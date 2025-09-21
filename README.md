@@ -126,3 +126,22 @@ Contributions are welcome! Whether it's:
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 *Questions? Contact: [staranto@gmail.com](mailto:staranto@gmail.com)*
+
+## Verify releases
+
+We sign release artifacts with Sigstore `cosign`. Two common verification methods:
+
+- Keyless (recommended): verify signatures published to the transparency log:
+
+```bash
+cosign verify-blob --keyless path/to/artifact
+```
+
+- Key-based (if a `cosign.pub` is provided with the release):
+
+```bash
+curl -L https://github.com/staranto/tfctlgo-release/releases/latest/download/cosign.pub -o cosign.pub
+cosign verify-blob --key cosign.pub path/to/artifact
+```
+
+If a `cosign.pub` file is published with the release, it will be available alongside other assets on the release page.
