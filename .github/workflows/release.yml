@@ -30,9 +30,9 @@ jobs:
       - name: Show PATH and versions
         run: |
           echo $PATH
-          where cosign && cosign version
-          where gh && gh --version
-          where tar && tar --version
+          which cosign && cosign version
+          which gh && gh --version
+          which tar && tar --version
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
