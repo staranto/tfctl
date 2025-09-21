@@ -17,10 +17,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Clean dist folder
+        run: |
+          rm -rf dist
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
-          args: release --rm-dist
+          args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
