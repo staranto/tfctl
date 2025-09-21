@@ -27,22 +27,12 @@ jobs:
           chmod +x cosign
           sudo mv cosign /usr/local/bin/
 
-      - name: Install GitHub CLI
-        run: |
-          set -euo pipefail
-          # Install gh from the official GitHub CLI apt repository
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-          sudo chmod 644 /usr/share/keyrings/githubcli-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-          sudo apt update
-          sudo apt install -y gh
-
       - name: Show PATH and versions
         run: |
           echo $PATH
-          cosign version
-          gh --version
-          tar --version
+          where cosign && cosign version
+          where gh && gh --version
+          where tar && tar --version
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
@@ -50,7 +40,6 @@ jobs:
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PATH: /usr/local/bin:${{ env.PATH }}
 
       # Note: goreleaser handles signing via the `signs` config. We keep cosign
       # installed here so post-release verification steps or optional manual
