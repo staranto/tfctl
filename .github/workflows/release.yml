@@ -21,13 +21,6 @@ jobs:
         run: |
           rm -rf dist
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          args: release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Install cosign
         run: |
           curl -sSL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 -o cosign
@@ -49,6 +42,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "$GITHUB_TOKEN" | gh auth login --with-token
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          args: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Note: goreleaser handles signing via the `signs` config. We keep cosign
       # installed here so post-release verification steps or optional manual
