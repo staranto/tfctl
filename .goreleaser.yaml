@@ -59,7 +59,7 @@ changelog:
 release:
   github:
     owner: staranto
-    name: tfctlgo-release
+    name: tfctlgo
   footer: >-
 
     Copyright (c) 2025 Steve Taranto staranto@gmail.com
@@ -73,12 +73,12 @@ brews:
     ids: [tfctl]
     repository:
       owner: staranto
-      name: tfctlgo-release
+      name: tfctlgo
     homepage: https://github.com/staranto/tfctlgo
     description: CLI to query Terraform/OpenTofu state across backends
     license: MIT
-    # Point Homebrew to the prebuilt archives published in tfctlgo-release.
-    url_template: "https://github.com/staranto/tfctlgo-release/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    # Point Homebrew to the prebuilt archives published in tfctlgo.
+    url_template: "https://github.com/staranto/tfctlgo/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     # Install the prebuilt binary from the archive (no compilation).
     install: |
       bin.install "tfctl"
@@ -103,5 +103,4 @@ signs:
   - id: cosign-keyless
     cmd: |
       cosign sign-blob --keyless --output-signature {{ .ArtifactPath }}.sig {{ .ArtifactPath }}
-    artifacts:
-      - archive
+    artifacts: archive
