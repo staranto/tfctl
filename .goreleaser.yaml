@@ -101,6 +101,11 @@ nfpms:
 
 signs:
   - id: cosign-keyless
-    cmd: |
-      cosign sign-blob --keyless --output-signature {{ .ArtifactPath }}.sig {{ .ArtifactPath }}
+    cmd: cosign
+    args:
+      - sign-blob
+      - --keyless
+      - --output-signature
+      - "{{ .ArtifactPath }}.sig"
+      - "{{ .ArtifactPath }}"
     artifacts: archive
