@@ -1,0 +1,44 @@
+.TH TFCTL-MQ 1 "2025-09-25" "tfctl" "User Commands"
+.SH NAME
+tfctl-mq \- query modules in the HCP Terraform / Terraform Enterprise private registry
+.SH SYNOPSIS
+.B tfctl mq
+.RI [ options ]
+.P
+Common options are documented in
+.BR tfctl\-flags (7).
+.SH DESCRIPTION
+.B tfctl mq
+lists registry modules available to an organization on a given host.
+Use filters and attribute selection to shape results for automation and reporting.
+.SH OPTIONS
+.TP
+.BR \-\-host \fIHOST\fR
+HCP/TFE host (e.g. app.terraform.io or a private TFE hostname).
+.TP
+.BR \-\-org \fIORG\fR
+Organization name to scope queries.
+.TP
+See also global options in
+.BR tfctl (1)
+and
+.BR tfctl\-flags (7).
+.SH EXAMPLES
+.nf
+# List modules for an organization (text)
+tfctl mq --org {{organization_name}}
+
+# Filter modules by name (contains) and return JSON
+tfctl mq --org {{organization_name}} --filter 'name@{{text}}' --output json
+
+# Filter modules by regex
+tfctl mq --org {{organization_name}} --filter 'name~{{pattern}}' --output json
+
+# Use a specific Terraform Enterprise host
+tfctl mq --host {{tfe.example.com}} --org {{organization_name}}
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-attrs (7),
+.BR tfctl\-filters (7),
+.BR tfctl\-flags (7)

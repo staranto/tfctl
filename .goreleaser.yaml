@@ -1,0 +1,116 @@
+# Copyright © 2025 Steve Taranto staranto@gmail.com
+# SPDX-License-Identifier: MIT
+
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: tfctl
+    binary: tfctl
+    env:
+      - CGO_ENABLED=0
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - darwin
+      - linux
+      - windows
+    flags:
+      - -trimpath
+    ldflags:
+      - '-s -w -extldflags "-static"'
+      - '-X "github.com/staranto/tfctlgo/internal/version.Version={{ .Version }}"'
+
+archives:
+  - id: archive
+    formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{- if eq .Arch "amd64" }}x86_64{{- else if eq .Arch "386" }}i386{{- else }}{{ .Arch }}{{- end }}{{- if .Arm }}v{{ .Arm }}{{ end }}'
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE*
+      - README.md
+      - docs/man/**/*
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  github:
+    owner: staranto
+    name: tfctlgo
+  footer: >-
+
+    Copyright (c) 2025 Steve Taranto staranto@gmail.com
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+
+brews:
+  - name: tfctl
+    ids: [archive]
+    repository:
+      owner: staranto
+      name: homebrew-tfctlgo
+    homepage: https://github.com/staranto/tfctl
+    description: CLI to query Terraform/OpenTofu state across backends
+    license: MIT
+    url_template: "https://github.com/staranto/tfctlgo/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    install: |
+      bin.install "tfctl"
+      man1.install Dir["docs/man/share/man1/*"] if File.directory?("docs/man/share/man1")
+      man7.install Dir["docs/man/share/man7/*"] if File.directory?("docs/man/share/man7")
+    test: |
+      system "#{bin}/tfctl", "--version"
+
+nfpms:
+  - id: tfctl-deb
+    ids: [tfctl]
+    package_name: tfctl
+    file_name_template: '{{ .Binary }}_{{ .Version }}_{{- if eq .Arch "amd64" }}amd64{{ else }}{{ .Arch }}{{ end }}{{ .ConventionalExtension }}'
+    vendor: Steve Taranto
+    maintainer: Steve Taranto <staranto@gmail.com>
+    homepage: https://github.com/staranto/tfctlgo
+    description: CLI to query Terraform/OpenTofu state across backends
+    license: MIT
+    bindir: /usr/local/bin
+    formats:
+      - deb
+    contents:
+      - src: docs/man/share/man1/*
+        dst: /usr/share/man/man1/
+      - src: docs/man/share/man7/*
+        dst: /usr/share/man/man7/
+      # Optionally include license/readme too
+      - src: LICENSE*
+        dst: /usr/share/doc/tfctl/
+      - src: README.md
+        dst: /usr/share/doc/tfctl/
+
+signs:
+  - artifacts: all
+    cmd: gpg
+    args:
+      [
+        "--batch",
+        "--yes",
+        "--detach-sign",
+        "--armor",
+        "--output",
+        "${signature}",
+        "${artifact}",
+      ]

@@ -1,0 +1,35 @@
+.TH TFCTL-OQ 1 "2025-09-25" "tfctl" "User Commands"
+.SH NAME
+tfctl-oq \- query organizations
+.SH SYNOPSIS
+.B tfctl oq
+.RI [ options ]
+.SH DESCRIPTION
+.B tfctl oq
+lists organizations from the configured host.
+Use filters and attributes to extract exactly what you need.
+.SH OPTIONS
+.TP
+.BR \-\-host \fIHOST\fR
+HCP/TFE host (e.g. app.terraform.io or a private TFE hostname).
+.TP
+See also global options in
+.BR tfctl (1)
+and
+.BR tfctl\-flags (7).
+.SH EXAMPLES
+.nf
+# List organizations
+tfctl oq --output json
+
+# Filter by name (contains)
+tfctl oq --filter 'name@{{prod}}'
+
+# Include admin email address
+tfctl oq --attrs {{email}} --output json
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-attrs (7),
+.BR tfctl\-filters (7),
+.BR tfctl\-flags (7)

@@ -1,0 +1,174 @@
+.TH TFCTL 1 "2025-09-25" "tfctl" "User Commands"
+.SH NAME
+tfctl \- query Terraform/HCP Terraform (TFE) state and metadata from the CLI
+.SH SYNOPSIS
+.B tfctl
+.RI [ global\-options ]
+.I command
+.RI [ command\-options ]
+.RI [ RootDir ]
+.P
+Many commands accept an optional
+.I RootDir
+(the path to an IaC root directory) as the first non\-flag argument.
+.SH DESCRIPTION
+.B tfctl
+is a high\-performance CLI for querying Terraform and OpenTofu infrastructure.
+It provides deep read\-only visibility into organizations, projects, workspaces,
+state resources, runs, and state versions across HCP Terraform/Terraform Enterprise
+and local state. Output can be shaped via attribute selection, filtering, sorting,
+and multiple formats for easy automation and reporting.
+.SH COMMANDS
+The following top\-level commands are available. See each command's dedicated
+man page for details and examples.
+.TP
+.B mq
+Module registry query.
+.TP
+.B oq
+Organization query.
+.TP
+.B pq
+Project query.
+.TP
+.B rq
+Run query (per workspace).
+.TP
+.B si
+State inspector (interactive and advanced state operations).
+.TP
+.B sq
+State query (resources from a workspace or local RootDir).
+.TP
+.B svq
+State version query (list state versions for a workspace).
+.TP
+.B wq
+Workspace query.
+.SH GLOBAL OPTIONS
+These options are accepted by all commands:
+.TP
+.BR \-a ", " \-\-attrs \fISPEC\fR
+Comma\-separated attribute list to include in results. See
+.BR tfctl\-attrs (7)
+for syntax and transformation rules.
+.TP
+.BR \-c ", " \-\-color
+Enable colored text output.
+.TP
+.BR \-f ", " \-\-filter \fIEXPR\fR
+Comma\-separated filter expression(s) applied before output. See
+.BR tfctl\-filters (7)
+for operators and examples.
+.TP
+.BR \-o ", " \-\-output \fIFORMAT\fR
+Output format. One of
+.B text
+(default),
+.B json
+or
+.B raw
+(raw JSON from the upstream API when applicable).
+.TP
+.BR \-s ", " \-\-sort \fIATTRS\fR
+Comma\-separated list of attributes to sort by. Prefix an attribute with
+.B \-
+for descending order.
+.TP
+.BR \-t ", " \-\-titles
+Show column titles in text output mode.
+.TP
+.BR \-v ", " \-\-version
+Show version information and exit.
+.SH COMMON COMMAND OPTIONS
+These options are commonly supported by many resource\-backed commands:
+.TP
+.BR \-\-host \fIHOST\fR
+HCP/TFE host (e.g. app.terraform.io or a private TFE hostname). Overrides any
+backend\-derived host.
+.TP
+.BR \-\-org \fIORG\fR
+Organization name to scope queries. Overrides backend\-derived organization.
+.TP
+.BR \-w ", " \-\-workspace \fINAME\fR
+Workspace name to scope queries. Overrides backend\-derived workspace where
+applicable.
+.P
+Use
+.BR tfctl \ \fIcommand\fR \ \-\-help
+to see the full set of options for a specific command.
+.SH ENVIRONMENT
+The following environment variables are recognized by various commands:
+.TP
+.B TFCTL_HOST
+Default HCP/TFE host (alternative to
+.BR \-\-host ).
+.TP
+.B TF_CLOUD_HOSTNAME
+Alternate variable recognized for the host.
+.TP
+.B TFCTL_ORG
+Default organization (alternative to
+.BR \-\-org ).
+.TP
+.B TF_CLOUD_ORGANIZATION
+Alternate variable recognized for the organization.
+.TP
+.B TFCTL_WORKSPACE
+Default workspace (alternative to
+.BR \-\-workspace ).
+.TP
+.B TFCTL_FILTER_DELIM
+Override the delimiter used between multiple filters (default ",").
+.TP
+.B TZ
+Used by time transformations in
+.BR \-\-attrs
+when converting timestamps to local time.
+.TP
+.B TF_VAR_passphrase
+Used by
+.B sq
+when decrypting OpenTofu encrypted state (if not provided via
+.BR \-\-passphrase ).
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B >0
+An error occurred.
+.SH EXAMPLES
+.nf
+# List organizations (default host)
+tfctl oq --output json
+
+# List workspaces in an organization
+tfctl wq --org {{organization_name}}
+
+# Query state for a workspace and filter to EC2 instances
+tfctl sq --workspace {{workspace_name}} --filter 'type=aws_instance' --output json
+
+# Query state from a local IaC root directory (RootDir)
+tfctl sq {{/path/to/terraform/dir}}
+
+# List state versions for a workspace (latest 10)
+tfctl svq --workspace {{workspace_name}} --limit 10 --output json
+.fi
+.SH SEE ALSO
+.BR tfctl\-attrs (7),
+.BR tfctl\-filters (7),
+.BR tfctl\-flags (7),
+.BR tfctl\-mq (1),
+.BR tfctl\-oq (1),
+.BR tfctl\-pq (1),
+.BR tfctl\-rq (1),
+.BR tfctl\-sq (1),
+.BR tfctl\-svq (1),
+.BR tfctl\-wq (1)
+.SH HOMEPAGE
+https://github.com/staranto/tfctlgo
+.SH AUTHOR
+Steve Taranto <staranto@gmail.com>
+.SH COPYRIGHT
+MIT License. See the project LICENSE file.

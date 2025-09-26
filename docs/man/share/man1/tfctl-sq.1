@@ -1,0 +1,66 @@
+.TH TFCTL-SQ 1 "2025-09-25" "tfctl" "User Commands"
+.SH NAME
+tfctl-sq \- query resources from Terraform/OpenTofu state
+.SH SYNOPSIS
+.B tfctl sq
+.RI [ options ]
+.RI [ RootDir ]
+.SH DESCRIPTION
+.B tfctl sq
+reads a workspace's state (or a local RootDir) and emits resource data suitable
+for inventory, auditing, and automation. State decryption for OpenTofu encrypted
+states is supported via
+.BR \-\-passphrase
+or
+.BR TF_VAR_passphrase .
+.SH OPTIONS
+.TP
+.BR \-\-host \fIHOST\fR
+HCP/TFE host.
+.TP
+.BR \-\-org \fIORG\fR
+Organization.
+.TP
+.BR \-w ", " \-\-workspace \fINAME\fR
+Workspace name.
+.TP
+.BR \-\-concrete
+Only include concrete (managed) resources.
+.TP
+.BR \-\-diff
+Show differences between state versions when supported by the backend.
+.TP
+.BR \-\-noshort
+Show full resource paths.
+.TP
+.BR \-\-passphrase \fISTRING\fR
+Passphrase for decrypting OpenTofu state (if encrypted). Can also be supplied
+via
+.BR TF_VAR_passphrase .
+.TP
+.BR \-\-sv \fIN\fR
+State version to query.
+.TP
+See also global options in
+.BR tfctl (1)
+and
+.BR tfctl\-flags (7).
+.SH EXAMPLES
+.nf
+# Query state from a workspace
+tfctl sq --workspace {{workspace_name}}
+
+# Query state from a local directory (RootDir)
+tfctl sq {{/path/to/terraform/dir}}
+
+# Only include concrete resources
+tfctl sq --workspace {{workspace_name}} --concrete
+
+# Filter to EC2 instances and output JSON
+tfctl sq --workspace {{workspace_name}} --filter 'type=aws_instance' --output json
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-attrs (7),
+.BR tfctl\-filters (7),
+.BR tfctl\-flags (7)

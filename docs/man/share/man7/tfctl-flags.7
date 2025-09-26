@@ -1,0 +1,55 @@
+.TH TFCTL-FLAGS 7 "2025-09-25" "tfctl" "Miscellaneous Information"
+.SH NAME
+tfctl-flags \- common flags and usage patterns
+.SH SYNOPSIS
+Global flags and common command options.
+.SH DESCRIPTION
+Most commands accept the same set of global flags for output, filtering, and
+formatting. Some commands also provide resource\-specific flags.
+.SH GLOBAL FLAGS
+.TP
+.BR \-a ", " \-\-attrs \fISPEC\fR
+Attribute selection and transformation spec.
+.TP
+.BR \-c ", " \-\-color
+Enable colored text output.
+.TP
+.BR \-f ", " \-\-filter \fIEXPR\fR
+Filter expression(s).
+.TP
+.BR \-o ", " \-\-output \fIFORMAT\fR
+Output format: text (default), json, raw.
+.TP
+.BR \-s ", " \-\-sort \fIATTRS\fR
+Sort by one or more attributes (prefix with '-' for descending).
+.TP
+.BR \-t ", " \-\-titles
+Show column titles in text mode.
+.TP
+.BR \-v ", " \-\-version
+Show version information.
+.SH COMMON RESOURCE FLAGS
+.TP
+.BR \-\-host \fIHOST\fR
+HCP/TFE host (app.terraform.io or private TFE).
+.TP
+.BR \-\-org \fIORG\fR
+Organization to scope queries.
+.TP
+.BR \-w ", " \-\-workspace \fINAME\fR
+Workspace name.
+.SH EXAMPLES
+.nf
+# Query with JSON output
+tfctl oq --output json
+
+# Add attribute columns
+tfctl wq --attrs name,terraform-version
+
+# Filter results
+tfctl oq --filter 'name@prod'
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-attrs (7),
+.BR tfctl\-filters (7)

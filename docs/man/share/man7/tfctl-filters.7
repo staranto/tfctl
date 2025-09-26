@@ -1,0 +1,65 @@
+.TH TFCTL-FILTERS 7 "2025-09-25" "tfctl" "Miscellaneous Information"
+.SH NAME
+tfctl-filters \- filtering expressions with tfctl
+.SH SYNOPSIS
+Use the
+.BR \-\-filter
+flag to narrow results.
+.SH DESCRIPTION
+Filters are comma\-delimited by default and have the form
+.IR key<op>target .
+Negation is written by prefixing the operator with
+.B !
+(e.g.,
+.IR name!@prod ).
+.SH OPERATORS
+.TP
+.B =
+Exact match (string equality).
+.TP
+.B ~
+Case\-insensitive equality.
+.TP
+.B ^
+Starts with.
+.TP
+.B > , <
+Lexicographic comparisons.
+.TP
+.B @
+Contains / membership (strings, slices, maps).
+.TP
+.B /
+Regular expression match (Go regexp syntax).
+.SH NOTES
+- Filters referencing attribute names beginning with
+.B _
+are treated as native API filters and may be passed through upstream.
+- Filters are applied before attribute transformations.
+- For
+.B sq
+with
+.BR \-\-concrete ,
+.B mode=managed
+is automatically appended.
+.SH EXAMPLES
+.nf
+# Contains and negation
+tfctl oq --filter 'name@prod'
+tfctl oq --filter 'name!@prod'
+
+# Exact, starts\-with, case\-insensitive
+tfctl wq --filter 'status=applied'
+tfctl wq --filter 'name^prod'
+tfctl oq --filter 'email~admin'
+
+# Regex
+tfctl wq --filter 'name/^prod-\d{3}$'
+
+# Multiple filters
+tfctl oq --filter 'name@prod,created-at>2024-01-01'
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-attrs (7),
+.BR tfctl\-flags (7)

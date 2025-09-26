@@ -1,0 +1,228 @@
+// Copyright © 2025 Steve Taranto staranto@gmail.com
+// SPDX-License-Identifier: MIT
+
+package output
+
+import (
+	"fmt"
+	"os"
+	"regexp"
+	"strings"
+
+	"github.com/apex/log"
+	"github.com/staranto/tfctlgo/internal/attrs"
+	"github.com/staranto/tfctlgo/internal/driller"
+	"github.com/tidwall/gjson"
+)
+
+// filterRegex is the pattern used to parse filter expressions into key, operator, and target components.
+// It matches: key + operator + target, where operator can be negated with !
+var filterRegex = regexp.MustCompile(`^(.*?)([!/]{1,2}|[=^~><!@]{1,2})(.*)$`)
+
+// The --filter argument is parsed into a slice of Filter structs.
+type Filter struct {
+	Key     string
+	Negate  bool
+	Operand string
+	Target  string
+}
+
+// applyFilters checks the candidate against the filters and returns a bool
+// indicating if the candidate should be included in the result set.
+func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter) bool {
+	// No filters, so go home early.
+	if len(filters) == 0 {
+		return true
+	}
+
+	// Iterate over the filters, checking each against the candidate.
+	for _, filter := range filters {
+		var key string
+
+		// If Key starts with _, it's a native filter used by the TF API and should
+		// be ignored here.
+		if strings.HasPrefix(filter.Key, "_") {
+			continue
+		}
+
+		// Find the attribute that matches the filter key.
+		for _, attr := range attrs {
+			if attr.OutputKey == filter.Key {
+				key = attr.Key
+				break
+			}
+		}
+
+		// If an attribute matching the filter key was not found, log the condition
+		// and fail early.
+		// THINK Don't we allow a bad operand to be ignored?  Be consistent.
+		if key == "" {
+			log.Error("filterkey not found: " + filter.Key)
+			return false
+		}
+
+		// Get the value from the candidate for the key.  If it's nil, fail early.
+		//value := candidate.Get(key).Value()
+		value := driller.Driller(candidate.Raw, key).Value()
+		if value == nil {
+			return false
+		}
+
+		// Check the value against the filter.  If it fails the check, fail early as
+		// there's no need to continue checking the remaining filters.
+		result := true
+		if v, ok := value.(string); ok {
+			result = checkStringOperand(v, filter)
+		} else if v, ok := value.(bool); ok {
+			result = checkStringOperand(fmt.Sprintf("%v", v), filter)
+		} else if filter.Operand == "@" {
+			result = checkContainsOperand(value, filter)
+		}
+
+		if !result {
+			return false
+		}
+	}
+
+	return true
+}
+
+// checkContainsOperand checks the value against the target for "membership".  Does
+// the target "have" the value?
+func checkContainsOperand(value interface{}, filter Filter) bool {
+	switch val := value.(type) {
+	case []any:
+		for _, item := range val {
+			if item == filter.Target && !filter.Negate {
+				return true
+			}
+		}
+	case map[string]any:
+		_, found := val[filter.Target]
+		if filter.Negate {
+			return !found
+		}
+		return found
+	default:
+		log.Error(fmt.Sprintf("unsupported type for contains filtering: %T", value))
+		return false
+	}
+	return false
+}
+
+// checkStringOperand checks the value against the target using the provided
+// operand and returns a bool indicating if the check was successful.  The
+// value is normalized to a string before the check is performed.  All operands,
+// including '@', support normalized string values.  `@` is a special case that
+// also supports other types.
+func checkStringOperand(value string, filter Filter) bool {
+	switch filter.Operand {
+	case "=":
+		return value == filter.Target == !filter.Negate
+	case "~":
+		return strings.EqualFold(value, filter.Target) == !filter.Negate
+	case "^":
+		return strings.HasPrefix(value, filter.Target) == !filter.Negate
+	case ">":
+		return value > filter.Target == !filter.Negate
+	case "<":
+		return value < filter.Target == !filter.Negate
+	case "@":
+		return strings.Contains(value, filter.Target) == !filter.Negate
+	case "/":
+		matched, err := regexp.MatchString(filter.Target, value)
+		if err != nil {
+			log.Error("invalid regex: " + filter.Target)
+			return false
+		}
+		return matched == !filter.Negate
+
+	default:
+		log.Error("unsupported filtering operand: " + filter.Operand)
+		return false
+	}
+}
+
+// BuildFilters parses the filter spec and returns a slice of filter structs.
+// Invalid specs (currently determined by an unsupported operand) are ignored.
+func BuildFilters(spec string) []Filter {
+	// Don't prealloc because we don't know what len will be and performance is
+	// not critical.
+	//nolint:prealloc
+	var filters []Filter
+
+	// If there are no filters specified, go home early.
+	if spec == "" {
+		return filters
+	}
+
+	// Default delimiter is ",", allow an override.
+	delim := ","
+	if d, ok := os.LookupEnv("TFCTL_FILTER_DELIM"); ok {
+		delim = d
+	}
+
+	// Split the spec and iterate over each filter spec entry.
+	filterSpecs := strings.Split(spec, delim)
+	for _, filterSpec := range filterSpecs {
+		parts := filterRegex.FindStringSubmatch(filterSpec)
+
+		// If a supported operand was not found, log an error and throw it away.
+		if parts == nil {
+			log.Error("invalid filter: " + filterSpec)
+			continue
+		}
+
+		// parts[2] is the operand.  It may have a leading negation.  If so, chop it
+		// off and just use the remainder as the working operand.
+		// Check if the operand begins with a negation.
+		negate := strings.HasPrefix(parts[2], "!")
+		if negate {
+			parts[2] = strings.TrimPrefix(parts[2], "!")
+		}
+
+		// We've got a good filter, append it to the result set.
+		filters = append(filters, Filter{
+			Key:     parts[1],
+			Negate:  negate,
+			Operand: parts[2],
+			Target:  parts[3],
+		})
+	}
+
+	return filters
+}
+
+// FilterDataset filters the candidate dataset based on the provided spec.  This
+// is the entry point by SliceDiceSpit() for filtering.
+func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) []map[string]interface{} {
+	//nolint:prealloc // Don't prealloc because we don't know what len will be.
+	var filteredResults []map[string]interface{}
+
+	// Build a slice of filters from the spec. We're doing this here so we don't
+	// have to reparse for each candidate row and so we can remove any invalid
+	// filters.
+	filters := BuildFilters(spec)
+
+	// Iterate over the candidate dataset, checking each against the filters.
+	for _, candidate := range candidates.Array() {
+		if !applyFilters(candidate, attrs, filters) {
+			continue
+		}
+
+		// If the filter check was successful, add each attribute from the candidate
+		// to the filtered result set.
+		result := make(map[string]interface{})
+		for i := range attrs {
+			attr := attrs[i]
+			// THINK Should we Transform here or in a separate loop back in
+			// SliceDiceSpit()?  This func is filtering, not filtering & transforming.
+			// value := attr.Transform(candidate.Get(attr.Key).Value())
+			value := driller.Driller(candidate.Raw, attr.Key)
+			result[attr.OutputKey] = value.Value()
+		}
+		filteredResults = append(filteredResults, result)
+	}
+
+	return filteredResults
+}

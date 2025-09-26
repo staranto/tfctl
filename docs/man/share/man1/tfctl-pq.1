@@ -1,0 +1,37 @@
+.TH TFCTL-PQ 1 "2025-09-25" "tfctl" "User Commands"
+.SH NAME
+tfctl-pq \- query projects
+.SH SYNOPSIS
+.B tfctl pq
+.RI [ options ]
+.SH DESCRIPTION
+.B tfctl pq
+lists projects for an organization.
+.SH OPTIONS
+.TP
+.BR \-\-host \fIHOST\fR
+HCP/TFE host.
+.TP
+.BR \-\-org \fIORG\fR
+Organization to scope queries.
+.TP
+See also global options in
+.BR tfctl (1)
+and
+.BR tfctl\-flags (7).
+.SH EXAMPLES
+.nf
+# List projects
+tfctl pq --org {{organization_name}}
+
+# Filter by name and include last updated timestamp
+tfctl pq --org {{organization_name}} --filter 'name@{{storage}}' --attrs {{updated-at}} --output json
+
+# Include VCS repo identifier
+tfctl pq --org {{organization_name}} --attrs {{vcs-repo.identifier}} --output json
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-attrs (7),
+.BR tfctl\-filters (7),
+.BR tfctl\-flags (7)

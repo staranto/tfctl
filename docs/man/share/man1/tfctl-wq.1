@@ -1,0 +1,34 @@
+.TH TFCTL-WQ 1 "2025-09-25" "tfctl" "User Commands"
+.SH NAME
+tfctl-wq \- query workspaces
+.SH SYNOPSIS
+.B tfctl wq
+.RI [ options ]
+.SH DESCRIPTION
+.B tfctl wq
+lists workspaces for an organization on the configured host.
+.SH OPTIONS
+.TP
+.BR \-\-host \fIHOST\fR
+HCP/TFE host.
+.TP
+.BR \-\-org \fIORG\fR
+Organization to scope queries.
+.TP
+See also global options in
+.BR tfctl (1)
+and
+.BR tfctl\-flags (7).
+.SH EXAMPLES
+.nf
+# List workspaces in an organization
+tfctl wq --org {{organization_name}}
+
+# Filter by name (regex) and return JSON
+tfctl wq --org {{organization_name}} --filter 'name/^{{prod-\d{3}}}$' --output json
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-attrs (7),
+.BR tfctl\-filters (7),
+.BR tfctl\-flags (7)

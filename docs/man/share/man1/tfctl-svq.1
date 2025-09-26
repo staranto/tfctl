@@ -1,0 +1,38 @@
+.TH TFCTL-SVQ 1 "2025-09-25" "tfctl" "User Commands"
+.SH NAME
+tfctl-svq \- query state versions for a workspace
+.SH SYNOPSIS
+.B tfctl svq
+.RI [ options ]
+.RI [ RootDir ]
+.SH DESCRIPTION
+.B tfctl svq
+lists state versions associated with a workspace.
+.SH OPTIONS
+.TP
+.BR \-\-host \fIHOST\fR
+HCP/TFE host.
+.TP
+.BR \-\-org \fIORG\fR
+Organization.
+.TP
+.BR \-w ", " \-\-workspace \fINAME\fR
+Workspace name.
+.TP
+.BR \-l ", " \-\-limit \fIN\fR
+Limit the number of state versions returned (default from config).
+.TP
+See also global options in
+.BR tfctl (1)
+and
+.BR tfctl\-flags (7).
+.SH EXAMPLES
+.nf
+# List state versions (latest 10)
+tfctl svq --workspace {{workspace_name}} --limit 10 --output json
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-attrs (7),
+.BR tfctl\-filters (7),
+.BR tfctl\-flags (7)

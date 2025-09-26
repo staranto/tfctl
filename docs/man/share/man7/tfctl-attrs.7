@@ -1,0 +1,52 @@
+.TH TFCTL-ATTRS 7 "2025-09-25" "tfctl" "Miscellaneous Information"
+.SH NAME
+tfctl-attrs \- attribute selection and transformation with tfctl
+.SH SYNOPSIS
+Use the
+.BR \-\-attrs
+flag with most commands to select and transform fields.
+.SH DESCRIPTION
+The
+.B \-\-attrs
+flag accepts a comma\-separated list of extraction specs with optional renaming
+and transformation directives.
+.P
+Each spec has the form:
+.P
+.RS
+json_path:output_name:transform_spec
+.RE
+.P
+See the project documentation for a complete guide to JSON paths, renaming, and
+transformations.
+.SH TRANSFORMS
+.TP
+.B U / L
+Uppercase or lowercase.
+.TP
+.B N
+Truncate to first N characters (e.g., "10"). Use negative N to compress the
+middle (e.g., "-8").
+.TP
+.B t
+Convert UTC timestamps to local time (uses the
+.B TZ
+environment variable when set).
+.SH EXAMPLES
+.nf
+# Select specific attributes
+tfctl oq --attrs name,email,created-at
+
+# Root\-level attributes
+tfctl oq --attrs .id,.type
+
+# Rename outputs
+tfctl oq --attrs created-at:Created,email:Admin
+
+# Transformations
+tfctl oq --attrs name::U,created-at::t,email::L10
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-filters (7),
+.BR tfctl\-flags (7)

@@ -1,0 +1,41 @@
+.TH TFCTL-RQ 1 "2025-09-25" "tfctl" "User Commands"
+.SH NAME
+tfctl-rq \- query runs for a workspace
+.SH SYNOPSIS
+.B tfctl rq
+.RI [ options ]
+.RI [ RootDir ]
+.SH DESCRIPTION
+.B tfctl rq
+lists runs associated with a workspace.
+.SH OPTIONS
+.TP
+.BR \-\-host \fIHOST\fR
+HCP/TFE host.
+.TP
+.BR \-\-org \fIORG\fR
+Organization.
+.TP
+.BR \-w ", " \-\-workspace \fINAME\fR
+Workspace name.
+.TP
+.BR \-l ", " \-\-limit \fIN\fR
+Limit the number of runs returned (default 99999).
+.TP
+See also global options in
+.BR tfctl (1)
+and
+.BR tfctl\-flags (7).
+.SH EXAMPLES
+.nf
+# List runs for a workspace (latest 20)
+tfctl rq --workspace {{workspace_name}} --limit 20
+
+# Return as JSON
+tfctl rq --workspace {{workspace_name}} --output json
+.fi
+.SH SEE ALSO
+.BR tfctl (1),
+.BR tfctl\-attrs (7),
+.BR tfctl\-filters (7),
+.BR tfctl\-flags (7)

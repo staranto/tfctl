@@ -1,0 +1,10 @@
+**/.vscode/
+
+**/.envrc*
+**/*.out
+**/testdata/.cache
+
+# Temporarily ignore these working hacks.
+
+# Added by goreleaser init:
+dist/
