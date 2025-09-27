@@ -170,9 +170,8 @@ func NewHostFlag(params ...string) (flag *cli.StringFlag) {
 
 func NewOrgFlag(params ...string) (flag *cli.StringFlag) {
 	flag = &cli.StringFlag{
-		Name:    "org",
-		Aliases: []string{"o"},
-		Usage:   "organization to use for all commands. Overrides the backend",
+		Name:  "org",
+		Usage: "organization to use for all commands. Overrides the backend",
 		Sources: cli.NewValueSourceChain(
 			cli.EnvVar("TFCTL_ORG"),
 			cli.EnvVar("TF_CLOUD_ORGANIZATION"),
