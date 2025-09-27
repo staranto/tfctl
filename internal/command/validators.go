@@ -12,7 +12,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-func GlobalFlagsValidator(ctx context.Context, c *cli.Command, globalFlags []cli.Flag) error {
+func GlobalFlagsValidator(ctx context.Context, c *cli.Command) error {
 	return nil
 }
 

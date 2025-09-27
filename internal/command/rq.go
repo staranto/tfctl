@@ -88,7 +88,7 @@ func RqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func RqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) *cli.Command {
+func RqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "rq",
 		Usage:     "run query",
@@ -113,7 +113,7 @@ func RqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			workspaceFlag,
 		}, NewGlobalFlags("rq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := RqCommandValidator(ctx, c, globalFlags); err != nil {
+			if err := RqCommandValidator(ctx, c); err != nil {
 				return err
 			}
 			return RqCommandAction(ctx, c)
@@ -121,6 +121,6 @@ func RqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 	}
 }
 
-func RqCommandValidator(ctx context.Context, cmd *cli.Command, globalFlags []cli.Flag) error {
-	return GlobalFlagsValidator(ctx, cmd, globalFlags)
+func RqCommandValidator(ctx context.Context, cmd *cli.Command) error {
+	return GlobalFlagsValidator(ctx, cmd)
 }

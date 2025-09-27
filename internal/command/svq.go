@@ -88,7 +88,7 @@ func SvqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) *cli.Command {
+func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "svq",
 		Usage:     "state version query",
@@ -113,7 +113,7 @@ func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag)
 			workspaceFlag,
 		}, NewGlobalFlags("svq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := SvqCommandValidator(ctx, c, globalFlags); err != nil {
+			if err := SvqCommandValidator(ctx, c); err != nil {
 				return err
 			}
 			return SvqCommandAction(ctx, c)
@@ -121,6 +121,6 @@ func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag)
 	}
 }
 
-func SvqCommandValidator(ctx context.Context, cmd *cli.Command, globalFlags []cli.Flag) error {
-	return GlobalFlagsValidator(ctx, cmd, globalFlags)
+func SvqCommandValidator(ctx context.Context, cmd *cli.Command) error {
+	return GlobalFlagsValidator(ctx, cmd)
 }

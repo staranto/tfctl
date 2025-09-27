@@ -17,57 +17,7 @@ func init() {
 }
 
 var (
-	cfg config.ConfigType
-
-	// GlobalFlags is a collection of flags that every command gets.
-	GlobalFlags = []cli.Flag{
-		&cli.StringFlag{
-			Name:    "attrs",
-			Aliases: []string{"a"},
-			Usage:   "comma-separated list of attributes to include in results",
-		},
-		&cli.BoolFlag{
-			Name:        "color",
-			Aliases:     []string{"c"},
-			Usage:       "enable colored text output",
-			HideDefault: true,
-			Sources: cli.NewValueSourceChain(
-				yaml.YAML("color", altsrc.StringSourcer(cfg.Source)),
-			),
-		},
-		&cli.StringFlag{
-			Name:    "filter",
-			Aliases: []string{"f"},
-			Usage:   "comma-separated list of filters to apply to results",
-		},
-		&cli.StringFlag{
-			Name:    "output",
-			Aliases: []string{"o"},
-			Usage:   "output format",
-			Value:   "text",
-			Validator: func(value string) error {
-				return FlagValidators(value, OutputValidator)
-			},
-		},
-		&cli.StringFlag{
-			Name:    "sort",
-			Aliases: []string{"s"},
-			Usage:   "comma-separated list of attributes to sort the results by",
-		},
-		&cli.BoolFlag{
-			Name:        "titles",
-			Aliases:     []string{"t"},
-			Usage:       "show titles with text output",
-			HideDefault: true,
-			Sources: cli.NewValueSourceChain(
-				yaml.YAML("titles", altsrc.StringSourcer(cfg.Source)),
-			),
-		},
-	}
-
-	// The remaining flags are standard for every command with which they're used.
-	// But, since they're not used by all commands, they're not considered for
-	// GlobalFlags.
+	cfg      config.ConfigType
 	tldrFlag *cli.BoolFlag = &cli.BoolFlag{
 		Name:        "tldr",
 		Usage:       "show tldr page",

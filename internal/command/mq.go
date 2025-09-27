@@ -104,7 +104,7 @@ func MqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func MqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) *cli.Command {
+func MqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "mq",
 		Usage:     "module registry query",
@@ -119,7 +119,7 @@ func MqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			schemaFlag,
 		}, NewGlobalFlags("mq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := MqCommandValidator(ctx, c, globalFlags); err != nil {
+			if err := MqCommandValidator(ctx, c); err != nil {
 				return err
 			}
 			return MqCommandAction(ctx, c)
@@ -127,6 +127,6 @@ func MqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 	}
 }
 
-func MqCommandValidator(ctx context.Context, cmd *cli.Command, globalFlags []cli.Flag) error {
-	return GlobalFlagsValidator(ctx, cmd, globalFlags)
+func MqCommandValidator(ctx context.Context, cmd *cli.Command) error {
+	return GlobalFlagsValidator(ctx, cmd)
 }

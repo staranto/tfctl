@@ -105,7 +105,7 @@ func WqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func WqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) *cli.Command {
+func WqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "wq",
 		Usage:     "workspace query",
@@ -120,7 +120,7 @@ func WqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			schemaFlag,
 		}, NewGlobalFlags("wq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := WqCommandValidator(ctx, c, globalFlags); err != nil {
+			if err := WqCommandValidator(ctx, c); err != nil {
 				return err
 			}
 			return WqCommandAction(ctx, c)
@@ -128,6 +128,6 @@ func WqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 	}
 }
 
-func WqCommandValidator(ctx context.Context, cmd *cli.Command, globalFlags []cli.Flag) error {
-	return GlobalFlagsValidator(ctx, cmd, globalFlags)
+func WqCommandValidator(ctx context.Context, cmd *cli.Command) error {
+	return GlobalFlagsValidator(ctx, cmd)
 }

@@ -118,7 +118,7 @@ func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func PqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) *cli.Command {
+func PqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:  "pq",
 		Usage: "project query",
@@ -132,7 +132,7 @@ func PqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			schemaFlag,
 		}, NewGlobalFlags("pq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := PqCommandValidator(ctx, c, globalFlags); err != nil {
+			if err := PqCommandValidator(ctx, c); err != nil {
 				return err
 			}
 			return PqCommandAction(ctx, c)
@@ -140,6 +140,6 @@ func PqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 	}
 }
 
-func PqCommandValidator(ctx context.Context, cmd *cli.Command, globalFlags []cli.Flag) error {
-	return GlobalFlagsValidator(ctx, cmd, globalFlags)
+func PqCommandValidator(ctx context.Context, cmd *cli.Command) error {
+	return GlobalFlagsValidator(ctx, cmd)
 }

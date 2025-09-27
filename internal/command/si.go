@@ -314,7 +314,7 @@ func saveSiHistory(filename string, history []string) {
 	writer.Flush()
 }
 
-func SiCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) *cli.Command {
+func SiCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "si",
 		Usage:     "state inspector",
@@ -335,7 +335,7 @@ func SiCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 				Value:       "0",
 				HideDefault: true,
 			},
-		}, globalFlags...),
+		}, NewGlobalFlags("si")...),
 		Action: SiCommandAction,
 	}
 }

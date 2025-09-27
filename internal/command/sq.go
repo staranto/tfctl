@@ -128,7 +128,7 @@ func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func SqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) *cli.Command {
+func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "sq",
 		Usage:     "state query",
@@ -183,7 +183,7 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			workspaceFlag,
 		}, NewGlobalFlags("sq")...),
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			if err := SqCommandValidator(ctx, cmd, globalFlags); err != nil {
+			if err := SqCommandValidator(ctx, cmd); err != nil {
 				return err
 			}
 			return SqCommandAction(ctx, cmd)
@@ -191,6 +191,6 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 	}
 }
 
-func SqCommandValidator(ctx context.Context, cmd *cli.Command, globalFlags []cli.Flag) error {
-	return GlobalFlagsValidator(ctx, cmd, globalFlags)
+func SqCommandValidator(ctx context.Context, cmd *cli.Command) error {
+	return GlobalFlagsValidator(ctx, cmd)
 }

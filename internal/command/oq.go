@@ -116,7 +116,7 @@ func OqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func OqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) *cli.Command {
+func OqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "oq",
 		Usage:     "organization query",
@@ -130,7 +130,7 @@ func OqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			schemaFlag,
 		}, NewGlobalFlags("oq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := OqCommandValidator(ctx, c, globalFlags); err != nil {
+			if err := OqCommandValidator(ctx, c); err != nil {
 				return err
 			}
 			return OqCommandAction(ctx, c)
@@ -138,6 +138,6 @@ func OqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 	}
 }
 
-func OqCommandValidator(ctx context.Context, cmd *cli.Command, globalFlags []cli.Flag) error {
-	return GlobalFlagsValidator(ctx, cmd, globalFlags)
+func OqCommandValidator(ctx context.Context, cmd *cli.Command) error {
+	return GlobalFlagsValidator(ctx, cmd)
 }

@@ -71,14 +71,14 @@ func InitApp(ctx context.Context, args []string) (*cli.Command, error) {
 	}
 
 	app.Commands = append(app.Commands,
-		MqCommandBuilder(app, meta, GlobalFlags),
-		OqCommandBuilder(app, meta, GlobalFlags),
-		PqCommandBuilder(app, meta, GlobalFlags),
-		RqCommandBuilder(app, meta, GlobalFlags),
-		SiCommandBuilder(app, meta, GlobalFlags),
-		SqCommandBuilder(app, meta, GlobalFlags),
-		SvqCommandBuilder(app, meta, GlobalFlags),
-		WqCommandBuilder(app, meta, GlobalFlags),
+		MqCommandBuilder(app, meta),
+		OqCommandBuilder(app, meta),
+		PqCommandBuilder(app, meta),
+		RqCommandBuilder(app, meta),
+		SiCommandBuilder(app, meta),
+		SqCommandBuilder(app, meta),
+		SvqCommandBuilder(app, meta),
+		WqCommandBuilder(app, meta),
 	)
 
 	// Make sure flags are sorted for the --help text.
