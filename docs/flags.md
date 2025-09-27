@@ -11,7 +11,7 @@ tfctl has a rich collection of flags available to each command. Many of these fl
 | `-f`, `--filter`  | A comma-separated list of filters to apply to the result before it is returned. See [Filters](filters.md) for a much more detailed discussion. |
 | `-h`, `--host`    | The HCP/TFE host to query. Overrides the workspace backend configuration. |
 | `--help` | Show command-specific help. |
-| `-o`, `--output` | Output format. Valid values are `text` (default), `json` or `raw`. Raw is a JSON dump of the Terraform API response. |
+| `-o`, `--output` | Output format. Valid values are `text` (default), `json`, `yaml` or `raw`. Raw is a JSON dump of the Terraform API response. |
 | `-s`, `--sort`    | A comma-separated list of attributes to sort the result by. Reverse sorting is indicated by a leading `-`. |
 | `-v`, `--version` | Print tfctl version information and exit. |
 | `-t`, `--titles`  | Print attribute name column headings when in text output mode. |

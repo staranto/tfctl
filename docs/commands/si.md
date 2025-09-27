@@ -41,7 +41,7 @@ Flags
 | `--attrs` | `-a` | Comma-separated list of attributes to include | Global flag |
 | `--color` | `-c` | Enable colored text output | Global flag
 | `--filter` | `-f` | Comma-separated list of filters to apply | See [Filters](../filters.md)
-| `--output` | `-o` | Output format (`text`, `json`, `raw`) | Global flag
+| `--output` | `-o` | Output format (`text`, `json`, `yaml`, `raw`) | Global flag
 | `--sort` | `-s` | Attributes to sort by | Global flag
 | `--titles` | `-t` | Show titles with text output | Global flag
 | Flag | Alias | Description | Default | Notes |
@@ -49,7 +49,7 @@ Flags
 | `--attrs` | `-a` | Comma-separated list of attributes to include | (none) | Global flag |
 | `--color` | `-c` | Enable colored text output | false | Global flag
 | `--filter` | `-f` | Comma-separated list of filters to apply | (none) | See [Filters](../filters.md)
-| `--output` | `-o` | Output format (`text`, `json`, `raw`) | `text` | Global flag
+| `--output` | `-o` | Output format (`text`, `json`, `yaml`, `raw`) | `text` | Global flag
 | `--passphrase` | `-p` | Passphrase for encrypted state files | (none) | si-specific
 | `--sort` | `-s` | Attributes to sort by | (none) | Global flag
 | `--sv` |  | State version to query | `0` | si-specific

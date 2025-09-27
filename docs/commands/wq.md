@@ -25,7 +25,7 @@ Flags
 | `--filter` | `-f` | Comma-separated list of filters to apply | (none) | See [Filters](../filters.md)
 | `--host` | `-h` | Host to use for queries | `app.terraform.io` | Command-scoped via `NewHostFlag`
 | `--org` | `-o` | Organization to query | (none) | Command-scoped via `NewOrgFlag`
-| `--output` | `-o` | Output format (`text`, `json`, `raw`) | `text` | Global flag
+| `--output` | `-o` | Output format (`text`, `json`, `yaml`, `raw`) | `text` | Global flag
 | `--schema` |  | Dump the schema | false | Command-specific helper
 | `--sort` | `-s` | Attributes to sort by | (none) | Global flag
 | `--titles` | `-t` | Show titles with text output | false | Global flag

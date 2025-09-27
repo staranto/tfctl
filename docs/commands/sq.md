@@ -29,7 +29,7 @@ Flags
 | `--host` | `-h` | Host to use for queries | `app.terraform.io` | Command-scoped via `NewHostFlag`
 | `--limit` |  | Limit state versions returned | 99999 | sq-specific, hidden default
 | `--noshort` |  | Include full resource name paths | false | sq-specific
-| `--output` | `-o` | Output format (`text`, `json`, `raw`) | `text` | Global flag
+| `--output` | `-o` | Output format (`text`, `json`, `yaml`, `raw`) | `text` | Global flag
 | `--org` | `-o` | Organization to query | (none) | Command-scoped via `NewOrgFlag`
 | `--passphrase` |  | Passphrase for encrypted state | (none) | sq-specific; falls back to TF_VAR_passphrase or interactive prompt
 | `--sort` | `-s` | Attributes to sort by | (none) | Global flag
