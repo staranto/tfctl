@@ -118,7 +118,7 @@ func WqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			NewOrgFlag("wq", meta.Config.Source),
 			tldrFlag,
 			schemaFlag,
-		}, globalFlags...),
+		}, NewGlobalFlags("wq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := WqCommandValidator(ctx, c, globalFlags); err != nil {
 				return err

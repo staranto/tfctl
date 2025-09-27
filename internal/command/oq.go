@@ -128,7 +128,7 @@ func OqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			tldrFlag,
 			NewHostFlag("oq", meta.Config.Source),
 			schemaFlag,
-		}, globalFlags...),
+		}, NewGlobalFlags("oq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := OqCommandValidator(ctx, c, globalFlags); err != nil {
 				return err

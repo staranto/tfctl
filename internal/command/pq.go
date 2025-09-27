@@ -130,7 +130,7 @@ func PqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			NewOrgFlag("svq", meta.Config.Source),
 			tldrFlag,
 			schemaFlag,
-		}, globalFlags...),
+		}, NewGlobalFlags("pq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := PqCommandValidator(ctx, c, globalFlags); err != nil {
 				return err

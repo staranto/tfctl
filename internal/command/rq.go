@@ -111,7 +111,7 @@ func RqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			tldrFlag,
 			schemaFlag,
 			workspaceFlag,
-		}, globalFlags...),
+		}, NewGlobalFlags("rq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := RqCommandValidator(ctx, c, globalFlags); err != nil {
 				return err

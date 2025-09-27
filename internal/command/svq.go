@@ -111,7 +111,7 @@ func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag)
 			tldrFlag,
 			schemaFlag,
 			workspaceFlag,
-		}, globalFlags...),
+		}, NewGlobalFlags("svq")...),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if err := SvqCommandValidator(ctx, c, globalFlags); err != nil {
 				return err

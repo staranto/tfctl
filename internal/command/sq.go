@@ -181,7 +181,7 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			NewOrgFlag("sq", meta.Config.Source),
 			tldrFlag,
 			workspaceFlag,
-		}, globalFlags...),
+		}, NewGlobalFlags("sq")...),
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			if err := SqCommandValidator(ctx, cmd, globalFlags); err != nil {
 				return err
