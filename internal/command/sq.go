@@ -103,9 +103,9 @@ func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
 			// First, look to the flag for passphrase value.
 			passphrase := cmd.String("passphrase")
 
-			// Issue 14 - Next look in env TF_VAR_passphrase and use it if found.
+			// Issue 14 - Next look in env and use it if found.
 			if passphrase == "" {
-				passphrase = os.Getenv("TF_VAR_passphrase")
+				passphrase = os.Getenv("TFCTL_PASSPHRASE")
 			}
 
 			// Finally, prompt for passphrase
@@ -164,7 +164,6 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta, globalFlags []cli.Flag) 
 			&cli.StringFlag{
 				Name:  "passphrase",
 				Usage: "encrypted state passphrase",
-				Value: "text",
 			},
 			&cli.StringFlag{
 				Name:        "sv",
