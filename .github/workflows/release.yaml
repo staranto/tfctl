@@ -42,33 +42,37 @@ jobs:
           path: dist/
           retention-days: 5
 
-      - name: Prepare tap release payload (binaries + sigs + docs)
+      - name: Make new release in tap
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          set -euo pipefail
-          mkdir -p tap-dist
-          # Include archives typically produced by GoReleaser and their signatures
-          find dist -type f \ \
-            \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.tar.xz" -o -name "*.tgz" \) \ \
-            \( ! -name "*source*" \) -print0 | xargs -0 -I {} cp -v {} tap-dist/
-          # Include detached signatures where present
-          find dist -type f \ \
-            \( -name "*.tar.gz.sig" -o -name "*.zip.sig" -o -name "*.tar.xz.sig" -o -name "*.tgz.sig" \) \ \
-            -print0 | xargs -0 -I {} cp -v {} tap-dist/ || true
-          # Explicitly exclude Debian and other package formats
-          rm -f tap-dist/*.deb tap-dist/*.deb.sig tap-dist/*.rpm tap-dist/*.apk 2>/dev/null || true
-          # Add top-level docs
-          cp -v README.md LICENSE tap-dist/
-
-      - name: Publish subset to tap repository (staranto/homebrew-tfctlgo)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: staranto/homebrew-tfctlgo
-          tag_name: ${{ github.ref_name }}
-          draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          files: |
-            tap-dist/**
+          gh release create "${{ github.ref_name }}" \
+            --repo staranto/homebrew-tfctlgo \
+            --title "${{ github.ref_name }}" \
+            --notes "Release ${{ github.ref_name }} for Homebrew tap." \
+            --latest
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_GORELEASER_PAT }}
+          GH_TOKEN: ${{ secrets.GH_GORELEASER_PAT }}
+
+      - name: Copy Brew artifacts to tap
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          # Upload archives
+          gh release upload "${{ github.ref_name }}" \
+            dist/*.{tar.gz,zip,tar.xz,tgz} \
+            --repo staranto/homebrew-tfctlgo --clobber || true
+
+          # Upload detached signatures
+          gh release upload "${{ github.ref_name }}" \
+            dist/*.{tar.gz.sig,zip.sig,tar.xz.sig,tgz.sig} \
+            --repo staranto/homebrew-tfctlgo --clobber || true
+
+          # Upload docs
+          gh release upload "${{ github.ref_name }}" \
+            README.md LICENSE \
+            --repo staranto/homebrew-tfctlgo --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GH_GORELEASER_PAT }}
