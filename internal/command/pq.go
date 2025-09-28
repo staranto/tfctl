@@ -127,7 +127,7 @@ func PqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		},
 		Flags: append([]cli.Flag{
 			NewHostFlag("pq", meta.Config.Source),
-			NewOrgFlag("svq", meta.Config.Source),
+			NewOrgFlag("pq", meta.Config.Source),
 			tldrFlag,
 			schemaFlag,
 		}, NewGlobalFlags("pq")...),

@@ -46,7 +46,9 @@ func InitApp(ctx context.Context, args []string) (*cli.Command, error) {
 	// This is determined by whether or not it begins with - or --.  If it does,
 	// it's a flag and the CWD directory is the starting directory.  If it's not,
 	// we assume we have a directory spec of some sort and need to parse it more.
-	if len(args) > 2 && !strings.HasPrefix(args[2], "-") {
+	// Special-case the 'completion' command which takes a shell name as a plain
+	// positional argument (e.g., 'bash' or 'zsh').
+	if ns != "completion" && len(args) > 2 && !strings.HasPrefix(args[2], "-") {
 		if wd, env, err := util.ParseRootDir(args[2]); err == nil {
 			meta.RootDir = wd
 			meta.Env = env
@@ -79,6 +81,7 @@ func InitApp(ctx context.Context, args []string) (*cli.Command, error) {
 		SqCommandBuilder(app, meta),
 		SvqCommandBuilder(app, meta),
 		WqCommandBuilder(app, meta),
+		CompletionCommandBuilder(app, meta),
 	)
 
 	// Make sure flags are sorted for the --help text.
