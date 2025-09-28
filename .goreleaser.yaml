@@ -66,10 +66,10 @@ brews:
     repository:
       owner: staranto
       name: homebrew-tfctlgo
-    homepage: https://github.com/staranto/tfctl
+    homepage: https://github.com/staranto/tfctlgo
     description: CLI to query Terraform/OpenTofu state across backends
     license: MIT
-    url_template: "https://github.com/staranto/tfctlgo/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    url_template: "https://github.com/staranto/homebrew-tfctlgo/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     install: |
       bin.install "tfctl"
       man1.install Dir["docs/man/share/man1/*"] if File.directory?("docs/man/share/man1")
