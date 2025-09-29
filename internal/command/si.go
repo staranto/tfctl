@@ -25,6 +25,9 @@ import (
 )
 
 func SiCommandAction(ctx context.Context, cmd *cli.Command) error {
+	// SiCommandAction is the action handler for the "si" subcommand. It
+	// loads Terraform state for the target root directory and launches an
+	// interactive inspector UI to explore resources and outputs.
 	meta := cmd.Metadata["meta"].(meta.Meta)
 	log.Debugf("Executing action for %v", meta.Args[1:])
 
@@ -315,6 +318,8 @@ func saveSiHistory(filename string, history []string) {
 }
 
 func SiCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+	// SiCommandBuilder constructs the cli.Command for "si" and wires up
+	// metadata, flags, and the action handler.
 	return &cli.Command{
 		Name:      "si",
 		Usage:     "state inspector",

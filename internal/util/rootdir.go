@@ -1,4 +1,3 @@
-// Copyright © 2025 Steve Taranto staranto@gmail.com
 package util
 
 import (

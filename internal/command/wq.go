@@ -4,57 +4,35 @@
 package command
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
 	"reflect"
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
-	"github.com/hashicorp/jsonapi"
-	"github.com/staranto/tfctlgo/internal/attrs"
 	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/staranto/tfctlgo/internal/output"
 	"github.com/urfave/cli/v3"
 )
 
+// WqCommandAction is the action handler for the "wq" subcommand. It lists
+// workspaces for the selected organization, supports --tldr/--schema short-
+// circuits, and emits results per common flags.
 func WqCommandAction(ctx context.Context, cmd *cli.Command) error {
-	meta := cmd.Metadata["meta"].(meta.Meta)
-	log.Debugf("Executing action for %v", meta.Args[1:])
+	m := GetMeta(cmd)
+	log.Debugf("Executing action for %v", m.Args[1:])
 
 	// Bail out early if we're just dumping tldr.
-	if cmd.Bool("tldr") {
-		if _, err := exec.LookPath("tldr"); err == nil {
-			c := exec.CommandContext(ctx, "tldr", "tfctl", "wq")
-			c.Stdout = os.Stdout
-			c.Stderr = os.Stderr
-			_ = c.Run()
-		}
+	if ShortCircuitTLDR(ctx, cmd, "wq") {
 		return nil
 	}
 
 	// Bail out early if we're just dumping the schema.
-	if cmd.Bool("schema") {
-		output.DumpSchema("", reflect.TypeOf(tfe.Workspace{}))
+	if DumpSchemaIfRequested(cmd, reflect.TypeOf(tfe.Workspace{})) {
 		return nil
 	}
 
-	var attrs attrs.AttrList
-	//nolint:errcheck
-	{
-		attrs.Set(".id")
-		attrs.Set("name")
-
-		extras := cmd.String("attrs")
-		if extras != "" {
-			attrs.Set(extras)
-		}
-
-		attrs.SetGlobalTransformSpec()
-	}
+	attrs := BuildAttrs(cmd, ".id", "name")
 	log.Debugf("attrs: %v", attrs)
 
 	//be, _ := remote.NewConfigRemote(remote.BuckNaked())
@@ -92,19 +70,15 @@ func WqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		options.ListOptions.PageNumber++
 	}
 
-	// Marshal into a JSON document so we can slice and dice some more.  Note that
-	// we're using jsonapi, which will use the StructField tags as the keys of the
-	// JSON document.
-	var raw bytes.Buffer
-	if err := jsonapi.MarshalPayload(&raw, results); err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
+	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {
+		return err
 	}
-
-	output.SliceDiceSpit(raw, attrs, cmd, "data", os.Stdout)
 
 	return nil
 }
 
+// WqCommandBuilder constructs the cli.Command for "wq", wiring metadata,
+// flags, and action/validator handlers.
 func WqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "wq",
@@ -128,6 +102,8 @@ func WqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	}
 }
 
+// WqCommandValidator performs validation for "wq" and delegates to
+// GlobalFlagsValidator.
 func WqCommandValidator(ctx context.Context, cmd *cli.Command) error {
 	return GlobalFlagsValidator(ctx, cmd)
 }

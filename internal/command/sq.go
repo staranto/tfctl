@@ -9,10 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/apex/log"
-	"github.com/staranto/tfctlgo/internal/attrs"
 	"github.com/staranto/tfctlgo/internal/backend"
 	"github.com/staranto/tfctlgo/internal/config"
 	"github.com/staranto/tfctlgo/internal/differ"
@@ -24,18 +22,15 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// SqCommandAction is the action handler for the "sq" subcommand. It reads
+// Terraform state (including optional decryption), supports --tldr short-
+// circuit, and emits results per common flags.
 func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
-	meta := cmd.Metadata["meta"].(meta.Meta)
-	log.Debugf("Executing action for %v", meta.Args[1:])
+	m := GetMeta(cmd)
+	log.Debugf("Executing action for %v", m.Args[1:])
 
 	// Bail out early if we're just dumping tldr.
-	if cmd.Bool("tldr") {
-		if _, err := exec.LookPath("tldr"); err == nil {
-			c := exec.CommandContext(ctx, "tldr", "tfctl", "sq")
-			c.Stdout = os.Stdout
-			c.Stderr = os.Stderr
-			_ = c.Run()
-		}
+	if ShortCircuitTLDR(ctx, cmd, "sq") {
 		return nil
 	}
 
@@ -43,7 +38,7 @@ func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
 
 	// Check to make sure the target directory looks like it might be a legit TF
 	// workspace.
-	tfConfigFile := fmt.Sprintf("%s/.terraform/terraform.tfstate", meta.RootDir)
+	tfConfigFile := fmt.Sprintf("%s/.terraform/terraform.tfstate", m.RootDir)
 	if _, err := os.Stat(tfConfigFile); err != nil {
 		return fmt.Errorf("terraform config file not found: %s", tfConfigFile)
 	}
@@ -70,24 +65,7 @@ func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	var attrs attrs.AttrList
-	//nolint:errcheck
-	{
-		// mode and type are hidden and used to build the resource attr and for
-		// commonly used filtering (eg. --concrete).
-		attrs.Set("!.mode")
-		attrs.Set("!.type")
-		attrs.Set(".resource")
-		attrs.Set("id")
-		attrs.Set("name")
-
-		extras := cmd.String("attrs")
-		if extras != "" {
-			attrs.Set(extras)
-		}
-
-		attrs.SetGlobalTransformSpec()
-	}
+	attrs := BuildAttrs(cmd, "!.mode", "!.type", ".resource", "id", "name")
 	log.Debugf("attrs: %v", attrs)
 
 	var doc []byte
@@ -128,6 +106,8 @@ func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
+// SqCommandBuilder constructs the cli.Command for "sq", wiring metadata,
+// flags, and action/validator handlers.
 func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "sq",
@@ -191,6 +171,8 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	}
 }
 
+// SqCommandValidator performs validation for "sq" and delegates to
+// GlobalFlagsValidator.
 func SqCommandValidator(ctx context.Context, cmd *cli.Command) error {
 	return GlobalFlagsValidator(ctx, cmd)
 }

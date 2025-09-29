@@ -4,70 +4,37 @@
 package command
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
 	"reflect"
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
-	"github.com/hashicorp/jsonapi"
-	"github.com/staranto/tfctlgo/internal/attrs"
 	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/staranto/tfctlgo/internal/output"
 	"github.com/urfave/cli/v3"
 )
 
+// PqCommandAction is the action handler for the "pq" subcommand. It lists
+// projects for the selected organization, supports --tldr/--schema
+// short-circuit behavior, and emits output per common flags.
 func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
-	meta := cmd.Metadata["meta"].(meta.Meta)
-	log.Debugf("Executing action for %v", meta.Args[1:])
+	m := GetMeta(cmd)
+	log.Debugf("Executing action for %v", m.Args[1:])
 
 	// Bail out early if we're just dumping tldr.
-	if cmd.Bool("tldr") {
-		if _, err := exec.LookPath("tldr"); err == nil {
-			c := exec.CommandContext(ctx, "tldr", "tfctl", "pq")
-			c.Stdout = os.Stdout
-			c.Stderr = os.Stderr
-			_ = c.Run()
-		}
+	if ShortCircuitTLDR(ctx, cmd, "pq") {
 		return nil
 	}
 
-	// Bail out early if we're just dumping examples.
-	if cmd.Bool("examples") {
-		examples := [][2]string{
-			{"tfctl pq", "All Projects in TFCTL's default Organization."},
-			{"tfctl pq --org abc123", "All Projects in the abc123 Organization."},
-			{"tfctl pq --filter 'name@storage'", "Projects containing 'storage' in their name."},
-			{"tfctl pq --attrs updated-at", "Projects and their last updated timestamp."},
-			{"tfctl pq --attrs vcs-repo.identifier", "Projects and VCS repo."},
-		}
-		output.DumpExamples(ctx, cmd, examples)
-		return nil
-	}
+	//
 
 	// Bail out early if we're just dumping the schema.
-	if cmd.Bool("schema") {
-		output.DumpSchema("", reflect.TypeOf(tfe.Project{}))
+	if DumpSchemaIfRequested(cmd, reflect.TypeOf(tfe.Project{})) {
 		return nil
 	}
 
-	var attrs attrs.AttrList
-	//nolint:errcheck
-	{
-		attrs.Set(".id")
-		attrs.Set("name")
-
-		extras := cmd.String("attrs")
-		if extras != "" {
-			attrs.Set(extras)
-		}
-
-		attrs.SetGlobalTransformSpec()
-	}
+	attrs := BuildAttrs(cmd, ".id", "name")
 	log.Debugf("attrs: %v", attrs)
 
 	//be, _ := remote.NewConfigRemote(remote.BuckNaked())
@@ -105,19 +72,15 @@ func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		options.ListOptions.PageNumber++
 	}
 
-	// Marshal into a JSON document so we can slice and dice some more.  Note that
-	// we're using jsonapi, which will use the StructField tags as the keys of the
-	// JSON document.
-	var raw bytes.Buffer
-	if err := jsonapi.MarshalPayload(&raw, results); err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
+	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {
+		return err
 	}
-
-	output.SliceDiceSpit(raw, attrs, cmd, "data", os.Stdout)
 
 	return nil
 }
 
+// PqCommandBuilder constructs the cli.Command for "pq", wiring metadata,
+// flags, and action/validator handlers.
 func PqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:  "pq",
@@ -140,6 +103,8 @@ func PqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	}
 }
 
+// PqCommandValidator performs validation for "pq" and delegates shared checks
+// to GlobalFlagsValidator.
 func PqCommandValidator(ctx context.Context, cmd *cli.Command) error {
 	return GlobalFlagsValidator(ctx, cmd)
 }

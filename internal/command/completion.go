@@ -1,3 +1,6 @@
+// Copyright © 2025 Steve Taranto staranto@gmail.com
+// SPDX-License-Identifier: MIT
+
 package command
 
 import (
@@ -33,7 +36,8 @@ _tfctl()
     cmd=${COMP_WORDS[1]}
   local common="--attrs -a --color -c --filter -f --output -o --sort -s --titles -t --tldr"
 
-    # Determine if an optional RootDir (first non-flag after subcommand) has already been provided
+    # Determine if an optional RootDir (first non-flag after subcommand) has
+		# already been provided
     local have_rootdir=0
     local idx=2
     while [[ $idx -lt ${#COMP_WORDS[@]} ]]; do
@@ -212,7 +216,8 @@ _tfctl() {
   esac
 }
 
-# If this file is sourced directly (not autoloaded via fpath), ensure compsys is initialized and register the completion
+# If this file is sourced directly (not autoloaded via fpath), ensure compsys
+# is initialized and register the completion
 if ! typeset -f compdef >/dev/null 2>&1; then
   autoload -Uz compinit && compinit -i
 fi

@@ -4,69 +4,37 @@
 package command
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
 	"reflect"
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
-	"github.com/hashicorp/jsonapi"
-	"github.com/staranto/tfctlgo/internal/attrs"
 	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/staranto/tfctlgo/internal/output"
 	"github.com/urfave/cli/v3"
 )
 
+// OqCommandAction is the action handler for the "oq" subcommand. It lists
+// organizations from the configured host, supports --tldr/--schema
+// short-circuit behavior, and emits output per common flags.
 func OqCommandAction(ctx context.Context, cmd *cli.Command) error {
-	meta := cmd.Metadata["meta"].(meta.Meta)
-	log.Debugf("Executing action for %v", meta.Args[1:])
+	m := GetMeta(cmd)
+	log.Debugf("Executing action for %v", m.Args[1:])
 
 	// Bail out early if we're just dumping tldr.
-	if cmd.Bool("tldr") {
-		if _, err := exec.LookPath("tldr"); err == nil {
-			c := exec.CommandContext(ctx, "tldr", "tfctl", "oq")
-			c.Stdout = os.Stdout
-			c.Stderr = os.Stderr
-			_ = c.Run()
-		}
+	if ShortCircuitTLDR(ctx, cmd, "oq") {
 		return nil
 	}
 
-	// Bail out early if we're just dumping examples.
-	if cmd.Bool("examples") {
-		examples := [][2]string{
-			{"tfctl oq", "All Organizations on the default HCP/TFE server."},
-			{"tfctl oq --host tfe.example.com", "All Organizations on the tfe.example.com server."},
-			{"tfctl oq --attrs email", "All Organizations, plus the email of their administrator."},
-			{"tfctl oq --filter 'name@prod'", "Organizations containing 'prod' in their name."},
-		}
-		output.DumpExamples(ctx, cmd, examples)
-		return nil
-	}
+	//
 
 	// Bail out early if we're just dumping the schema.
-	if cmd.Bool("schema") {
-		output.DumpSchema("", reflect.TypeOf(tfe.Organization{}))
+	if DumpSchemaIfRequested(cmd, reflect.TypeOf(tfe.Organization{})) {
 		return nil
 	}
 
-	var attrs attrs.AttrList
-	//nolint:errcheck
-	{
-		attrs.Set("external-id:id")
-		attrs.Set(".id:name")
-
-		extras := cmd.String("attrs")
-		if extras != "" {
-			attrs.Set(extras)
-		}
-
-		attrs.SetGlobalTransformSpec()
-	}
+	attrs := BuildAttrs(cmd, "external-id:id", ".id:name")
 	log.Debugf("attrs: %v", attrs)
 
 	be, err := remote.NewBackendRemote(ctx, cmd, remote.BuckNaked())
@@ -103,19 +71,15 @@ func OqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		options.ListOptions.PageNumber++
 	}
 
-	// Marshal into a JSON document so we can slice and dice some more.  Note that
-	// we're using jsonapi, which will use the StructField tags as the keys of the
-	// JSON document.
-	var raw bytes.Buffer
-	if err := jsonapi.MarshalPayload(&raw, results); err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
+	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {
+		return err
 	}
-
-	output.SliceDiceSpit(raw, attrs, cmd, "data", os.Stdout)
 
 	return nil
 }
 
+// OqCommandBuilder constructs the cli.Command for "oq", configuring metadata,
+// flags, and the associated action/validator.
 func OqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "oq",
@@ -138,6 +102,8 @@ func OqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	}
 }
 
+// OqCommandValidator performs validation for "oq" and delegates shared checks
+// to GlobalFlagsValidator.
 func OqCommandValidator(ctx context.Context, cmd *cli.Command) error {
 	return GlobalFlagsValidator(ctx, cmd)
 }

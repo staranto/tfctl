@@ -4,57 +4,36 @@
 package command
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
 	"reflect"
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
-	"github.com/hashicorp/jsonapi"
-	"github.com/staranto/tfctlgo/internal/attrs"
 	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/staranto/tfctlgo/internal/output"
 	"github.com/urfave/cli/v3"
 )
 
+// MqCommandAction is the action handler for the "mq" subcommand. It lists
+// registry modules for the selected organization, supporting short-circuit
+// behavior for --tldr and --schema, and emits results according to common
+// output/attr flags.
 func MqCommandAction(ctx context.Context, cmd *cli.Command) error {
-	meta := cmd.Metadata["meta"].(meta.Meta)
-	log.Debugf("Executing action for %v", meta.Args[1:])
+	m := GetMeta(cmd)
+	log.Debugf("Executing action for %v", m.Args[1:])
 
 	// Bail out early if we're just dumping tldr.
-	if cmd.Bool("tldr") {
-		if _, err := exec.LookPath("tldr"); err == nil {
-			cmd := exec.CommandContext(ctx, "tldr", "tfctl", "mq")
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			_ = cmd.Run()
-		}
+	if ShortCircuitTLDR(ctx, cmd, "mq") {
 		return nil
 	}
 
 	// Bail out early if we're just dumping the schema.
-	if cmd.Bool("schema") {
-		output.DumpSchema("", reflect.TypeOf(tfe.RegistryModule{}))
+	if DumpSchemaIfRequested(cmd, reflect.TypeOf(tfe.RegistryModule{})) {
 		return nil
 	}
 
-	var attrs attrs.AttrList
-	//nolint:errcheck
-	{
-		attrs.Set(".id")
-		attrs.Set("name")
-
-		extras := cmd.String("attrs")
-		if extras != "" {
-			attrs.Set(extras)
-		}
-
-		attrs.SetGlobalTransformSpec()
-	}
+	attrs := BuildAttrs(cmd, ".id", "name")
 	log.Debugf("attrs: %v", attrs)
 
 	be, err := remote.NewBackendRemote(ctx, cmd, remote.BuckNaked())
@@ -91,19 +70,15 @@ func MqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		options.ListOptions.PageNumber++
 	}
 
-	// Marshal into a JSON document so we can slice and dice some more.  Note that
-	// we're using jsonapi, which will use the StructField tags as the keys of the
-	// JSON document.
-	var raw bytes.Buffer
-	if err := jsonapi.MarshalPayload(&raw, results); err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
+	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {
+		return err
 	}
-
-	output.SliceDiceSpit(raw, attrs, cmd, "data", os.Stdout)
 
 	return nil
 }
 
+// MqCommandBuilder constructs the cli.Command definition for the "mq" command,
+// wiring flags, metadata, and the action/validator handlers.
 func MqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "mq",
@@ -127,6 +102,8 @@ func MqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	}
 }
 
+// MqCommandValidator performs command-level validation for "mq" and currently
+// delegates to GlobalFlagsValidator for shared flag checks.
 func MqCommandValidator(ctx context.Context, cmd *cli.Command) error {
 	return GlobalFlagsValidator(ctx, cmd)
 }
