@@ -121,7 +121,10 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 				Name:    "concrete",
 				Aliases: []string{"k"},
 				Usage:   "only include concrete resources",
-				Value:   false,
+				Sources: cli.NewValueSourceChain(
+					yaml.YAML("sq.concrete", altsrc.StringSourcer(cfg.Source)),
+				),
+				Value: false,
 			},
 			&cli.BoolFlag{
 				Name:  "diff",
@@ -131,14 +134,27 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			&cli.StringFlag{
 				Name:   "diff_filter",
 				Hidden: true,
-				Value:  "check_results",
 				Sources: cli.NewValueSourceChain(
-					yaml.YAML("diff_filter", altsrc.StringSourcer(meta.Config.Source)),
+					yaml.YAML("sq.diff_filter", altsrc.StringSourcer(meta.Config.Source)),
 				),
+				Value: "check_results",
+			},
+			&cli.IntFlag{
+				Name:   "limit",
+				Hidden: true,
+				Usage:  "limit state versions returned",
+				Sources: cli.NewValueSourceChain(
+					yaml.YAML("sq.limit", altsrc.StringSourcer(cfg.Source)),
+					yaml.YAML("limit", altsrc.StringSourcer(cfg.Source)),
+				),
+				Value: 99999,
 			},
 			&cli.BoolFlag{
 				Name:  "noshort",
 				Usage: "include full resource name paths",
+				Sources: cli.NewValueSourceChain(
+					yaml.YAML("sq.noshort", altsrc.StringSourcer(meta.Config.Source)),
+				),
 				Value: false,
 			},
 			&cli.StringFlag{
@@ -150,12 +166,6 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 				Usage:       "state version to query",
 				Value:       "0",
 				HideDefault: true,
-			},
-			&cli.IntFlag{
-				Name:   "limit",
-				Hidden: true,
-				Usage:  "limit state versions returned",
-				Value:  99999,
 			},
 			NewHostFlag("sq", meta.Config.Source),
 			NewOrgFlag("sq", meta.Config.Source),

@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/meta"
+	altsrc "github.com/urfave/cli-altsrc/v3"
+	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -88,6 +90,16 @@ func WqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			"meta": meta,
 		},
 		Flags: append([]cli.Flag{
+			&cli.IntFlag{
+				Name:    "limit",
+				Aliases: []string{"l"},
+				Usage:   "limit workspaces returned",
+				Sources: cli.NewValueSourceChain(
+					yaml.YAML("wq.limit", altsrc.StringSourcer(meta.Config.Source)),
+					yaml.YAML("limit", altsrc.StringSourcer(meta.Config.Source)),
+				),
+				Value: 99999,
+			},
 			NewHostFlag("wq", meta.Config.Source),
 			NewOrgFlag("wq", meta.Config.Source),
 			tldrFlag,

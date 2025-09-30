@@ -28,8 +28,6 @@ func RqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	//
-
 	// Bail out early if we're just dumping the schema.
 	if DumpSchemaIfRequested(cmd, reflect.TypeOf(tfe.Run{})) {
 		return nil
@@ -49,7 +47,7 @@ func RqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	log.Debugf("stateVersions: %v", results)
+	log.Debugf("runs: %v", results)
 
 	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {
 		return err
@@ -72,11 +70,12 @@ func RqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			&cli.IntFlag{
 				Name:    "limit",
 				Aliases: []string{"l"},
-				Usage:   "limit state versions returned",
-				Value:   99999,
+				Usage:   "limit runs returned",
 				Sources: cli.NewValueSourceChain(
-					yaml.YAML("limit", altsrc.StringSourcer(meta.Config.Source)),
+					yaml.YAML("rq.limit", altsrc.StringSourcer(cfg.Source)),
+					yaml.YAML("limit", altsrc.StringSourcer(cfg.Source)),
 				),
+				Value: 99999,
 			},
 			NewHostFlag("rq", meta.Config.Source),
 			NewOrgFlag("rq", meta.Config.Source),

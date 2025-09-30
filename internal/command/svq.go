@@ -28,8 +28,6 @@ func SvqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	//
-
 	// Bail out early if we're just dumping the schema.
 	if DumpSchemaIfRequested(cmd, reflect.TypeOf(tfe.StateVersion{})) {
 		return nil
@@ -73,10 +71,11 @@ func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 				Name:    "limit",
 				Aliases: []string{"l"},
 				Usage:   "limit state versions returned",
-				Value:   99999,
 				Sources: cli.NewValueSourceChain(
+					yaml.YAML("svq.limit", altsrc.StringSourcer(meta.Config.Source)),
 					yaml.YAML("limit", altsrc.StringSourcer(meta.Config.Source)),
 				),
+				Value: 99999,
 			},
 			NewHostFlag("svq", meta.Config.Source),
 			NewOrgFlag("svq", meta.Config.Source),

@@ -42,12 +42,6 @@ var (
 	}
 )
 
-// pathHas checks if the given key exists in cfg.Source.
-func pathHas(target string) bool {
-	_, err := exec.LookPath(target)
-	return err == nil
-}
-
 func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 	flags = []cli.Flag{
 		&cli.StringFlag{
@@ -74,7 +68,11 @@ func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 			Name:    "output",
 			Aliases: []string{"o"},
 			Usage:   "output format",
-			Value:   "text",
+			Sources: cli.NewValueSourceChain(
+				yaml.YAML(params[0]+"."+"output", altsrc.StringSourcer(cfg.Source)),
+				yaml.YAML("output", altsrc.StringSourcer(cfg.Source)),
+			),
+			Value: "text",
 			Validator: func(value string) error {
 				return FlagValidators(value, OutputValidator)
 			},
@@ -83,6 +81,9 @@ func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 			Name:    "sort",
 			Aliases: []string{"s"},
 			Usage:   "comma-separated list of attributes to sort the results by",
+			Sources: cli.NewValueSourceChain(
+				yaml.YAML(params[0]+"."+"sort", altsrc.StringSourcer(cfg.Source)),
+			),
 		},
 		&cli.BoolFlag{
 			Name:        "titles",
@@ -90,6 +91,7 @@ func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 			Usage:       "show titles with text output",
 			HideDefault: true,
 			Sources: cli.NewValueSourceChain(
+				yaml.YAML(params[0]+"."+"titles", altsrc.StringSourcer(cfg.Source)),
 				yaml.YAML("titles", altsrc.StringSourcer(cfg.Source)),
 			),
 		},
@@ -106,7 +108,6 @@ func NewHostFlag(params ...string) (flag *cli.StringFlag) {
 		Sources: cli.NewValueSourceChain(
 			cli.EnvVar("TFCTL_HOST"),
 			cli.EnvVar("TF_CLOUD_HOSTNAME"),
-			yaml.YAML("host", altsrc.StringSourcer(cfg.Source)),
 		),
 		Value: "app.terraform.io",
 	}
@@ -126,7 +127,6 @@ func NewOrgFlag(params ...string) (flag *cli.StringFlag) {
 			cli.EnvVar("TFCTL_ORG"),
 			cli.EnvVar("TF_CLOUD_ORGANIZATION"),
 		),
-		Value: "",
 	}
 
 	if len(params) == 2 {
@@ -144,4 +144,10 @@ func NameSpacedValueChainFlag(ns string, path string, flag *cli.StringFlag) *cli
 	flag.Sources.Chain = append(flag.Sources.Chain, src)
 
 	return flag
+}
+
+// pathHas checks if the given key exists in cfg.Source.
+func pathHas(target string) bool {
+	_, err := exec.LookPath(target)
+	return err == nil
 }

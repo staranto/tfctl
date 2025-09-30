@@ -29,9 +29,10 @@ func Load(cfgFilePath ...string) (ConfigType, error) {
 
 	path := filepath.Join(os.Getenv("HOME"), ".config/tfctl.yaml")
 
-	if len(cfgFilePath) > 0 {
-		path = cfgFilePath[0]
-	}
+	// THINK
+	// if len(cfgFilePath) > 0 {
+	// 	path = cfgFilePath[0]
+	// }
 
 	bytes, err := os.ReadFile(path)
 	if err != nil {
