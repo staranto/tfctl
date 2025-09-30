@@ -16,7 +16,7 @@ import (
 )
 
 // NewBackendRemote returns a BackendRemote object that implements the Backend
-// interface.  It is load()ed from the config file found in the rootDir.
+// interface. It is load()ed from the config file found in the rootDir.
 func NewBackendRemote(ctx context.Context, cmd *cli.Command, options ...BackendRemoteOption) (*BackendRemote, error) {
 	options = append([]BackendRemoteOption{WithDefaults()}, options...)
 
@@ -102,7 +102,7 @@ func WithSvOverride() BackendRemoteOption {
 }
 
 // load reads the terraform config file and unmarshals it into the BackendRemote
-// struct.  It is simply a convenience method to make NewBackendRemote more
+// struct. It is simply a convenience method to make NewBackendRemote more
 // readable.
 func (be *BackendRemote) load() error {
 	tfFile := be.RootDir + "/.terraform/terraform.tfstate"

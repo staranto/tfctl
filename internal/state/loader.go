@@ -23,7 +23,8 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// LoadStateData loads and decrypts state data from a backend
+// LoadStateData loads and optionally decrypts a state document from the
+// detected backend at the provided rootDir.
 func LoadStateData(ctx context.Context, cmd *cli.Command, rootDir string) (map[string]interface{}, error) {
 	// Check to make sure the target directory looks like it might be a legit TF workspace.
 	tfConfigFile := fmt.Sprintf("%s/.terraform/terraform.tfstate", rootDir)
@@ -78,7 +79,7 @@ func LoadStateData(ctx context.Context, cmd *cli.Command, rootDir string) (map[s
 	return stateData, nil
 }
 
-// LoadStateDataFromFile loads state data directly from a file (for testing)
+// LoadStateDataFromFile loads an unencrypted state file from disk (test helper).
 func LoadStateDataFromFile(filepath string) (map[string]interface{}, error) {
 	data, err := os.ReadFile(filepath)
 	if err != nil {
@@ -126,7 +127,8 @@ func decryptState(encryptedData string, derivedKey []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
-// DecryptOpenTofuState decrypts an encrypted OpenTofu state file
+// DecryptOpenTofuState decrypts an encrypted OpenTofu state file using the
+// provided passphrase.
 func DecryptOpenTofuState(stateData []byte, passphrase string) ([]byte, error) {
 	var state struct {
 		Meta struct {
@@ -175,7 +177,7 @@ func DecryptOpenTofuState(stateData []byte, passphrase string) ([]byte, error) {
 	return decryptState(state.EncryptedData, key)
 }
 
-// GetPassphrase prompts the user for a passphrase securely
+// GetPassphrase prompts interactively for a passphrase without echoing input.
 func GetPassphrase() (string, error) {
 	var password []byte
 	signalChannel := make(chan os.Signal, 1)

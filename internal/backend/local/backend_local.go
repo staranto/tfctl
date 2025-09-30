@@ -121,7 +121,7 @@ func (be *BackendLocal) Runs() ([]*tfe.Run, error) {
 // backup files, parses them, and creates minimal tfe.StateVersion with ID as
 // filename, CreatedAt from file timestamp, and Serial from the document.
 // Other Backend types will cache these results in the BackendStruct for
-// efficiencies sake.  We're not doing that here, since local filesystem access
+// efficiencies sake. We're not doing that here, since local filesystem access
 // should be lickity split.
 func (be *BackendLocal) StateVersions() ([]*tfe.StateVersion, error) {
 	var versions []*tfe.StateVersion

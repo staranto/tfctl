@@ -27,12 +27,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Tag represents a discovered struct field tag used when emitting schema
+// information (--schema flag).
 type Tag struct {
 	Kind     string
 	Name     string
 	Encoding string
 }
 
+// NewTag constructs a Tag from a raw struct tag value and an optional holder
+// prefix used to build hierarchical attribute names.
 func NewTag(h string, s string) Tag {
 	allowed := []string{"attr"}
 
@@ -69,6 +73,7 @@ func NewTag(h string, s string) Tag {
 	return tag
 }
 
+// Print renders the tag into its display form.
 func (t Tag) Print() (out string) {
 	parts := []string{}
 	if t.Name != "" {
@@ -77,6 +82,7 @@ func (t Tag) Print() (out string) {
 	return strings.Join(parts, ",")
 }
 
+// DumpExamples renders a table of example command usages.
 func DumpExamples(ctx context.Context, cmd *cli.Command, examples [][2]string) {
 	if len(examples) == 0 {
 		return
@@ -102,6 +108,7 @@ func DumpExamples(ctx context.Context, cmd *cli.Command, examples [][2]string) {
 	fmt.Println(t)
 }
 
+// DumpSchema prints a sorted list of attribute tags for the provided type.
 func DumpSchema(prefix string, typ reflect.Type) {
 	tags := DumpSchemaWalker(prefix, typ, 0)
 	if len(tags) == 0 {
@@ -131,6 +138,7 @@ attrs help in the documentation or man tfctl-attrs.`)
 
 const maxSchemaDepth = 1
 
+// DumpSchemaWalker recursively walks a struct type discovering jsonapi tags.
 func DumpSchemaWalker(holder string, typ reflect.Type, depth int) []Tag {
 	tags := make([]Tag, 0)
 
@@ -171,6 +179,8 @@ func DumpSchemaWalker(holder string, typ reflect.Type, depth int) []Tag {
 	return tags
 }
 
+// SliceDiceSpit orchestrates filtering, transforming, sorting and rendering
+// of a dataset according to command flags and attribute specifications.
 func SliceDiceSpit(raw bytes.Buffer,
 	attrs attrs.AttrList,
 	cmd *cli.Command,
@@ -193,7 +203,7 @@ func SliceDiceSpit(raw bytes.Buffer,
 
 	// THINK sq specific, so here is probably not best place for this.
 	// This will transform the hiearchical state schema instances[].attributes
-	// into a schema that is the same as all the others.  We can now have common
+	// into a schema that is the same as all the others. We can now have common
 	// code to handle all of them.
 	if resources := gjson.Parse(raw.String()).Get("resources"); resources.Exists() {
 		raw = flattenState(resources, cmd.Bool("noshort"))
@@ -201,7 +211,7 @@ func SliceDiceSpit(raw bytes.Buffer,
 
 	var fullDataset gjson.Result
 	// Just keep the "data" object from the document and throw away everything
-	// else, notably "included", which we don't have a use case for.  We're also
+	// else, notably "included", which we don't have a use case for. We're also
 	// Parsing this into JSON so that we can use the lowercase key names and not
 	// the proper case names from the TFE API.
 	if parent != "" {
@@ -220,13 +230,13 @@ func SliceDiceSpit(raw bytes.Buffer,
 		filter += "mode=managed"
 	}
 
-	// Filter out the rows we don't want.  Do it here so that the following
+	// Filter out the rows we don't want. Do it here so that the following
 	// processes are slightly more efficient since they'll be working on a smaller
 	// dataset.
 	filteredDataset := FilterDataset(fullDataset, attrs, filter)
 
-	// THINK This is inefficient.  We're forcing a time transformation to occur
-	// for all attributes, even though many will not be a timestamp.  One
+	// THINK This is inefficient. We're forcing a time transformation to occur
+	// for all attributes, even though many will not be a timestamp. One
 	// alternative would be to look at first row of full dataset and only add the
 	// time transformation to attrs that look like timestamps.
 	if cmd.Bool("local") {
@@ -267,6 +277,8 @@ func SliceDiceSpit(raw bytes.Buffer,
 	}
 }
 
+// TableWriter renders the result set in a tabular form honoring color,
+// titles and padding options.
 func TableWriter(
 	resultSet []map[string]interface{},
 	attrs attrs.AttrList,
@@ -348,6 +360,7 @@ func TableWriter(
 	fmt.Println(t)
 }
 
+// getColors returns configured color values for table rendering.
 func getColors(key string) (header string, even string, odd string) {
 	header, _ = config.GetString(fmt.Sprintf("%s.title", key), "#f6be00")
 	even, _ = config.GetString(fmt.Sprintf("%s.even", key), "#ffffff")
@@ -357,11 +370,11 @@ func getColors(key string) (header string, even string, odd string) {
 
 // flattenState takes the state schema of each entry and flattens it into a
 // schema with parent and attributes.	This is done so that we can have a common
-// schema for all the different types of resources.  The state schema is
-// resources[].instances[].attribute.  We'll throw away all the top level
-// attributes that are siblings of resources[].  And then the siblings of
+// schema for all the different types of resources. The state schema is
+// resources[].instances[].attribute. We'll throw away all the top level
+// attributes that are siblings of resources[]. And then the siblings of
 // instances[] become the new top level and the attributes of instances[] become
-// the new siblings of that.  One resource with many instances will produce many
+// the new siblings of that. One resource with many instances will produce many
 // flat resources and entries in the result.
 func flattenState(resources gjson.Result, short bool) bytes.Buffer {
 	var flatResources []map[string]interface{}
@@ -380,7 +393,7 @@ func flattenState(resources gjson.Result, short bool) bytes.Buffer {
 				flatResource[key] = value.Value()
 			}
 
-			// Build the developers view of the full path to the resource.  The logic
+			// Build the developers view of the full path to the resource. The logic
 			// being, in .tf source, you'd refer to a data resource as
 			// "data.<name>.<type>", so we need to include the mode in the ID path.
 			module := ""
@@ -388,7 +401,7 @@ func flattenState(resources gjson.Result, short bool) bytes.Buffer {
 				module = InterfaceToString(flatResource["module"]) + "."
 			}
 
-			// We only want to include mode for non-managed resources.  This,
+			// We only want to include mode for non-managed resources. This,
 			// currently, only includes "data".
 			mode := ""
 			if flatResource["mode"] != "managed" {
@@ -436,6 +449,8 @@ func getCommonFields(resource gjson.Result) map[string]interface{} {
 	return common
 }
 
+// InterfaceToString converts supported primitive or composite values to a
+// string. A custom empty value may be provided.
 func InterfaceToString(value interface{}, emptyValue ...string) string {
 	if len(emptyValue) == 0 {
 		emptyValue = []string{""}
@@ -445,7 +460,7 @@ func InterfaceToString(value interface{}, emptyValue ...string) string {
 		return emptyValue[0]
 	}
 
-	// THINK This doesn't do what you think it does.  int and bool paths are never
+	// THINK This doesn't do what you think it does. int and bool paths are never
 	// taken?
 	switch value := value.(type) {
 	case string:

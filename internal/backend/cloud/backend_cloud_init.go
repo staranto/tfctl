@@ -16,7 +16,7 @@ import (
 )
 
 // NewBackendCloud returns a BackendCloud object that implements the Backend
-// interface.  It is load()ed from the config file found in the rootDir.
+// interface. It is load()ed from the config file found in the rootDir.
 func NewBackendCloud(ctx context.Context, cmd *cli.Command, options ...BackendCloudOption) (*BackendCloud, error) {
 	options = append([]BackendCloudOption{WithDefaults()}, options...)
 

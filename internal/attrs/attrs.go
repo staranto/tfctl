@@ -15,7 +15,7 @@ import (
 	"github.com/apex/log"
 )
 
-// Attr represents each of the keys to be included in the output.  These are
+// Attr represents each of the keys to be included in the output. These are
 // typically identified by the JSON attributes key, thus the name.
 type Attr struct {
 	// The JSON key to extract from the result JSON object.
@@ -23,13 +23,15 @@ type Attr struct {
 	// Should this Attr be included in output or is it just
 	// intended for filtering and sorting?
 	Include bool
-	// The key to use in the output.  # This will also be used as the column title
-	// when output=text.  # TODO Consider a separate title field.
+	// The key to use in the output. This is also used as the column title when
+	// output=text. TODO Consider a separate title field.
 	OutputKey string
 	// Transformation spec to apply to the output value.
 	TransformSpec string
 }
 
+// Transform applies the attribute's transform spec to a value and returns the
+// transformed result.
 func (a *Attr) Transform(value interface{}) interface{} {
 
 	// TODO Currently only string values can be transformed.
@@ -44,15 +46,14 @@ func (a *Attr) Transform(value interface{}) interface{} {
 	// Convert UTC time to local.
 	if strings.ContainsAny(a.TransformSpec, "tT") {
 
-		// See if there is a timezone in the config file or via a TFCTL_ or TF_ env
-		// variable.  If there's not, look for a plain TZ env variable.
+		// See if there is a timezone in the config or via a TFCTL_ or TF_ env
+		// variable. If there is not, look for a plain TZ env variable.
 		tz := "" // TODO rt.GetRuntimeVar("timezone", true, "")
 		if tz == "" {
 			tz = os.Getenv("TZ")
 		}
 
-		// We're only going to convert if we've specifically told what TZ to use.
-		// If we haven't, we'll just use the value as is.
+		// Convert only if a TZ was specified. Otherwise, use the value as is.
 		if tz != "" {
 			loc, err := time.LoadLocation(tz)
 			if err == nil {
@@ -69,10 +70,10 @@ func (a *Attr) Transform(value interface{}) interface{} {
 		}
 	}
 
-	// We need to know which case transformation appears last.  This covers the
+	// We need to know which case transformation appears last. This covers the
 	// case where there has been a global case transformation prepended to the
-	// attrs transformation and, thus, allows the attr's to carry more weight.
-	// IOW...  --attrs '*::U,name::l' will be lower case.
+	// attrs transformation and allows the attr's to carry more weight.
+	// IOW... --attrs '*::U,name::l' will be lower case.
 	lastL := strings.LastIndexAny(a.TransformSpec, "lL")
 	lastU := strings.LastIndexAny(a.TransformSpec, "uU")
 
@@ -85,7 +86,7 @@ func (a *Attr) Transform(value interface{}) interface{} {
 	// Is it a length-based transformation?
 	if a.TransformSpec != "" {
 		re := regexp.MustCompile(`-?\d+`)
-		// Same logic as above re: case.  This allows a more specific length
+		// Same logic as above re: case. This allows a more specific length
 		// transformation to override a global one.
 		match := re.FindAllString(a.TransformSpec, -1)
 		if len(match) != 0 {
@@ -108,9 +109,10 @@ func (a *Attr) Transform(value interface{}) interface{} {
 	return result
 }
 
+// AttrList is a collection of Attr used to shape output fields.
 type AttrList []Attr
 
-// Return a string representation of the AttrList.  This should match the format
+// String returns a string representation of the AttrList. This matches the format
 // of the original --attrs flag.
 func (a *AttrList) String() string {
 	result := make([]string, 0, len(*a))
@@ -120,7 +122,7 @@ func (a *AttrList) String() string {
 	return strings.Join(result, ",")
 }
 
-// Parse each spec from the --attrs flag and add it to the AttrList.
+// Set parses each spec from --attrs and adds it to the AttrList.
 func (a *AttrList) Set(value string) error {
 	if value == "" || value == "*" {
 		return nil
@@ -132,16 +134,16 @@ func (a *AttrList) Set(value string) error {
 		transformIdx
 	)
 
-	// There are three : delimited fields in each spec.  The first is the key to
-	// extract from the JSON object.  The second is the key to use in the output.
+	// There are three : delimited fields in each spec. The first is the key to
+	// extract from the JSON object. The second is the key to use in the output.
 	// The third is the transformation spec to apply to the output value. The
-	// latter two are optional.  The output key will default to the last
+	// latter two are optional. The output key defaults to the last
 	// section of the JSON key.
 	specs := strings.Split(value, ",")
 specloop:
 	for _, spec := range specs {
 
-		// Default to including the attribute also assuming it will be a child of the
+		// Default to including the attribute, assuming it is a child of the
 		// .attributes key of the JSON object.
 		attr := Attr{
 			Include: true,
@@ -149,7 +151,7 @@ specloop:
 
 		fields := strings.Split(spec, ":")
 
-		// The first field is the key to extract from the JSON payload.  If it
+		// The first field is the key to extract from the JSON payload. If it
 		// begins with a !, it is excluded from the output.
 		attr.Key = strings.TrimSpace(fields[jsonIdx])
 		if strings.HasPrefix(attr.Key, "!") {
@@ -161,8 +163,8 @@ specloop:
 			attr.Include = false
 		}
 
-		// Fixup the output field.  If there is only one field it is considered the
-		// JSON extract key and the output key will become the last segment of the
+		// Fix up the output field. If there is only one field, it is the JSON
+		// extract key and the output key becomes the last segment of the
 		// . notation.
 		if len(fields) == 1 {
 			segments := strings.Split(attr.Key, ".")
@@ -180,8 +182,8 @@ specloop:
 			attr.TransformSpec = strings.TrimSpace(fields[transformIdx])
 		}
 
-		// If the attr already exists in the list (because it's one of the defaults
-		// for cmd or the user double-entered it) just apply the OutputKey, Include
+		// If the attr already exists in the list (because it is a default for
+		// a command or the user double-entered it), apply the OutputKey, Include
 		// and TransformSpec to the existing Attr.
 
 		for i := range *a {
@@ -193,8 +195,8 @@ specloop:
 			}
 		}
 
-		// Fixup the key field.  If it begins with a . that means we're working off
-		// the root of the JSON objects.  If it does not, we're working off the
+		// Fix up the key field. If it begins with '.', we are working off the root
+		// of the JSON objects. If it does not, we are working off the
 		// .attributes of the JSON objects.
 		if strings.HasPrefix(attr.Key, ".") {
 			attr.Key = attr.Key[1:]
@@ -208,13 +210,12 @@ specloop:
 	return nil
 }
 
-// SetGlobalTransformSpec inserts a global transform spec into the front of all
+// SetGlobalTransformSpec inserts a global transform spec at the front of all
 // attrs in the list.
 func (alist *AttrList) SetGlobalTransformSpec() error {
 	spec := ""
 
-	// Find the global transform spec.  If there is more than one, we're not
-	// dealing with it and just taking the first.
+	// Find the global transform spec. If there is more than one, take the first.
 	for a := range *alist {
 		if (*alist)[a].Key == "*" {
 			spec = (*alist)[a].TransformSpec
@@ -227,7 +228,7 @@ func (alist *AttrList) SetGlobalTransformSpec() error {
 		return nil
 	}
 
-	// Slam the global spec onto
+	// Prepend the global spec onto each attribute's spec.
 	for a := range *alist {
 		(*alist)[a].TransformSpec = spec + "," + (*alist)[a].TransformSpec
 	}
@@ -235,6 +236,5 @@ func (alist *AttrList) SetGlobalTransformSpec() error {
 	return nil
 }
 
-func (a *AttrList) Type() string {
-	return "list"
-}
+// Type returns the flag type for use with the flag.Value interface.
+func (a *AttrList) Type() string { return "list" }

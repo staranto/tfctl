@@ -16,7 +16,7 @@ import (
 )
 
 // NewBackendS3 returns a BackendS3 object that implements the Backend
-// interface.  It is load()ed from the config file found in the rootDir.
+// interface. It is load()ed from the config file found in the rootDir.
 func NewBackendS3(ctx context.Context, cmd *cli.Command, options ...BackendS3Option) (*BackendS3, error) {
 	options = append([]BackendS3Option{WithDefaults()}, options...)
 

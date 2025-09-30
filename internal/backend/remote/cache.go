@@ -18,7 +18,7 @@ import (
 
 // CacheEntry represents a single entry in the cache.
 type CacheEntry struct {
-	// Key is the clear-text key used to identify the cache entry.  For example,
+	// Key is the clear-text key used to identify the cache entry. For example,
 	// the state version id or the HSDU.
 	Key string
 	// EncodedKey is the encoded version of the key, used as the filename in the
@@ -31,8 +31,8 @@ type CacheEntry struct {
 }
 
 // CacheEntryPath returns the path to the cache entry for the given key, if it
-// exists.  The cache is organized first by the backend hostname
-// (app.terraform.io) and then by the organization name.  The key is hashed and
+// exists. The cache is organized first by the backend hostname
+// (app.terraform.io) and then by the organization name. The key is hashed and
 // used as the filename.
 func CacheEntryPath(be *BackendRemote, key string) (string, bool) {
 
@@ -53,7 +53,7 @@ func CacheEntryPath(be *BackendRemote, key string) (string, bool) {
 	return "", false
 }
 
-// CacheReader reads the cache entry for the given key, if it exists.  If the
+// CacheReader reads the cache entry for the given key, if it exists. If the
 // cache is disabled, or the entry does not exist, the second return value will
 // be false.
 func CacheReader(be *BackendRemote, key string) (*CacheEntry, bool) {
@@ -135,7 +135,7 @@ func getOverrides(be *BackendRemote) (hostname, organization string) {
 	return
 }
 
-// isCacheEnabled returns true if the cache is enabled.  By default it is, and
+// isCacheEnabled returns true if the cache is enabled. By default it is, and
 // can only be disabled by setting the TFCTL_CACHE environment variable to "0"
 // or "false".
 func isCacheEnabled() bool {

@@ -9,12 +9,16 @@ import (
 	"github.com/staranto/tfctlgo/internal/config"
 )
 
+// RootDirSpec holds the resolved root directory and optional environment
+// override used when evaluating backends.
 type RootDirSpec struct {
 	RootDir string
 	Env     string
 }
 
-// Meta are the meta-options that are available on all or most commands.
+// Meta contains runtime metadata shared by commands. It carries CLI arguments,
+// loaded configuration, context, the resolved root directory specification, and
+// the starting working directory.
 type Meta struct {
 	Args    []string
 	Config  config.ConfigType

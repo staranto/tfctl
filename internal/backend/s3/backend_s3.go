@@ -203,7 +203,7 @@ func (be *BackendS3) StateVersions() ([]*tfe.StateVersion, error) {
 
 	var mostRecentDelete time.Time
 	for _, d := range rawVersions.DeleteMarkers {
-		// This filters out tflock files.  The prefix is literally a prefix so both
+		// This filters out tflock files. The prefix is literally a prefix so both
 		// the actual state file versions and any lock files they might have, are
 		// returned by the AWS API.
 		if *d.Key != prefix {

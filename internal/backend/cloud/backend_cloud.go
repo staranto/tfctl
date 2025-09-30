@@ -62,7 +62,7 @@ func (be *BackendCloud) Token() (string, error) {
 	token, _ = be.Backend.Config.Token.(string)
 
 	// Once we're here, token may have existed already in the config file or it
-	// may have been overridden by an environment variable.  If it's still empty,
+	// may have been overridden by an environment variable. If it's still empty,
 	// we need to try to get it from the credentials file.
 	if token == "" {
 		home, err := os.UserHomeDir()

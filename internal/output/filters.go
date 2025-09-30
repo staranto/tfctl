@@ -19,7 +19,8 @@ import (
 // It matches: key + operator + target, where operator can be negated with !
 var filterRegex = regexp.MustCompile(`^(.*?)([!/]{1,2}|[=^~><!@]{1,2})(.*)$`)
 
-// The --filter argument is parsed into a slice of Filter structs.
+// Filter represents a single parsed --filter expression including the key,
+// operand, optional negation and target value.
 type Filter struct {
 	Key     string
 	Negate  bool
@@ -29,6 +30,8 @@ type Filter struct {
 
 // applyFilters checks the candidate against the filters and returns a bool
 // indicating if the candidate should be included in the result set.
+// applyFilters returns true if the candidate row matches all of the provided
+// filters. Native TF API filter keys (prefixed with _) are ignored here.
 func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter) bool {
 	// No filters, so go home early.
 	if len(filters) == 0 {
@@ -55,20 +58,20 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter
 
 		// If an attribute matching the filter key was not found, log the condition
 		// and fail early.
-		// THINK Don't we allow a bad operand to be ignored?  Be consistent.
+		// THINK Don't we allow a bad operand to be ignored? Be consistent.
 		if key == "" {
 			log.Error("filterkey not found: " + filter.Key)
 			return false
 		}
 
-		// Get the value from the candidate for the key.  If it's nil, fail early.
+		// Get the value from the candidate for the key. If it's nil, fail early.
 		//value := candidate.Get(key).Value()
 		value := driller.Driller(candidate.Raw, key).Value()
 		if value == nil {
 			return false
 		}
 
-		// Check the value against the filter.  If it fails the check, fail early as
+		// Check the value against the filter. If it fails the check, fail early as
 		// there's no need to continue checking the remaining filters.
 		result := true
 		if v, ok := value.(string); ok {
@@ -87,8 +90,10 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter
 	return true
 }
 
-// checkContainsOperand checks the value against the target for "membership".  Does
+// checkContainsOperand checks the value against the target for "membership". Does
 // the target "have" the value?
+// checkContainsOperand evaluates a membership style filter (operand '@')
+// against slice or map values.
 func checkContainsOperand(value interface{}, filter Filter) bool {
 	switch val := value.(type) {
 	case []any:
@@ -111,10 +116,12 @@ func checkContainsOperand(value interface{}, filter Filter) bool {
 }
 
 // checkStringOperand checks the value against the target using the provided
-// operand and returns a bool indicating if the check was successful.  The
-// value is normalized to a string before the check is performed.  All operands,
-// including '@', support normalized string values.  `@` is a special case that
+// operand and returns a bool indicating if the check was successful. The
+// value is normalized to a string before the check is performed. All operands,
+// including '@', support normalized string values. `@` is a special case that
 // also supports other types.
+// checkStringOperand evaluates a string comparison style filter against the
+// provided value using the operand semantics.
 func checkStringOperand(value string, filter Filter) bool {
 	switch filter.Operand {
 	case "=":
@@ -145,6 +152,8 @@ func checkStringOperand(value string, filter Filter) bool {
 
 // BuildFilters parses the filter spec and returns a slice of filter structs.
 // Invalid specs (currently determined by an unsupported operand) are ignored.
+// BuildFilters parses a filter specification string into a slice of Filter.
+// Invalid specs (unsupported operand or malformed expression) are skipped.
 func BuildFilters(spec string) []Filter {
 	// Don't prealloc because we don't know what len will be and performance is
 	// not critical.
@@ -173,7 +182,7 @@ func BuildFilters(spec string) []Filter {
 			continue
 		}
 
-		// parts[2] is the operand.  It may have a leading negation.  If so, chop it
+		// parts[2] is the operand. It may have a leading negation. If so, chop it
 		// off and just use the remainder as the working operand.
 		// Check if the operand begins with a negation.
 		negate := strings.HasPrefix(parts[2], "!")
@@ -193,8 +202,10 @@ func BuildFilters(spec string) []Filter {
 	return filters
 }
 
-// FilterDataset filters the candidate dataset based on the provided spec.  This
+// FilterDataset filters the candidate dataset based on the provided spec. This
 // is the entry point by SliceDiceSpit() for filtering.
+// FilterDataset returns a result set filtered per the provided spec. It is the
+// public entry point used by SliceDiceSpit.
 func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) []map[string]interface{} {
 	//nolint:prealloc // Don't prealloc because we don't know what len will be.
 	var filteredResults []map[string]interface{}
@@ -216,7 +227,7 @@ func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) [
 		for i := range attrs {
 			attr := attrs[i]
 			// THINK Should we Transform here or in a separate loop back in
-			// SliceDiceSpit()?  This func is filtering, not filtering & transforming.
+			// SliceDiceSpit()? This func is filtering, not filtering & transforming.
 			// value := attr.Transform(candidate.Get(attr.Key).Value())
 			value := driller.Driller(candidate.Raw, attr.Key)
 			result[attr.OutputKey] = value.Value()

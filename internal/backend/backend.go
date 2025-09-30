@@ -20,6 +20,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// BackendType holds common backend resolution context and flags.
 type BackendType struct {
 	Ctx         context.Context
 	Cmd         *cli.Command
@@ -29,6 +30,8 @@ type BackendType struct {
 	// TerraformVersion string `json:"terraform_version" validate:"semver"`
 }
 
+// Backend abstracts Terraform/OpenTofu backend interactions needed by the
+// application.
 type Backend interface {
 	Runs() ([]*tfe.Run, error)
 	// State() returns the CSV~0 state document.
@@ -40,10 +43,14 @@ type Backend interface {
 	Type() (string, error)
 }
 
+// SelfDiffer is implemented by backends that can diff state snapshots without
+// an external differ.
 type SelfDiffer interface {
 	DiffStates(ctx context.Context, cmd *cli.Command) ([][]byte, error)
 }
 
+// NewBackend returns the appropriate Backend implementation for the working
+// directory represented by the resolved root dir in command metadata.
 func NewBackend(ctx context.Context, cmd cli.Command) (Backend, error) {
 	meta := cmd.Metadata["meta"].(meta.Meta)
 	log.Debugf("NewBackend: meta: %v", meta)
@@ -53,14 +60,14 @@ func NewBackend(ctx context.Context, cmd cli.Command) (Backend, error) {
 	eFile, eErr := os.Stat(filepath.Join(meta.RootDir, ".terraform", "environment"))
 	_, _, _ = cFile, sFile, eFile // HACK
 
-	// Maybe we're in a non-sq command and just need a naked remote.  This will be
+	// Maybe we're in a non-sq command and just need a naked remote. This will be
 	// when c, s and e are all in error meaning none of them exist.
 	if cErr != nil && sErr != nil && eErr != nil {
 		return remote.NewBackendRemote(ctx, &cmd, remote.BuckNaked())
 	}
 
 	// If terraform.tfstate exists but .terraform/terraform.tfstate doesn't,
-	// infer local backend.  This is a terraform.backend {} block situation
+	// infer local backend. This is a terraform.backend {} block situation
 	if cErr != nil && sErr == nil {
 		return local.NewBackendLocal(ctx, &cmd,
 			local.FromRootDir(meta.RootDir),
@@ -69,7 +76,7 @@ func NewBackend(ctx context.Context, cmd cli.Command) (Backend, error) {
 	}
 
 	// Peek at the backend type so we can switch on it.
-	// TODO We're double reading the file.  Once in peek() and once in the New().
+	// TODO We're double reading the file. Once in peek() and once in the New().
 	typ, err := peek(meta)
 	if err != nil {
 		return nil, err
@@ -104,10 +111,11 @@ func NewBackend(ctx context.Context, cmd cli.Command) (Backend, error) {
 		return be, err
 	}
 
-	// This is a fail-safe.  We should never get here.
+	// This is a fail-safe. We should never get here.
 	return nil, fmt.Errorf("unknown type %s: %w", typ, err)
 }
 
+// peek returns the backend type by reading the local terraform state file.
 func peek(meta meta.Meta) (string, error) {
 	raw, err := os.ReadFile(filepath.Join(meta.RootDir, ".terraform", "terraform.tfstate"))
 	if err != nil {

@@ -1,3 +1,6 @@
+// Copyright © 2025 Steve Taranto staranto@gmail.com
+// SPDX-License-Identifier: MIT
+
 package util
 
 import (
@@ -6,20 +9,20 @@ import (
 	"strings"
 )
 
-// ParseRootDir parses the root directory string and returns the absolute path
-// to the directory and the environment override if present. It also checks
-// if the directory exists and is a valid directory.
+// ParseRootDir parses a RootDir string and returns the absolute directory and
+// any optional environment override. It returns an error if the directory does
+// not exist or is not a directory.
 func ParseRootDir(rootDir string) (string, string, error) {
 	var dir, env string
 
-	// First , split the path to see if there is an ::env override.
+	// First, split the path to see if there is an ::env override.
 	parts := strings.Split(rootDir, "::")
 	if len(parts) > 1 {
 		env = parts[1]
 	}
 
 	// Now determine if the actual root directory (parts[0]) is absolute or
-	// relative.  If it is relative, make it absolute.
+	// relative. If it is relative, make it absolute.
 	if !strings.HasPrefix(parts[0], "/") {
 		cwd, err := os.Getwd()
 		if err != nil {

@@ -16,7 +16,7 @@ import (
 )
 
 // NewBackendLocal returns a BackendLocal object that implements the Backend
-// interface.  It is load()ed from the config file found in the rootDir.
+// interface. It is load()ed from the config file found in the rootDir.
 func NewBackendLocal(ctx context.Context, cmd *cli.Command, options ...BackendLocalOption) (*BackendLocal, error) {
 	options = append([]BackendLocalOption{WithDefaults()}, options...)
 
@@ -45,7 +45,7 @@ func FromRootDir(rootDir string) BackendLocalOption {
 		}
 
 		// Does the backend file exist in RootDir and is it valid?
-		// This is a Local so we should never return an error.  If there had been
+		// This is a Local so we should never return an error. If there had been
 		// a missing backend file, we should have already built out a default Remote
 		// backend.
 		return be.load(ctx, cmd)
@@ -94,13 +94,13 @@ func WithNoBackend(rootDir string) BackendLocalOption {
 }
 
 // load reads the terraform config file and unmarshals it into the ConfigLocal
-// struct.  It is simply a convenience method to make NewConfigLocal more
+// struct. It is simply a convenience method to make NewConfigLocal more
 // readable.
 func (be *BackendLocal) load(_ context.Context, _ *cli.Command) error {
 	tfFile := be.RootDir + "/.terraform/terraform.tfstate"
 	data, err := os.ReadFile(tfFile)
 	if err != nil {
-		// Deal with a no terraform.backend {} situation.  In this case, it looks
+		// Deal with a no terraform.backend {} situation. In this case, it looks
 		// like we're in a real IAC root, but there is no backend config file.
 		// This is a valid situation, so we just return a local backend with no
 		// config.
