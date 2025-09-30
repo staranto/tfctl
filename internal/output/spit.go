@@ -22,6 +22,7 @@ import (
 	"github.com/charmbracelet/lipgloss/v2/table"
 	"github.com/staranto/tfctlgo/internal/attrs"
 	"github.com/staranto/tfctlgo/internal/config"
+	"github.com/staranto/tfctlgo/internal/filters"
 	"github.com/tidwall/gjson"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v2"
@@ -233,7 +234,7 @@ func SliceDiceSpit(raw bytes.Buffer,
 	// Filter out the rows we don't want. Do it here so that the following
 	// processes are slightly more efficient since they'll be working on a smaller
 	// dataset.
-	filteredDataset := FilterDataset(fullDataset, attrs, filter)
+	filteredDataset := filters.FilterDataset(fullDataset, attrs, filter)
 
 	// THINK This is inefficient. We're forcing a time transformation to occur
 	// for all attributes, even though many will not be a timestamp. One
