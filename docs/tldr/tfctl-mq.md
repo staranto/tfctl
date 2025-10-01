@@ -5,7 +5,7 @@
 
 - List registry modules:
 
-`tfctl mq --sort createdAt`
+`tfctl mq`
 
 - Show common module attributes:
 
