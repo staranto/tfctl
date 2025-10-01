@@ -213,5 +213,33 @@ Terraform, Terraform Enterprise, and HCP Terraform are trademarks of HashiCorp, 
 
 ---
 ## Thank You
+---
+## Git hooks for doc generation (optional)
+
+If you don’t want to use a Makefile, you can enable a versioned Git pre-commit hook included in this repo that automatically regenerates man and TLDR pages from the canonical Markdown docs when you commit.
+
+What it does on each commit:
+- Builds the tiny generator at `tools/docgen`.
+- Generates `docs/man/share/man1/*.1` and `docs/tldr/*.md` from `docs/commands/*.md`.
+- Stages changed generated files so they’re included in the commit.
+
+Enable it once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Disable:
+
+```sh
+git config --unset core.hooksPath
+```
+
+Run generator manually if needed:
+
+```sh
+go run tools/docgen/main.go -root .
+```
+
 
 Your contributions help make infrastructure automation easier. Thank you for helping improve `tfctl`.

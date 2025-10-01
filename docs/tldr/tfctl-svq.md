@@ -1,20 +1,12 @@
 # tfctl-svq
 
-> Query state versions for a workspace.
+> List and inspect state versions for a workspace or state backend. Useful for audits and rollbacks.
 > More information: https://github.com/staranto/tfctlgo.
 
-- List state versions for a workspace:
+- List state versions:
 
-`tfctl svq --workspace {{workspace_name}}`
+`tfctl svq`
 
-- Limit the number of state versions returned:
+- Limit number of versions returned:
 
-`tfctl svq --workspace {{workspace_name}} --limit {{10}}`
-
-- Output results as JSON:
-
-`tfctl svq --workspace {{workspace_name}} --output json`
-
-- Use a specific Terraform Enterprise host:
-
-`tfctl svq --host {{tfe.example.com}} --org {{organization_name}} --workspace {{workspace_name}}`
+`tfctl svq --limit 10`

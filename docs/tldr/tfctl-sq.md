@@ -1,24 +1,12 @@
 # tfctl-sq
 
-> Query Terraform state resources from a workspace or local directory.
+> Query Terraform/OpenTofu state files in a local IaC root. Supports listing resources, filtering, and comparing state versions.
 > More information: https://github.com/staranto/tfctlgo.
 
-- Query state from a workspace:
+- Query the current directory's state:
 
-`tfctl sq --workspace {{workspace_name}}`
+`tfctl sq`
 
-- Query state from a local Terraform directory (RootDir):
+- See state-specific flags (e.g., --concrete, --diff):
 
-`tfctl sq {{path/to/terraform/directory}}`
-
-- Only include concrete resources:
-
-`tfctl sq --workspace {{workspace_name}} --concrete`
-
-- Filter by resource type and output as JSON:
-
-`tfctl sq --workspace {{workspace_name}} --filter "type=aws_instance" --output json`
-
-- Show full resource name paths:
-
-`tfctl sq --workspace {{workspace_name}} --noshort`
+`tfctl sq --help`

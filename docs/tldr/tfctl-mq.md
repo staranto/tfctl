@@ -1,20 +1,12 @@
 # tfctl-mq
 
-> Query modules in the HCP Terraform / Terraform Enterprise private registry.
+> Query the Module Registry (HCP/TFE) for available modules and metadata.
 > More information: https://github.com/staranto/tfctlgo.
 
-- List modules in an organization:
+- List registry modules:
 
-`tfctl mq --org {{organization_name}}`
+`tfctl mq`
 
-- Filter modules by name (contains):
+- Show common module attributes:
 
-`tfctl mq --org {{organization_name}} --filter "name@{{text}}" --output json`
-
-- Filter modules by name (regex):
-
-`tfctl mq --org {{organization_name}} --filter "name~{{pattern}}" --output json`
-
-- Use a specific Terraform Enterprise host:
-
-`tfctl mq --host {{tfe.example.com}} --org {{organization_name}}`
+`tfctl mq --schema`

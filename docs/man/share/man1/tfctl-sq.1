@@ -1,66 +1,111 @@
-.TH TFCTL-SQ 1 "2025-09-25" "tfctl" "User Commands"
-.SH NAME
-tfctl-sq \- query resources from Terraform/OpenTofu state
-.SH SYNOPSIS
-.B tfctl sq
-.RI [ options ]
-.RI [ RootDir ]
-.SH DESCRIPTION
-.B tfctl sq
-reads a workspace's state (or a local RootDir) and emits resource data suitable
-for inventory, auditing, and automation. State decryption for OpenTofu encrypted
-states is supported via
-.BR \-\-passphrase
-or
-.BR TF_VAR_passphrase .
-.SH OPTIONS
-.TP
-.BR \-\-host \fIHOST\fR
-HCP/TFE host.
-.TP
-.BR \-\-org \fIORG\fR
-Organization.
-.TP
-.BR \-w ", " \-\-workspace \fINAME\fR
-Workspace name.
-.TP
-.BR \-\-concrete
-Only include concrete (managed) resources.
-.TP
-.BR \-\-diff
-Show differences between state versions when supported by the backend.
-.TP
-.BR \-\-noshort
-Show full resource paths.
-.TP
-.BR \-\-passphrase \fISTRING\fR
-Passphrase for decrypting OpenTofu state (if encrypted). Can also be supplied
-via
-.BR TF_VAR_passphrase .
-.TP
-.BR \-\-sv \fIN\fR
-State version to query.
-.TP
-See also global options in
-.BR tfctl (1)
-and
-.BR tfctl\-flags (7).
-.SH EXAMPLES
-.nf
-# Query state from a workspace
-tfctl sq --workspace {{workspace_name}}
+.nh
+.TH tfctl sq — state query
+.PP
+Synopsis
 
-# Query state from a local directory (RootDir)
-tfctl sq {{/path/to/terraform/dir}}
+.EX
+tfctl sq [RootDir] [options]
 
-# Only include concrete resources
-tfctl sq --workspace {{workspace_name}} --concrete
+.EE
 
-# Filter to EC2 instances and output JSON
-tfctl sq --workspace {{workspace_name}} --filter 'type=aws_instance' --output json
-.fi
-.SH SEE ALSO
-.BR tfctl (1),
-.BR tfctl\-attrs (7),
-.BR tfctl\-filters (7),
-.BR tfctl\-flags (7)
+.PP
+Short description
+
+.PP
+Query Terraform/OpenTofu state files in a local IaC root. Supports listing resources, filtering, and comparing state versions.
+
+.PP
+Flags and related docs
+
+.RS
+.IP \(bu 2
+See the common flag reference: Flags
+\[la]../flags.md\[ra]
+.IP \(bu 2
+Attributes: Attributes
+\[la]../attrs.md\[ra]
+.IP \(bu 2
+Filtering: Filters
+\[la]../filters.md\[ra]
+
+.RE
+
+.PP
+Flags
+
+.TS
+allbox;
+l l l l l 
+l l l l l .
+\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
+\fB--attrs\fR	\fB-a\fR	T{
+Comma-separated list of attributes to include
+T}
+	(none)	Global flag
+\fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
+\fB--concrete\fR	\fB-k\fR	T{
+Only include concrete (managed) resources
+T}
+	false	sq-specific
+\fB--diff\fR		T{
+Show diff between state versions
+T}
+	false	sq-specific
+\fB--diff_filter\fR		Hidden, internal diff filter	\fBcheck_results\fR	Hidden / internal
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}
+	(none)	See Filters
+\[la]../filters.md\[ra]
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
+\fB--limit\fR		Limit state versions returned	99999	sq-specific, hidden default
+\fB--noshort\fR		T{
+Include full resource name paths
+T}
+	false	sq-specific
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
+\fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
+\fB--passphrase\fR		Passphrase for encrypted state	(none)	T{
+sq-specific; falls back to TF_VAR_passphrase or interactive prompt
+T}
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
+\fB--sv\fR		State version to query	\fB0\fR	sq-specific
+\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
+\fB--workspace\fR	\fB-w\fR	T{
+Workspace to use (overrides backend)
+T}
+	(none)	Command flag
+.TE
+
+.PP
+Quick examples
+
+.EX
+# Query the current directory's state
+ tfctl sq
+
+# See state-specific flags (e.g., --concrete, --diff)
+ tfctl sq --help
+
+.EE
+
+.PP
+Notes
+
+.RS
+.IP \(bu 2
+\fBsq\fR operates against an IaC root directory (defaults to CWD when not provided).
+.IP \(bu 2
+When using encrypted state, \fBsq\fR will prompt for a passphrase or use \fBTF_VAR_passphrase\fR\&.
+
+.RE
+
+.PP
+See also
+
+.RS
+.IP \(bu 2
+Quickstart
+\[la]../quickstart.md\[ra]
+
+.RE

@@ -1,24 +1,12 @@
 # tfctl-pq
 
-> Query projects in HCP Terraform / Terraform Enterprise.
+> Query Projects within an organization. Use to enumerate and extract project-level metadata.
 > More information: https://github.com/staranto/tfctlgo.
 
-- List projects in an organization:
+- List projects in org:
 
-`tfctl pq --org {{organization_name}}`
+`tfctl pq --org my-org`
 
-- Filter projects by name (contains):
+- Show common project attributes:
 
-`tfctl pq --org {{organization_name}} --filter "name@{{text}}" --output json`
-
-- Include last updated timestamp:
-
-`tfctl pq --org {{organization_name}} --attrs {{updated-at}} --output json`
-
-- Include VCS repo information:
-
-`tfctl pq --org {{organization_name}} --attrs {{vcs-repo.identifier}} --output json`
-
-- Use a specific Terraform Enterprise host:
-
-`tfctl pq --host {{tfe.example.com}} --org {{organization_name}}`
+`tfctl pq --schema`

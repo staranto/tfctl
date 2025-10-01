@@ -1,37 +1,89 @@
-.TH TFCTL-PQ 1 "2025-09-25" "tfctl" "User Commands"
-.SH NAME
-tfctl-pq \- query projects
-.SH SYNOPSIS
-.B tfctl pq
-.RI [ options ]
-.SH DESCRIPTION
-.B tfctl pq
-lists projects for an organization.
-.SH OPTIONS
-.TP
-.BR \-\-host \fIHOST\fR
-HCP/TFE host.
-.TP
-.BR \-\-org \fIORG\fR
-Organization to scope queries.
-.TP
-See also global options in
-.BR tfctl (1)
-and
-.BR tfctl\-flags (7).
-.SH EXAMPLES
-.nf
-# List projects
-tfctl pq --org {{organization_name}}
+.nh
+.TH tfctl pq — project query
+.PP
+Synopsis
 
-# Filter by name and include last updated timestamp
-tfctl pq --org {{organization_name}} --filter 'name@{{storage}}' --attrs {{updated-at}} --output json
+.EX
+tfctl pq [RootDir] [options]
 
-# Include VCS repo identifier
-tfctl pq --org {{organization_name}} --attrs {{vcs-repo.identifier}} --output json
-.fi
-.SH SEE ALSO
-.BR tfctl (1),
-.BR tfctl\-attrs (7),
-.BR tfctl\-filters (7),
-.BR tfctl\-flags (7)
+.EE
+
+.PP
+Short description
+
+.PP
+Query Projects within an organization. Use to enumerate and extract project-level metadata.
+
+.PP
+Flags and related docs
+
+.RS
+.IP \(bu 2
+See the common flag reference: Flags
+\[la]../flags.md\[ra]
+.IP \(bu 2
+Attributes: Attributes
+\[la]../attrs.md\[ra]
+.IP \(bu 2
+Filtering: Filters
+\[la]../filters.md\[ra]
+
+.RE
+
+.PP
+Flags
+
+.TS
+allbox;
+l l l l l 
+l l l l l .
+\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
+\fB--attrs\fR	\fB-a\fR	T{
+Comma-separated list of attributes to include
+T}
+	(none)	Global flag
+\fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}
+	(none)	See Filters
+\[la]../filters.md\[ra]
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
+\fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
+\fB--schema\fR		Dump the schema	false	Command helper
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
+\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
+\fB--tldr\fR		Show tldr page (if installed)	false	Hidden unless \fBtldr\fR present
+.TE
+
+.PP
+Quick examples
+
+.EX
+# List projects in org
+ tfctl pq --org my-org
+
+# Show common project attributes
+ tfctl pq --schema
+
+.EE
+
+.PP
+Notes
+
+.RS
+.IP \(bu 2
+\fBpq\fR is useful for discovering projects that match naming patterns and for extracting VCS repo settings.
+
+.RE
+
+.PP
+See also
+
+.RS
+.IP \(bu 2
+Quickstart
+\[la]../quickstart.md\[ra]
+
+.RE

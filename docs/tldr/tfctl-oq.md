@@ -1,28 +1,16 @@
 # tfctl-oq
 
-> Query organizations in HCP Terraform / Terraform Enterprise.
+> Query Organizations from your configured Terraform/HCP/TFE host.
 > More information: https://github.com/staranto/tfctlgo.
 
-- List organizations on the default server:
+- List organizations:
 
 `tfctl oq`
 
-- List organizations on a specific Terraform Enterprise host:
+- Show common attributes:
 
-`tfctl oq --host {{tfe.example.com}}`
+`tfctl oq --schema`
 
-- Filter organizations by name (contains):
+- Examples provided by the command:
 
-`tfctl oq --filter "name@{{text}}"`
-
-- Return results as JSON:
-
-`tfctl oq --output json`
-
-- Include additional attributes in the output:
-
-`tfctl oq --attrs {{email}} --output json`
-
-- Sort organizations by an attribute:
-
-`tfctl oq --sort {{name}}`
+`tfctl oq --examples`

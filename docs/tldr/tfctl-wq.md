@@ -1,24 +1,16 @@
 # tfctl-wq
 
-> Query workspaces in HCP Terraform / Terraform Enterprise.
+> Query Workspaces for an organization or project. Useful for inventorying workspaces and extracting attributes like VCS information and Terraform version.
 > More information: https://github.com/staranto/tfctlgo.
 
-- List workspaces in an organization:
+- List workspaces in the current org:
 
-`tfctl wq --org {{organization_name}}`
+`tfctl wq`
 
-- Output results as JSON:
+- Show common workspace attributes:
 
-`tfctl wq --org {{organization_name}} --output json`
+`tfctl wq --schema`
 
-- Filter by name (regex):
+- Examples provided by the command:
 
-`tfctl wq --org {{organization_name}} --filter "name~{{pattern}}" --output json`
-
-- Sort results by attribute:
-
-`tfctl wq --org {{organization_name}} --sort {{name}}`
-
-- Query a Terraform Enterprise host:
-
-`tfctl wq --host {{tfe.example.com}} --org {{organization_name}}`
+`tfctl wq --examples`

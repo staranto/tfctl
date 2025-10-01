@@ -1,38 +1,93 @@
-.TH TFCTL-SVQ 1 "2025-09-25" "tfctl" "User Commands"
-.SH NAME
-tfctl-svq \- query state versions for a workspace
-.SH SYNOPSIS
-.B tfctl svq
-.RI [ options ]
-.RI [ RootDir ]
-.SH DESCRIPTION
-.B tfctl svq
-lists state versions associated with a workspace.
-.SH OPTIONS
-.TP
-.BR \-\-host \fIHOST\fR
-HCP/TFE host.
-.TP
-.BR \-\-org \fIORG\fR
-Organization.
-.TP
-.BR \-w ", " \-\-workspace \fINAME\fR
-Workspace name.
-.TP
-.BR \-l ", " \-\-limit \fIN\fR
-Limit the number of state versions returned (default from config).
-.TP
-See also global options in
-.BR tfctl (1)
-and
-.BR tfctl\-flags (7).
-.SH EXAMPLES
-.nf
-# List state versions (latest 10)
-tfctl svq --workspace {{workspace_name}} --limit 10 --output json
-.fi
-.SH SEE ALSO
-.BR tfctl (1),
-.BR tfctl\-attrs (7),
-.BR tfctl\-filters (7),
-.BR tfctl\-flags (7)
+.nh
+.TH tfctl svq — state version query
+.PP
+Synopsis
+
+.EX
+tfctl svq [RootDir] [options]
+
+.EE
+
+.PP
+Short description
+
+.PP
+List and inspect state versions for a workspace or state backend. Useful for audits and rollbacks.
+
+.PP
+Flags and related docs
+
+.RS
+.IP \(bu 2
+See the common flag reference: Flags
+\[la]../flags.md\[ra]
+.IP \(bu 2
+Attributes: Attributes
+\[la]../attrs.md\[ra]
+.IP \(bu 2
+Filtering: Filters
+\[la]../filters.md\[ra]
+
+.RE
+
+.PP
+Flags
+
+.TS
+allbox;
+l l l l l 
+l l l l l .
+\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
+\fB--attrs\fR	\fB-a\fR	T{
+Comma-separated list of attributes to include
+T}
+	(none)	Global flag
+\fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}
+	(none)	See Filters
+\[la]../filters.md\[ra]
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
+\fB--limit\fR	\fB-l\fR	Limit state versions returned	99999	Command-scoped
+\fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
+\fB--schema\fR		Dump the schema	false	Command helper
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
+\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
+\fB--workspace\fR	\fB-w\fR	T{
+Workspace to use (overrides backend)
+T}
+	(none)	Command flag
+.TE
+
+.PP
+Quick examples
+
+.EX
+# List state versions
+ tfctl svq
+
+# Limit number of versions returned
+ tfctl svq --limit 10
+
+.EE
+
+.PP
+Notes
+
+.RS
+.IP \(bu 2
+\fBsvq\fR integrates with backends that support state versioning (remote/HCP/TFE).
+
+.RE
+
+.PP
+See also
+
+.RS
+.IP \(bu 2
+Quickstart
+\[la]../quickstart.md\[ra]
+
+.RE

@@ -1,35 +1,97 @@
-.TH TFCTL-OQ 1 "2025-09-25" "tfctl" "User Commands"
-.SH NAME
-tfctl-oq \- query organizations
-.SH SYNOPSIS
-.B tfctl oq
-.RI [ options ]
-.SH DESCRIPTION
-.B tfctl oq
-lists organizations from the configured host.
-Use filters and attributes to extract exactly what you need.
-.SH OPTIONS
-.TP
-.BR \-\-host \fIHOST\fR
-HCP/TFE host (e.g. app.terraform.io or a private TFE hostname).
-.TP
-See also global options in
-.BR tfctl (1)
-and
-.BR tfctl\-flags (7).
-.SH EXAMPLES
-.nf
+.nh
+.TH tfctl oq — organization query
+.PP
+Synopsis
+
+.EX
+tfctl oq [RootDir] [options]
+
+.EE
+
+.PP
+Short description
+
+.PP
+Query Organizations from your configured Terraform/HCP/TFE host.
+
+.PP
+Flags and related docs
+
+.RS
+.IP \(bu 2
+See the common flag reference: Flags
+\[la]../flags.md\[ra]
+.IP \(bu 2
+Attributes: Attributes
+\[la]../attrs.md\[ra]
+.IP \(bu 2
+Filtering: Filters
+\[la]../filters.md\[ra]
+
+.RE
+
+.PP
+Flags
+
+.TS
+allbox;
+l l l l l 
+l l l l l .
+\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
+\fB--attrs\fR	\fB-a\fR	T{
+Comma-separated list of attributes to include
+T}
+	(none)	Global flag
+\fB--color\fR	\fB-c\fR	Enable colored text output	false	T{
+Global flag, configurable via config
+T}
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}
+	(none)	See Filters
+\[la]../filters.md\[ra]
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
+\fB--schema\fR		Dump the schema	false	Command-specific helper
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
+\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
+\fB--tldr\fR		Show tldr page (if available)	false	Hidden unless \fBtldr\fR installed
+.TE
+
+.PP
+Quick examples
+
+.EX
 # List organizations
-tfctl oq --output json
+ tfctl oq
 
-# Filter by name (contains)
-tfctl oq --filter 'name@{{prod}}'
+# Show common attributes
+ tfctl oq --schema
 
-# Include admin email address
-tfctl oq --attrs {{email}} --output json
-.fi
-.SH SEE ALSO
-.BR tfctl (1),
-.BR tfctl\-attrs (7),
-.BR tfctl\-filters (7),
-.BR tfctl\-flags (7)
+# Examples provided by the command
+ tfctl oq --examples
+
+.EE
+
+.PP
+Notes
+
+.RS
+.IP \(bu 2
+Use \fB--schema\fR to discover attributes available to \fB--attrs\fR for this command.
+.IP \(bu 2
+Use \fB--examples\fR to view curated usage examples.
+.IP \(bu 2
+For automation, prefer \fB--output json\fR\&.
+
+.RE
+
+.PP
+See also
+
+.RS
+.IP \(bu 2
+Quickstart
+\[la]../quickstart.md\[ra]
+
+.RE

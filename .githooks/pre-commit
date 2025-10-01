@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR=$(git rev-parse --show-toplevel)
+cd "$ROOT_DIR"
+
+echo "[pre-commit] generating man and tldr docs if needed..." >&2
+
+# Build the generator (cached by Go build cache)
+if ! go build -o .git/.docgen tools/docgen/main.go; then
+  echo "[pre-commit] docgen build failed" >&2
+  exit 1
+fi
+
+# Run the generator; it only writes files if changed
+.git/.docgen -root . -only-if-changed
+
+# Stage generated artifacts if they changed
+git add docs/man/share/man1/*.1 docs/tldr/*.md 2>/dev/null || true
+
+echo "[pre-commit] doc generation complete." >&2
+
+exit 0
