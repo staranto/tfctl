@@ -60,60 +60,24 @@ tfctl wq --attrs created-at,updated-at --output json
 
 ## Installation
 
-### Install tfctl
+For a quick start:
 
-**Homebrew (recommended)**
-```bash
-# Tap the repository
-brew tap staranto/tfctlgo https://github.com/staranto/tfctlgo
-
-# Install tfctl
-brew install tfctl
-```
-
-Note: The Homebrew formula installs man pages for tfctl and related commands. Try:
-
-```bash
-man tfctl
-man tfctl-sq
-```
-
-**Download pre-built binary**
-```bash
-# Download for your platform from releases
-curl -L https://github.com/staranto/tfctlgo/releases/latest/download/tfctl_linux_amd64.tar.gz | tar xz
-sudo mv tfctl /usr/local/bin/
-```
+- Homebrew (recommended):
+	```bash
+	brew install staranto/tfctlgo/tfctl
+	```
+- Debian/Ubuntu (.deb):
+	```bash
+	curl -LO https://github.com/staranto/tfctlgo/releases/latest/download/tfctl_amd64.deb \
+		&& sudo dpkg -i tfctl_amd64.deb || sudo apt-get -f install
+	```
+- Other methods (tarball, build from source), plus installing man and TLDR pages:
+	see the full guide at [docs/installation.md](docs/installation.md).
 
 <details>
 <summary>Other installation methods</summary>
 
-**Debian (.deb) package**
-```bash
-# Download the .deb from the latest release
-curl -LO https://github.com/staranto/tfctlgo/releases/latest/download/tfctl_$(uname -m == x86_64 && echo amd64 || echo $(uname -m))*.deb
-
-# Install (adjust filename as needed)
-sudo dpkg -i tfctl_*_amd64.deb || sudo apt-get -f install
-```
-
-Note: The Debian package installs man pages under /usr/share/man (man1 and man7):
-
-```bash
-man tfctl
-man tfctl-oq
-```
-
-**Build from source**
-```bash
-git clone https://github.com/staranto/tfctlgo.git
-cd tfctlgo && go build -o tfctl
-```
-
-**Build with GoReleaser**
-```bash
-goreleaser build --snapshot --clean --single-target
-```
+...existing code...
 </details>
 
 ### Setup Authentication
