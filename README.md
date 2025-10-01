@@ -9,23 +9,23 @@
 > **Supercharge your Terraform workflow with powerful CLI queries**
 
 
-**tfctl** is a command-line tool for querying Terraform and OpenTofu infrastructure. You can query workspaces, organizations, modules, and state data across multiple backend types from a single interface.
+**tfctl** is a command-line tool for querying Terraform and OpenTofu infrastructure. State querying is a main use-case, but tfctl also lets you query the broader Terraform ecosystem —workspaces, organizations, and modules—across multiple backends to power reporting and automation.
 
 ## Why tfctl?
 
-The native Terraform CLI provides essential infrastructure-as-code capabilities, but it lacks powerful state querying tools and offers no way to query other elements of the Terraform ecosystem like workspaces, organizations, or module registries. This is especially problematic for automation use cases, where you need programmatic access to infrastructure metadata, state history, or cross-workspace insights.
+The native Terraform CLI provides essential infrastructure-as-code tooling, but it lacks powerful state querying tools and offers no way to query other elements of the Terraform ecosystem like workspaces, organizations, or module registries. This is especially problematic for automation use cases, where you need programmatic access to infrastructure metadata, state history, or cross-workspace insights.
 
-**tfctl fills these gaps** by providing a unified, high-performance CLI for deep querying and analysis of Terraform-managed infrastructure, enabling better automation, reporting, and operational workflows.
+**tfctl fills these gaps** by providing a unified, high-performance CLI for deep querying and analysis of the Terraform ecosystem, enabling better automation, reporting, and operational workflows.
 
 ## Key Features
 
-**Cross-Backend Support** - Works with HCP Terraform, Terraform Enterprise, local state files, S3 backends, and module registries
+**Multiple Backend Support** - Works with HCP Terraform, Terraform Enterprise, local state files, S3 backends, and module registries
 
-**Fast Performance** - Built in Go with concurrent operations and intelligent caching
+**Fast Performance** - Built-in Go with concurrent operations and intelligent caching
 
-**Flexible Output** - Filter, sort, and format results as JSON, YAML, or formatted tables
+**Flexible Output** - Filter, sort, and transform results as JSON, YAML, or formatted tables
 
-**Secure** - Supports encrypted state files and multiple authentication methods
+**Secure** - Supports OpenTofu encrypted state files and multiple authentication methods
 
 **Comprehensive** - Query any attribute available through the Terraform APIs
 
@@ -39,9 +39,9 @@ tfctl wq --filter 'name@prod'
 tfctl sq --diff
 
 # List modules by popularity across registries
-tfctl mq --sort downloads --reverse
+tfctl mq --sort -downloads
 
-# Export workspace data for reporting
+# Export workspace data for automation
 tfctl wq --attrs created-at,updated-at --output json
 ```
 
@@ -67,26 +67,18 @@ For a quick start:
 	brew install staranto/tfctlgo/tfctl
 	```
 - Debian/Ubuntu (.deb):
+	- Visit https://github.com/staranto/tfctlgo/releases/latest and download the
+	  .deb matching your architecture (for example, amd64 or arm64).
+	- Then install it:
 	```bash
-	curl -LO https://github.com/staranto/tfctlgo/releases/latest/download/tfctl_amd64.deb \
-		&& sudo dpkg -i tfctl_amd64.deb || sudo apt-get -f install
+	sudo dpkg -i /path/to/tfctl_<version>_<arch>.deb || sudo apt-get -f install
 	```
 - Other methods (tarball, build from source), plus installing man and TLDR pages:
 	see the full guide at [docs/installation.md](docs/installation.md).
 
-<details>
-<summary>Other installation methods</summary>
-
-...existing code...
-</details>
-
 ### Setup Authentication
 
-For HCP Terraform / Terraform Enterprise:
-```bash
-# Generate tokens at: https://app.terraform.io/app/settings/tokens
-export TFE_TOKEN="your-hcp-token-here"
-```
+Configure and login in to your TFE/HCP account as described [here](https://developer.hashicorp.com/terraform/cli/commands/login)
 
 ### First Steps
 
@@ -96,7 +88,7 @@ tfctl wq
 
 # Get help anytime
 tfctl --help
-tfctl sq --help --examples
+tfctl sq --help
 ```
 
 ## Documentation
