@@ -35,7 +35,7 @@ Quick examples
 
 ```
 # List registry modules
- tfctl mq
+ tfctl mq  --sort createdAt
 
 # Show common module attributes
  tfctl mq --schema
