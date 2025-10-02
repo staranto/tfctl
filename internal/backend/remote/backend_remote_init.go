@@ -38,7 +38,6 @@ type BackendRemoteOption = func(ctx context.Context, cmd *cli.Command, be *Backe
 func BuckNaked() BackendRemoteOption {
 	return func(ctx context.Context, cmd *cli.Command, be *BackendRemote) error {
 		be.Backend.Config.Hostname = cmd.String("host")
-		be.Backend.Config.Organization = cmd.String("org")
 		be.Backend.Config.Token, _ = be.Token()
 
 		log.Debugf("BuckNaked(): hostname: %s", be.Backend.Config.Hostname)

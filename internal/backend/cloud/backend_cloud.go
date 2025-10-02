@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/staranto/tfctlgo/internal/backend/remote"
+	"github.com/staranto/tfctlgo/internal/config"
 	"github.com/urfave/cli/v3"
 )
 
@@ -110,9 +111,31 @@ func (c *BackendCloud) Transform2Remote(ctx context.Context, cmd *cli.Command) *
 	}
 	remote.Backend.Config.Hostname = host
 
+	// Organization precedence: --org > terraform.backend{} > tfctl.yaml
+	// Detect if --org is explicitly set to a value different from tfctl.yaml
+	// config so tfctl.yaml doesn't override backend values.
+	flagOrg := cmd.String("org")
+	// Attempt to read namespaced and global org from tfctl.yaml to infer defaults
+	var cfgOrg string
+	if ns := cmd.Name; ns != "" {
+		if v, err := config.GetString(ns + ".org"); err == nil {
+			cfgOrg = v
+		}
+	}
+	if cfgOrg == "" {
+		if v, err := config.GetString("org"); err == nil {
+			cfgOrg = v
+		}
+	}
+
+	// Start from backend value
 	org := c.Backend.Config.Organization
-	if org == "" {
-		org = cmd.String("org")
+	// If flag is provided and differs from cfg default, prefer it
+	if flagOrg != "" && flagOrg != cfgOrg {
+		org = flagOrg
+	} else if org == "" {
+		// Backend empty: fall back to flag (even if from cfg)
+		org = flagOrg
 	}
 	remote.Backend.Config.Organization = org
 

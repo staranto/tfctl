@@ -48,6 +48,11 @@ func MqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	}
 	log.Debugf("client: %v", client.BaseURL())
 
+	org, err := be.Organization()
+	if err != nil {
+		return fmt.Errorf("failed to resolve organization: %w", err)
+	}
+
 	options := tfe.RegistryModuleListOptions{
 		ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 100},
 	}
@@ -56,7 +61,7 @@ func MqCommandAction(ctx context.Context, cmd *cli.Command) error {
 
 	// Paginate through the dataset
 	for {
-		page, err := client.RegistryModules.List(ctx, cmd.String("org"), &options)
+		page, err := client.RegistryModules.List(ctx, org, &options)
 		if err != nil {
 			return fmt.Errorf("failed to list registry modules: %w", err)
 		}

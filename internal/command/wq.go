@@ -50,6 +50,11 @@ func WqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	}
 	log.Debugf("client: %v", client.BaseURL())
 
+	org, err := be.Organization()
+	if err != nil {
+		return fmt.Errorf("failed to resolve organization: %w", err)
+	}
+
 	options := tfe.WorkspaceListOptions{
 		ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 100},
 	}
@@ -58,7 +63,7 @@ func WqCommandAction(ctx context.Context, cmd *cli.Command) error {
 
 	// Paginate through the dataset
 	for {
-		page, err := client.Workspaces.List(ctx, cmd.String("org"), &options)
+		page, err := client.Workspaces.List(ctx, org, &options)
 		if err != nil {
 			return fmt.Errorf("failed to list workspaces: %w", err)
 		}

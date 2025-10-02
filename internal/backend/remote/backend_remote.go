@@ -496,10 +496,13 @@ func (be *BackendRemote) Workspace() (*tfe.Workspace, error) {
 		return nil, fmt.Errorf("failed to get TFE client: %w", err)
 	}
 
-	beCfg := be.Backend.Config
+	org, err := be.Organization()
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve organization: %w", err)
+	}
 	ctx := context.Background()
 
-	workspace, err := client.Workspaces.Read(ctx, beCfg.Organization, wsName)
+	workspace, err := client.Workspaces.Read(ctx, org, wsName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace: %w", err)
 	}

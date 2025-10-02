@@ -50,6 +50,11 @@ func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	}
 	log.Debugf("client: %v", client.BaseURL())
 
+	org, err := be.Organization()
+	if err != nil {
+		return fmt.Errorf("failed to resolve organization: %w", err)
+	}
+
 	options := tfe.ProjectListOptions{
 		ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 100},
 	}
@@ -58,7 +63,7 @@ func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
 
 	// Paginate through the dataset
 	for {
-		page, err := client.Projects.List(ctx, cmd.String("org"), &options)
+		page, err := client.Projects.List(ctx, org, &options)
 		if err != nil {
 			return fmt.Errorf("failed to list projects: %w", err)
 		}
