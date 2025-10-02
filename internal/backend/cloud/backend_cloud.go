@@ -95,21 +95,21 @@ func (be *BackendCloud) Token() (string, error) {
 	return token, nil
 }
 
-func (c *BackendCloud) Transform2Remote(ctx context.Context, cmd *cli.Command) *remote.BackendRemote {
-	remote := remote.BackendRemote{Ctx: ctx, Cmd: cmd}
+func (be *BackendCloud) Transform2Remote(ctx context.Context, cmd *cli.Command) *remote.BackendRemote {
+	beRemote := remote.BackendRemote{Ctx: ctx, Cmd: cmd}
 
-	remote.RootDir = c.RootDir
-	remote.Version = c.Version
-	remote.TerraformVersion = c.TerraformVersion
-	remote.EnvOverride = c.EnvOverride
-	remote.Backend.Type = "remote"
-	remote.Backend.Hash = c.Backend.Hash
+	beRemote.RootDir = be.RootDir
+	beRemote.Version = be.Version
+	beRemote.TerraformVersion = be.TerraformVersion
+	beRemote.EnvOverride = be.EnvOverride
+	beRemote.Backend.Type = "remote"
+	beRemote.Backend.Hash = be.Backend.Hash
 
-	host := c.Backend.Config.Hostname
+	host := be.Backend.Config.Hostname
 	if host == "" {
 		host = cmd.String("host")
 	}
-	remote.Backend.Config.Hostname = host
+	beRemote.Backend.Config.Hostname = host
 
 	// Organization precedence: --org > terraform.backend{} > tfctl.yaml
 	// Detect if --org is explicitly set to a value different from tfctl.yaml
@@ -129,7 +129,7 @@ func (c *BackendCloud) Transform2Remote(ctx context.Context, cmd *cli.Command) *
 	}
 
 	// Start from backend value
-	org := c.Backend.Config.Organization
+	org := be.Backend.Config.Organization
 	// If flag is provided and differs from cfg default, prefer it
 	if flagOrg != "" && flagOrg != cfgOrg {
 		org = flagOrg
@@ -137,10 +137,10 @@ func (c *BackendCloud) Transform2Remote(ctx context.Context, cmd *cli.Command) *
 		// Backend empty: fall back to flag (even if from cfg)
 		org = flagOrg
 	}
-	remote.Backend.Config.Organization = org
+	beRemote.Backend.Config.Organization = org
 
-	remote.Backend.Config.Workspaces.Name = c.Backend.Config.Workspaces.Name
-	remote.Backend.Config.Token, _ = remote.Token()
+	beRemote.Backend.Config.Workspaces.Name = be.Backend.Config.Workspaces.Name
+	beRemote.Backend.Config.Token, _ = beRemote.Token()
 
-	return &remote
+	return &beRemote
 }

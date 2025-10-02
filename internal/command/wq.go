@@ -65,7 +65,13 @@ func WqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	for {
 		page, err := client.Workspaces.List(ctx, org, &options)
 		if err != nil {
-			return fmt.Errorf("failed to list workspaces: %w", err)
+			ctxErr := remote.ErrorContext{
+				Host:      be.Backend.Config.Hostname,
+				Org:       org,
+				Operation: "list workspaces",
+				Resource:  "organization",
+			}
+			return remote.FriendlyTFE(err, ctxErr)
 		}
 
 		results = append(results, page.Items...)

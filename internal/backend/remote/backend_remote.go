@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -48,21 +49,21 @@ type BackendRemote struct {
 // Sentinel errors for validation and unsupported cases. These enable callers to
 // detect specific conditions via errors.Is/As while keeping messages consistent.
 var (
-	ErrTokenNotString                = fmt.Errorf("token is not a string")
-	ErrInvalidClientType             = fmt.Errorf("not a Cloud or Enterprise TFE server")
-	ErrOrganizationNotSet            = fmt.Errorf("organization is not set")
-	ErrNoCurrentStateVersion         = fmt.Errorf("no current state version")
-	ErrURLNotSupported               = fmt.Errorf("URL not supported")
-	ErrWorkspaceNameAndPrefixBothSet = fmt.Errorf("both workspace name and prefix are set")
+	ErrTokenNotString                = errors.New("token is not a string")
+	ErrInvalidClientType             = errors.New("not a Cloud or Enterprise TFE server")
+	ErrOrganizationNotSet            = errors.New("organization is not set")
+	ErrNoCurrentStateVersion         = errors.New("no current state version")
+	ErrURLNotSupported               = errors.New("URL not supported")
+	ErrWorkspaceNameAndPrefixBothSet = errors.New("both workspace name and prefix are set")
 )
 
 // Client optionally validates and returns a TFE client to the host specified
 // in the remote backend.
-func (c *BackendRemote) Client(validate ...bool) (*tfe.Client, error) {
-	beCfg := c.Backend.Config
+func (be *BackendRemote) Client(validate ...bool) (*tfe.Client, error) {
+	beCfg := be.Backend.Config
 
 	// Resolve token using standard precedence (env, config, credentials file).
-	token, err := c.Token()
+	token, err := be.Token()
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve token: %w", err)
 	}
@@ -92,7 +93,7 @@ func (be *BackendRemote) Organization() (string, error) {
 
 	org = be.Backend.Config.Organization
 	if org == "" {
-		return "", fmt.Errorf("organization is not set: %w", ErrOrganizationNotSet)
+		return "", fmt.Errorf("organization is not set (precedence: --org > backend block > tfctl.yaml). Set --org or backend.config.organization: %w", ErrOrganizationNotSet)
 	}
 
 	return org, nil
@@ -117,7 +118,7 @@ func (be *BackendRemote) DiffStates(ctx context.Context, cmd *cli.Command) ([][]
 			var err error
 			be.StateVersionList, err = be.StateVersions( /* TODO limit */ )
 			if err != nil {
-				return nil, fmt.Errorf("failed to get state version list: %v", err)
+				return nil, err
 			}
 
 			selectedVersions := differ.SelectStateVersions(be.StateVersionList)
@@ -159,7 +160,7 @@ func (be *BackendRemote) States(specs ...string) ([][]byte, error) {
 
 	candidates, err := be.StateVersions()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list state versions: %w", err)
+		return nil, err
 	}
 	versions, err := csv.Finder(candidates, specs...)
 	if err != nil {
@@ -179,22 +180,22 @@ func (be *BackendRemote) States(specs ...string) ([][]byte, error) {
 	return results, nil
 }
 
-func (be *BackendRemote) StateVersion(svSpec ...string) (tfe.StateVersion, error) {
-	if len(svSpec) == 0 {
-		svSpec = []string{"CSV~0"}
+func (be *BackendRemote) StateVersion(svSpecs ...string) (tfe.StateVersion, error) {
+	if len(svSpecs) == 0 {
+		svSpecs = []string{"CSV~0"}
 	}
 
 	// We just want to fall through if svSpec[0] is an sv-id, so don't bother
 	// checking for it.
 
 	// Force CSV~ prefix to uppercase to avoid case sensitivity issues
-	if strings.HasPrefix(strings.ToUpper(svSpec[0]), "CSV~") {
-		svSpec[0] = strings.ToUpper(svSpec[0])
+	if strings.HasPrefix(strings.ToUpper(svSpecs[0]), "CSV~") {
+		svSpecs[0] = strings.ToUpper(svSpecs[0])
 	}
 
 	// If no svid was passed in or it's CSV~0, we'll short circuit this and try to
 	// get the current state version.
-	if svSpec[0] == "" || svSpec[0] == "CSV~0" {
+	if svSpecs[0] == "" || svSpecs[0] == "CSV~0" {
 		workspace, err := be.Workspace()
 		if err != nil {
 			return tfe.StateVersion{}, fmt.Errorf("failed to get workspace: %w", err)
@@ -205,22 +206,22 @@ func (be *BackendRemote) StateVersion(svSpec ...string) (tfe.StateVersion, error
 				fmt.Errorf("workspace %s has no current state version: %w",
 					workspace.ID, ErrNoCurrentStateVersion)
 		}
-		svSpec[0] = workspace.CurrentStateVersion.ID
-	} else if strings.HasPrefix(svSpec[0], "CSV~") {
+		svSpecs[0] = workspace.CurrentStateVersion.ID
+	} else if strings.HasPrefix(svSpecs[0], "CSV~") {
 		// We've got to search through the state versions to be able to grab the
 		// relative one.
 		if be.StateVersionList == nil {
 			be.StateVersionList, _ = be.StateVersions()
 		}
 
-		parts := strings.Split(svSpec[0], "~")
+		parts := strings.Split(svSpecs[0], "~")
 		offset, err := strconv.Atoi(parts[1])
 		if err != nil {
 			return tfe.StateVersion{}, fmt.Errorf("invalid state version offset: %w", err)
 		}
 
-		svSpec[0] = be.StateVersionList[offset].ID
-	} else if serial, err := strconv.ParseInt(svSpec[0], 10, 64); err == nil {
+		svSpecs[0] = be.StateVersionList[offset].ID
+	} else if serial, err := strconv.ParseInt(svSpecs[0], 10, 64); err == nil {
 		// If we've got an int, find that specific serial number.
 		if be.StateVersionList == nil {
 			be.StateVersionList, _ = be.StateVersions()
@@ -228,17 +229,17 @@ func (be *BackendRemote) StateVersion(svSpec ...string) (tfe.StateVersion, error
 
 		for _, sv := range be.StateVersionList {
 			if sv.Serial == serial {
-				svSpec[0] = sv.ID
+				svSpecs[0] = sv.ID
 				break
 			}
 		}
-	} else if strings.HasPrefix(svSpec[0], "https://") {
+	} else if strings.HasPrefix(svSpecs[0], "https://") {
 		return tfe.StateVersion{}, fmt.Errorf("URL not supported: %w", ErrURLNotSupported)
 	}
 
 	// First look to see if it's in the cache.  If it is, unmarshall it and return
 	// early.
-	if entry, ok := CacheReader(be, svSpec[0]); ok {
+	if entry, ok := CacheReader(be, svSpecs[0]); ok {
 		var stateVersion tfe.StateVersion
 		if err := json.Unmarshal(entry.Data, &stateVersion); err != nil {
 			return tfe.StateVersion{}, fmt.Errorf("failed to unmarshal state version: %w", err)
@@ -252,7 +253,7 @@ func (be *BackendRemote) StateVersion(svSpec ...string) (tfe.StateVersion, error
 	}
 	ctx := context.Background()
 
-	stateVersion, err := client.StateVersions.Read(ctx, svSpec[0])
+	stateVersion, err := client.StateVersions.Read(ctx, svSpecs[0])
 	if err != nil {
 		return tfe.StateVersion{}, fmt.Errorf("failed to get state version: %w", err)
 	}
@@ -260,7 +261,7 @@ func (be *BackendRemote) StateVersion(svSpec ...string) (tfe.StateVersion, error
 	// If we got here, we need to write the state version to the cache.
 	stateVersionBytes, err := json.Marshal(stateVersion)
 	if err == nil {
-		if err := CacheWriter(be, svSpec[0], stateVersionBytes); err != nil {
+		if err := CacheWriter(be, svSpecs[0], stateVersionBytes); err != nil {
 			log.Warnf("failed to write state version to cache: %s", err)
 		}
 	}
@@ -314,7 +315,6 @@ func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
 	for {
 		page, err := client.Runs.ListForOrganization(be.Ctx, "tfctl", &options)
 		if err != nil {
-			log.Errorf("err: %v", err)
 			return nil, err
 		}
 
@@ -391,8 +391,14 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 	for {
 		page, err := client.StateVersions.List(be.Ctx, &options)
 		if err != nil {
-			log.Errorf("err: %v", err)
-			return nil, err
+			ctxErr := ErrorContext{
+				Host:      be.Backend.Config.Hostname,
+				Org:       organization,
+				Workspace: workspace,
+				Operation: "list state versions",
+				Resource:  "stateversion",
+			}
+			return nil, FriendlyTFE(err, ctxErr)
 		}
 
 		results = append(results, page.Items...)
@@ -413,8 +419,8 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 	return results, nil
 }
 
-func (c *BackendRemote) String() string {
-	copy := *c
+func (be *BackendRemote) String() string {
+	copy := *be
 	if copy.Backend.Config.Token != nil {
 		copy.Backend.Config.Token = "********"
 	}
@@ -478,8 +484,8 @@ func (be *BackendRemote) Token() (string, error) {
 	return token, nil
 }
 
-func (c *BackendRemote) Type() (string, error) {
-	return c.Backend.Type, nil
+func (be *BackendRemote) Type() (string, error) {
+	return be.Backend.Type, nil
 }
 
 // Workspace returns the workspace object for the workspace identified in the
@@ -504,7 +510,14 @@ func (be *BackendRemote) Workspace() (*tfe.Workspace, error) {
 
 	workspace, err := client.Workspaces.Read(ctx, org, wsName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get workspace: %w", err)
+		ctxErr := ErrorContext{
+			Host:      be.Backend.Config.Hostname,
+			Org:       org,
+			Workspace: wsName,
+			Operation: "read workspace",
+			Resource:  "workspace",
+		}
+		return nil, FriendlyTFE(err, ctxErr)
 	}
 
 	return workspace, nil
