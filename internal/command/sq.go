@@ -53,10 +53,10 @@ func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	// Short circuit --diff mode.
 	if cmd.Bool("diff") {
 		if _, ok := be.(backend.SelfDiffer); ok {
-			states, err := be.(backend.SelfDiffer).DiffStates(ctx, cmd)
-			if err != nil {
-				log.Errorf("diff error: %v", err)
-				return err
+			states, diffErr := be.(backend.SelfDiffer).DiffStates(ctx, cmd)
+			if diffErr != nil {
+				log.Errorf("diff error: %v", diffErr)
+				return diffErr
 			}
 
 			return differ.Diff(ctx, cmd, states)

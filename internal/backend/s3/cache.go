@@ -146,7 +146,7 @@ func PurgeCache() error {
 			if err := os.Remove(path); err == nil {
 				log.Debugf("removed cache file %s", path)
 			} else {
-				log.Warnf("failed to remove cache file %s: %w", path, err)
+				log.WithError(err).Warnf("failed to remove cache file %s", path)
 			}
 		}
 		return nil

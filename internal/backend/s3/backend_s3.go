@@ -15,7 +15,9 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	//lint:ignore SA1019 Temporary: using AWS SDK v1 until migration to v2 is complete
 	"github.com/aws/aws-sdk-go/aws"
+	//lint:ignore SA1019 Temporary: using AWS SDK v1 until migration to v2 is complete
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/hashicorp/go-tfe"
 	awsx "github.com/staranto/tfctlgo/internal/aws"
@@ -124,7 +126,7 @@ func (be *BackendS3) States(specs ...string) ([][]byte, error) {
 
 func (be *BackendS3) StateBody(svID string) ([]byte, error) {
 	if err := PurgeCache(); err != nil {
-		log.Warnf("failed to purge cache: %w", err)
+		log.WithError(err).Warn("failed to purge cache")
 	}
 
 	if entry, ok := CacheReader(be, svID); ok {
@@ -232,7 +234,7 @@ func (be *BackendS3) StateVersions() ([]*tfe.StateVersion, error) {
 		}
 
 		if err != nil {
-			log.Errorf("%w", err)
+			log.WithError(err).Error("s3 get object failed")
 			continue
 		}
 
@@ -246,7 +248,7 @@ func (be *BackendS3) StateVersions() ([]*tfe.StateVersion, error) {
 			}
 
 			if err := CacheWriter(be, *v.VersionId, body); err != nil {
-				log.Errorf("error writing to cache: %w", err)
+				log.WithError(err).Error("error writing to cache")
 			}
 		} else {
 			body = entry.Data

@@ -6,7 +6,6 @@ package remote
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -18,7 +17,7 @@ import (
 func Hitter(be *BackendRemote, url string) (bytes.Buffer, error) {
 
 	if err := PurgeCache(); err != nil {
-		log.Warnf("failed to purge cache: %w", errors.New("TODO"))
+		log.WithError(err).Warn("failed to purge cache")
 	}
 
 	if entry, ok := CacheReader(be, url); ok {
@@ -49,7 +48,7 @@ func Hitter(be *BackendRemote, url string) (bytes.Buffer, error) {
 	}
 
 	if err := CacheWriter(be, url, doc.Bytes()); err != nil {
-		log.Warnf("failed to write state to cache: %w", err)
+		log.WithError(err).Warn("failed to write state to cache")
 	}
 
 	return doc, nil

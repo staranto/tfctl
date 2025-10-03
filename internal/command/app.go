@@ -35,10 +35,11 @@ func InitApp(ctx context.Context, args []string) (*cli.Command, error) {
 		ns = args[1]
 	}
 
-	cfg, _ := config.Load(ns)
+	// allow short if-style local cfg; no actual outer cfg
+	cfg2, _ := config.Load(ns) //nolint
 	meta := meta.Meta{
 		Args:        args,
-		Config:      cfg,
+		Config:      cfg2,
 		Context:     ctx,
 		StartingDir: sd,
 	}

@@ -108,8 +108,8 @@ func writeFileIfChanged(path string, new []byte, onlyIfChanged bool) error {
 }
 
 var (
-	h1Re      = regexp.MustCompile(`(?m)^#\s+(.+)$`)
-	sectionRe = regexp.MustCompile(`(?m)^([A-Za-z][A-Za-z\s]+)\n+`)
+	h1Re = regexp.MustCompile(`(?m)^#\s+(.+)$`)
+	// sectionRe = regexp.MustCompile(`(?m)^([A-Za-z][A-Za-z\s]+)\n+`)
 )
 
 func extractTitleAndShortDesc(md string) (title, short string) {

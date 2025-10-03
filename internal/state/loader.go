@@ -154,7 +154,7 @@ func DecryptOpenTofuState(stateData []byte, passphrase string) ([]byte, error) {
 		KeyLength  int    `json:"key_length"`
 	}
 
-	if err := json.Unmarshal(keyProviderConfig, &kpConfig); err != nil {
+	if err = json.Unmarshal(keyProviderConfig, &kpConfig); err != nil {
 		return nil, fmt.Errorf("failed to parse key provider config: %w", err)
 	}
 
@@ -200,8 +200,8 @@ loop:
 			return "", fmt.Errorf("interrupted")
 		default:
 			var buf [1]byte
-			n, err := syscall.Read(syscall.Stdin, buf[:])
-			if err != nil || n == 0 {
+			n, readErr := syscall.Read(syscall.Stdin, buf[:])
+			if readErr != nil || n == 0 {
 				break loop
 			}
 			if buf[0] == '\n' || buf[0] == '\r' {

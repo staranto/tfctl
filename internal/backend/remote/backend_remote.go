@@ -262,7 +262,7 @@ func (be *BackendRemote) StateVersion(svSpecs ...string) (tfe.StateVersion, erro
 	stateVersionBytes, err := json.Marshal(stateVersion)
 	if err == nil {
 		if err := CacheWriter(be, svSpecs[0], stateVersionBytes); err != nil {
-			log.Warnf("failed to write state version to cache: %s", err)
+			log.WithError(err).Warn("failed to write state version to cache")
 		}
 	}
 
@@ -281,7 +281,7 @@ func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
 
 	client, err := be.Client()
 	if err != nil {
-		log.Errorf("can't get client: %w", err)
+		log.WithError(err).Error("can't get client")
 		return nil, err
 	}
 
@@ -350,7 +350,7 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 
 	client, err := be.Client()
 	if err != nil {
-		log.Errorf("can't get client: %w", err)
+		log.WithError(err).Error("can't get client")
 		return nil, err
 	}
 

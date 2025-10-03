@@ -82,37 +82,38 @@ func NewBackend(ctx context.Context, cmd cli.Command) (Backend, error) {
 		return nil, err
 	}
 
+	var result Backend
 	switch typ {
 	case "cloud":
-		be, err := cloud.NewBackendCloud(ctx, &cmd,
+		var beCloud *cloud.BackendCloud
+		beCloud, err = cloud.NewBackendCloud(ctx, &cmd,
 			cloud.FromRootDir(meta.RootDir),
 			cloud.WithEnvOverride(meta.Env),
 		)
-		return be.Transform2Remote(ctx, &cmd), err
+		// Preserve prior behavior: return transformed backend alongside any error
+		result = beCloud.Transform2Remote(ctx, &cmd)
 	case "local":
-		be, err := local.NewBackendLocal(ctx, &cmd,
+		result, err = local.NewBackendLocal(ctx, &cmd,
 			local.FromRootDir(meta.RootDir),
 			local.WithEnvOverride(meta.Env),
 		)
-		return be, err
 	case "remote":
-		be, err := remote.NewBackendRemote(ctx, &cmd,
+		result, err = remote.NewBackendRemote(ctx, &cmd,
 			remote.FromRootDir(meta.RootDir),
 			remote.WithEnvOverride(meta.Env),
 			remote.WithSvOverride(),
 		)
-		return be, err
 	case "s3":
-		be, err := s3.NewBackendS3(ctx, &cmd,
+		result, err = s3.NewBackendS3(ctx, &cmd,
 			s3.FromRootDir(meta.RootDir),
 			s3.WithEnvOverride(meta.Env),
 			s3.WithSvOverride(),
 		)
-		return be, err
+	default:
+		return nil, fmt.Errorf("unknown type %s: %w", typ, err)
 	}
 
-	// This is a fail-safe. We should never get here.
-	return nil, fmt.Errorf("unknown type %s: %w", typ, err)
+	return result, err
 }
 
 // peek returns the backend type by reading the local terraform state file.
@@ -124,16 +125,16 @@ func peek(meta meta.Meta) (string, error) {
 
 	var peeker map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &peeker); err != nil {
-		return "", fmt.Errorf("Can't peek: %w", err)
+		return "", fmt.Errorf("can't peek: %w", err)
 	}
 
 	if err := json.Unmarshal(peeker["backend"], &peeker); err != nil {
-		return "", fmt.Errorf("Can't peek: %w", err)
+		return "", fmt.Errorf("can't peek: %w", err)
 	}
 
 	var typ string
 	if err := json.Unmarshal(peeker["type"], &typ); err != nil {
-		return "", fmt.Errorf("Can't peek: %w", err)
+		return "", fmt.Errorf("can't peek: %w", err)
 	}
 	log.Debugf("type: %s", typ)
 
