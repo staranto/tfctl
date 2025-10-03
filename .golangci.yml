@@ -1,0 +1,36 @@
+run:
+  timeout: 3m
+  tests: true
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - revive
+    - errcheck
+    - ineffassign
+    - gofmt
+    - goimports
+    - copyloopvar
+    - predeclared
+    - gocritic
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/staranto/tfctlgo
+  revive:
+    rules:
+      - name: dot-imports
+      - name: exported
+      - name: var-naming
+      - name: receiver-naming
+
+issues:
+  exclude-rules:
+    # Suppress AWS SDK v1 deprecation warnings where migration is deferred.
+    - linters: [staticcheck]
+      text: SA1019
+      path: internal/aws/aws\.go
+    - linters: [staticcheck]
+      text: SA1019
+      path: internal/backend/s3/backend_s3\.go
