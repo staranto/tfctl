@@ -27,10 +27,4 @@ linters-settings:
 
 issues:
   exclude-rules:
-    # Suppress AWS SDK v1 deprecation warnings where migration is deferred.
-    - linters: [staticcheck]
-      text: SA1019
-      path: internal/aws/aws\.go
-    - linters: [staticcheck]
-      text: SA1019
-      path: internal/backend/s3/backend_s3\.go
+    # Reserved for future, currently no path-specific excludes

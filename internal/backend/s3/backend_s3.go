@@ -15,10 +15,9 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	//lint:ignore SA1019 Temporary: using AWS SDK v1 until migration to v2 is complete
-	"github.com/aws/aws-sdk-go/aws"
-	//lint:ignore SA1019 Temporary: using AWS SDK v1 until migration to v2 is complete
-	"github.com/aws/aws-sdk-go/service/s3"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/hashicorp/go-tfe"
 	awsx "github.com/staranto/tfctlgo/internal/aws"
 	"github.com/staranto/tfctlgo/internal/csv"
@@ -146,19 +145,23 @@ func (be *BackendS3) StateBody(svID string) ([]byte, error) {
 	}
 	key := filepath.Join(be.Backend.Config.Prefix, env, be.Backend.Config.Key)
 
-	awsSess, err := awsx.CreateAWSSession(be.Backend.Config.Region)
+	// Build AWS config (inherit env; override region if provided)
+	var cfgOpts []awsx.Option
+	if be.Backend.Config.Region != "" {
+		cfgOpts = append(cfgOpts, awsx.WithRegion(be.Backend.Config.Region))
+	}
+	cfg, err := awsx.LoadAWSConfig(be.Ctx, cfgOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+	svc := awsx.NewS3(cfg)
+	input := &s3v2.GetObjectInput{
+		Bucket:    awsv2.String(be.Backend.Config.Bucket),
+		Key:       awsv2.String(key),
+		VersionId: awsv2.String(svID),
 	}
 
-	svc := s3.New(awsSess)
-	input := &s3.GetObjectInput{
-		Bucket:    aws.String(be.Backend.Config.Bucket),
-		Key:       aws.String(key),
-		VersionId: &svID,
-	}
-
-	result, err := svc.GetObject(input)
+	result, err := svc.GetObject(be.Ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get S3 object: %w", err)
 	}
@@ -187,58 +190,76 @@ func (be *BackendS3) StateVersions() ([]*tfe.StateVersion, error) {
 	}
 	prefix := filepath.Join(be.Backend.Config.Prefix, env, be.Backend.Config.Key)
 
-	awsSess, err := awsx.CreateAWSSession(be.Backend.Config.Region)
+	var cfgOpts []awsx.Option
+	if be.Backend.Config.Region != "" {
+		cfgOpts = append(cfgOpts, awsx.WithRegion(be.Backend.Config.Region))
+	}
+	cfg, err := awsx.LoadAWSConfig(be.Ctx, cfgOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	svc := s3.New(awsSess)
-	input := &s3.ListObjectVersionsInput{
-		Bucket: aws.String(be.Backend.Config.Bucket),
-		Prefix: aws.String(prefix),
-		//MaxKeys: aws.Int64(999),
-	}
+	svc := awsx.NewS3(cfg)
+	paginator := s3v2.NewListObjectVersionsPaginator(svc, &s3v2.ListObjectVersionsInput{
+		Bucket: awsv2.String(be.Backend.Config.Bucket),
+		Prefix: awsv2.String(prefix),
+	})
 	combinedVersions := []*tfe.StateVersion{}
 
-	rawVersions, _ := svc.ListObjectVersions(input)
-	log.Debugf("v2: %v", rawVersions)
-
+	var allDeleteMarkers []types.DeleteMarkerEntry
+	var allVersions []types.ObjectVersion
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(be.Ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list object versions: %w", err)
+		}
+		allDeleteMarkers = append(allDeleteMarkers, page.DeleteMarkers...)
+		allVersions = append(allVersions, page.Versions...)
+	}
 	var mostRecentDelete time.Time
-	for _, d := range rawVersions.DeleteMarkers {
+	for _, d := range allDeleteMarkers {
 		// This filters out tflock files. The prefix is literally a prefix so both
 		// the actual state file versions and any lock files they might have, are
 		// returned by the AWS API.
-		if *d.Key != prefix {
-			log.Debugf("Throwing away delete marker %s", *d.Key)
+		if d.Key == nil || *d.Key != prefix {
+			if d.Key != nil {
+				log.Debugf("Throwing away delete marker %s", *d.Key)
+			}
 			continue
 		}
-		if d.LastModified.After(mostRecentDelete) {
+		if d.LastModified != nil && d.LastModified.After(mostRecentDelete) {
 			mostRecentDelete = *d.LastModified
 		}
 	}
 
-	for _, v := range rawVersions.Versions {
-		if *v.Key != prefix {
-			log.Debugf("Throwing away %s", *v.Key)
+	for _, v := range allVersions {
+		if v.Key == nil || *v.Key != prefix {
+			if v.Key != nil {
+				log.Debugf("Throwing away %s", *v.Key)
+			}
 			continue
 		}
 
-		obj, err := svc.GetObject(&s3.GetObjectInput{
-			Bucket:    aws.String(be.Backend.Config.Bucket),
-			Key:       aws.String(prefix),
+		if v.LastModified != nil && v.LastModified.Before(mostRecentDelete) {
+			continue
+		}
+
+		obj, err := svc.GetObject(be.Ctx, &s3v2.GetObjectInput{
+			Bucket:    awsv2.String(be.Backend.Config.Bucket),
+			Key:       awsv2.String(prefix),
 			VersionId: v.VersionId,
 		})
-
-		if v.LastModified.Before(mostRecentDelete) {
-			continue
-		}
-
 		if err != nil {
 			log.WithError(err).Error("s3 get object failed")
 			continue
 		}
 
 		var body []byte
+		if v.VersionId == nil {
+			// Shouldn't happen, but skip if no version id
+			_ = obj.Body.Close()
+			continue
+		}
 		entry, ok := CacheReader(be, *v.VersionId)
 		if !ok {
 			body, err = io.ReadAll(obj.Body)
@@ -270,11 +291,14 @@ func (be *BackendS3) StateVersions() ([]*tfe.StateVersion, error) {
 			serialInt = 0
 		}
 
-		combinedVersions = append(combinedVersions, &tfe.StateVersion{
-			ID:        *v.VersionId,
-			CreatedAt: *v.LastModified,
-			Serial:    serialInt,
-		})
+		// Guard against nil pointers
+		if v.VersionId != nil && v.LastModified != nil {
+			combinedVersions = append(combinedVersions, &tfe.StateVersion{
+				ID:        *v.VersionId,
+				CreatedAt: *v.LastModified,
+				Serial:    serialInt,
+			})
+		}
 
 	}
 
