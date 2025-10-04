@@ -19,10 +19,11 @@ import (
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/hashicorp/go-tfe"
+	"github.com/urfave/cli/v3"
+
 	awsx "github.com/staranto/tfctlgo/internal/aws"
 	"github.com/staranto/tfctlgo/internal/csv"
 	"github.com/staranto/tfctlgo/internal/differ"
-	"github.com/urfave/cli/v3"
 )
 
 type BackendS3 struct {

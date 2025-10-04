@@ -19,8 +19,9 @@ import (
 	"golang.org/x/term"
 
 	"github.com/apex/log"
-	"github.com/staranto/tfctlgo/internal/backend"
 	"github.com/urfave/cli/v3"
+
+	"github.com/staranto/tfctlgo/internal/backend"
 )
 
 // LoadStateData loads and optionally decrypts a state document from the

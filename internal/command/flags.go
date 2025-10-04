@@ -6,10 +6,11 @@ package command
 import (
 	"os/exec"
 
-	"github.com/staranto/tfctlgo/internal/config"
 	altsrc "github.com/urfave/cli-altsrc/v3"
 	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
+
+	"github.com/staranto/tfctlgo/internal/config"
 )
 
 func init() {
@@ -17,7 +18,7 @@ func init() {
 }
 
 var (
-	cfg      config.ConfigType
+	cfg      config.Type
 	tldrFlag *cli.BoolFlag = &cli.BoolFlag{
 		Name:        "tldr",
 		Usage:       "show tldr page",

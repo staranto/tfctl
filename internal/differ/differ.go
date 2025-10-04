@@ -12,10 +12,11 @@ import (
 	"strings"
 
 	"github.com/apex/log"
-	"github.com/staranto/tfctlgo/internal/meta"
 	"github.com/urfave/cli/v3"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
+
+	"github.com/staranto/tfctlgo/internal/meta"
 )
 
 // Diff compares two states.

@@ -10,9 +10,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/urfave/cli/v3"
 )
 
 // MqCommandAction is the action handler for the "mq" subcommand. It lists

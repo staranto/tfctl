@@ -17,11 +17,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/apex/log"
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/command/si"
 	"github.com/staranto/tfctlgo/internal/config"
 	"github.com/staranto/tfctlgo/internal/meta"
 	"github.com/staranto/tfctlgo/internal/state"
-	"github.com/urfave/cli/v3"
 )
 
 func SiCommandAction(ctx context.Context, cmd *cli.Command) error {
@@ -88,9 +89,8 @@ func (m siModel) Init() tea.Cmd {
 }
 
 func (m siModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		switch key.String() {
 		case "enter":
 			entry := m.input.Value()
 			if strings.TrimSpace(entry) != "" {

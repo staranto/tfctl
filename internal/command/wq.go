@@ -10,11 +10,12 @@ import (
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
-	"github.com/staranto/tfctlgo/internal/backend/remote"
-	"github.com/staranto/tfctlgo/internal/meta"
 	altsrc "github.com/urfave/cli-altsrc/v3"
 	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
+
+	"github.com/staranto/tfctlgo/internal/backend/remote"
+	"github.com/staranto/tfctlgo/internal/meta"
 )
 
 // WqCommandAction is the action handler for the "wq" subcommand. It lists
@@ -37,7 +38,6 @@ func WqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	attrs := BuildAttrs(cmd, ".id", "name")
 	log.Debugf("attrs: %v", attrs)
 
-	//be, _ := remote.NewConfigRemote(remote.BuckNaked())
 	be, err := remote.NewBackendRemote(ctx, cmd, remote.BuckNaked())
 	if err != nil {
 		return err

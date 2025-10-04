@@ -9,11 +9,12 @@ import (
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
-	"github.com/staranto/tfctlgo/internal/backend"
-	"github.com/staranto/tfctlgo/internal/meta"
 	altsrc "github.com/urfave/cli-altsrc/v3"
 	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
+
+	"github.com/staranto/tfctlgo/internal/backend"
+	"github.com/staranto/tfctlgo/internal/meta"
 )
 
 // RqCommandAction is the action handler for the "rq" subcommand. It lists

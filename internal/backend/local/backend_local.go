@@ -15,9 +15,10 @@ import (
 
 	"github.com/apex/log"
 	tfe "github.com/hashicorp/go-tfe"
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/csv"
 	"github.com/staranto/tfctlgo/internal/differ"
-	"github.com/urfave/cli/v3"
 )
 
 // BackendLocal is a struct that represents a local backend configuration.

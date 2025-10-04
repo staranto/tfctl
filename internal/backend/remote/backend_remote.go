@@ -16,9 +16,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/csv"
 	"github.com/staranto/tfctlgo/internal/differ"
-	"github.com/urfave/cli/v3"
 )
 
 type BackendRemote struct {
@@ -420,11 +421,11 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 }
 
 func (be *BackendRemote) String() string {
-	copy := *be
-	if copy.Backend.Config.Token != nil {
-		copy.Backend.Config.Token = "********"
+	beCopy := *be
+	if beCopy.Backend.Config.Token != nil {
+		beCopy.Backend.Config.Token = "********"
 	}
-	return fmt.Sprintf("ConfigRemote: %+v", copy)
+	return fmt.Sprintf("ConfigRemote: %+v", beCopy)
 }
 
 // Token retrieves the token from the environment variable, config file, or

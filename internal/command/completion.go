@@ -9,8 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/staranto/tfctlgo/internal/meta"
 	"github.com/urfave/cli/v3"
+
+	"github.com/staranto/tfctlgo/internal/meta"
 )
 
 const bashCompletionScript = `# bash completion for tfctl
@@ -237,11 +238,12 @@ func CompletionCommandAction(ctx context.Context, cmd *cli.Command) error {
 	default:
 		// Try to detect from SHELL or print help
 		sh := os.Getenv("SHELL")
-		if strings.HasSuffix(sh, "zsh") {
+		switch {
+		case strings.HasSuffix(sh, "zsh"):
 			fmt.Fprint(os.Stdout, zshCompletionScript)
-		} else if strings.HasSuffix(sh, "bash") {
+		case strings.HasSuffix(sh, "bash"):
 			fmt.Fprint(os.Stdout, bashCompletionScript)
-		} else {
+		default:
 			fmt.Fprintln(os.Stderr, "usage: tfctl completion [bash|zsh]")
 			return nil
 		}

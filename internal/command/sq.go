@@ -11,15 +11,16 @@ import (
 	"os"
 
 	"github.com/apex/log"
+	altsrc "github.com/urfave/cli-altsrc/v3"
+	yaml "github.com/urfave/cli-altsrc/v3/yaml"
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/backend"
 	"github.com/staranto/tfctlgo/internal/config"
 	"github.com/staranto/tfctlgo/internal/differ"
 	"github.com/staranto/tfctlgo/internal/meta"
 	"github.com/staranto/tfctlgo/internal/output"
 	"github.com/staranto/tfctlgo/internal/state"
-	altsrc "github.com/urfave/cli-altsrc/v3"
-	yaml "github.com/urfave/cli-altsrc/v3/yaml"
-	"github.com/urfave/cli/v3"
 )
 
 // SqCommandAction is the action handler for the "sq" subcommand. It reads

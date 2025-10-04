@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+
 	"github.com/staranto/tfctlgo/internal/config"
 )
 

@@ -10,9 +10,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/urfave/cli/v3"
 )
 
 // PqCommandAction is the action handler for the "pq" subcommand. It lists
@@ -37,7 +38,6 @@ func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	attrs := BuildAttrs(cmd, ".id", "name")
 	log.Debugf("attrs: %v", attrs)
 
-	//be, _ := remote.NewConfigRemote(remote.BuckNaked())
 	be, err := remote.NewBackendRemote(ctx, cmd, remote.BuckNaked())
 	if err != nil {
 		return err

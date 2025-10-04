@@ -20,12 +20,13 @@ import (
 	"github.com/apex/log"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/lipgloss/v2/table"
-	"github.com/staranto/tfctlgo/internal/attrs"
-	"github.com/staranto/tfctlgo/internal/config"
-	"github.com/staranto/tfctlgo/internal/filters"
 	"github.com/tidwall/gjson"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v2"
+
+	"github.com/staranto/tfctlgo/internal/attrs"
+	"github.com/staranto/tfctlgo/internal/config"
+	"github.com/staranto/tfctlgo/internal/filters"
 )
 
 // Tag represents a discovered struct field tag used when emitting schema
@@ -123,12 +124,6 @@ func DumpSchema(prefix string, typ reflect.Type) {
 		}
 		return tags[i].Kind < tags[j].Kind
 	})
-
-	fmt.Println("Schema for", typ.Name(), "--")
-
-	for _, tag := range tags {
-		fmt.Println(tag.Print())
-	}
 
 	fmt.Println("")
 	fmt.Println(

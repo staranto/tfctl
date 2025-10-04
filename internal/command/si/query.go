@@ -225,15 +225,16 @@ func smartSplit(s, delimiter string) []string {
 	i := 0
 
 	for i < len(s) {
-		if s[i] == '"' {
+		switch {
+		case s[i] == '"':
 			inQuotes = !inQuotes
 			current.WriteByte(s[i])
 			i++
-		} else if !inQuotes && i+len(delimiter) <= len(s) && s[i:i+len(delimiter)] == delimiter {
+		case !inQuotes && i+len(delimiter) <= len(s) && s[i:i+len(delimiter)] == delimiter:
 			parts = append(parts, current.String())
 			current.Reset()
 			i += len(delimiter)
-		} else {
+		default:
 			current.WriteByte(s[i])
 			i++
 		}

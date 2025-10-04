@@ -13,19 +13,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ConfigType struct {
+type Type struct {
 	Source    string
 	Namespace string
 	Data      map[string]interface{}
 }
 
-var Config ConfigType
+var Config Type
 
 func init() {
 	_, _ = Load()
 }
 
-func Load(cfgFilePath ...string) (ConfigType, error) {
+func Load(cfgFilePath ...string) (Type, error) {
 
 	path := filepath.Join(os.Getenv("HOME"), ".config/tfctl.yaml")
 
@@ -36,15 +36,15 @@ func Load(cfgFilePath ...string) (ConfigType, error) {
 
 	bytes, err := os.ReadFile(path)
 	if err != nil {
-		return ConfigType{}, err
+		return Type{}, err
 	}
 
 	var data map[string]interface{}
 	if err := yaml.Unmarshal(bytes, &data); err != nil {
-		return ConfigType{}, err
+		return Type{}, err
 	}
 
-	Config = ConfigType{
+	Config = Type{
 		Source: path,
 		Data:   data}
 
@@ -52,7 +52,7 @@ func Load(cfgFilePath ...string) (ConfigType, error) {
 }
 
 // get traverses the map using a dotted key path
-func (cfg *ConfigType) get(kspec string) (any, error) {
+func (cfg *Type) get(kspec string) (any, error) {
 	if len(cfg.Data) == 0 {
 		_, _ = Load(cfg.Source)
 	}

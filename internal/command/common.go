@@ -12,10 +12,11 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/jsonapi"
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/attrs"
 	"github.com/staranto/tfctlgo/internal/meta"
 	"github.com/staranto/tfctlgo/internal/output"
-	"github.com/urfave/cli/v3"
 )
 
 // ShortCircuitTLDR checks the --tldr flag and, if present and available,

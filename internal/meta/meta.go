@@ -21,7 +21,7 @@ type RootDirSpec struct {
 // the starting working directory.
 type Meta struct {
 	Args    []string
-	Config  config.ConfigType
+	Config  config.Type
 	Context context.Context
 	RootDirSpec
 	StartingDir string

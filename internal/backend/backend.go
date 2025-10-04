@@ -12,16 +12,17 @@ import (
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/backend/cloud"
 	"github.com/staranto/tfctlgo/internal/backend/local"
 	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/backend/s3"
 	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/urfave/cli/v3"
 )
 
-// BackendType holds common backend resolution context and flags.
-type BackendType struct {
+// Type holds common backend resolution context and flags.
+type Type struct {
 	Ctx         context.Context
 	Cmd         *cli.Command
 	RootDir     string `json:"-" validate:"dir"`

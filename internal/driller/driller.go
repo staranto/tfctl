@@ -16,7 +16,6 @@ func Driller(jsonData string, path string) gjson.Result {
 	parts := strings.Split(path, ".")
 	current := gjson.Parse(jsonData)
 
-	//re := regexp.MustCompile(`^([a-zA-Z0-9_-]+)($begin:math:display$(\\d+)$end:math:display$)?$`)
 	re := regexp.MustCompile(`^([a-zA-Z0-9_-]+)(\[(\d|\*)?\])?$`)
 
 	for _, p := range parts {
@@ -43,14 +42,15 @@ func Driller(jsonData string, path string) gjson.Result {
 		if val.IsArray() {
 			// If index is specified, use it; otherwise default to [0]
 			arr := val.Array()
-			if index == -1 {
+			switch {
+			case index == -1:
 				if len(arr) == 1 {
 					val = arr[0]
 				}
-				// Otherwise do nothing.  We'll jump dump the whole list.
-			} else if index >= 0 && index < len(arr) {
+				// Otherwise do nothing. We'll dump the whole list.
+			case index >= 0 && index < len(arr):
 				val = arr[index]
-			} else {
+			default:
 				return gjson.Result{}
 			}
 		}

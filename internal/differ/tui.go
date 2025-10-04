@@ -25,12 +25,8 @@ type model struct {
 func (m model) Init() tea.Cmd { return nil }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	// case tea.WindowSizeMsg:
-	// 	width, height := msg.Width, msg.Height
-	// 	return m, tea.Printf("Window size: %d x %d", width, height)
-	case tea.KeyMsg:
-		switch msg.String() {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		switch key.String() {
 		case "w":
 			return m, tea.WindowSize()
 		case "q", "esc":

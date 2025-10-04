@@ -10,10 +10,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/config"
 	"github.com/staranto/tfctlgo/internal/meta"
 	"github.com/staranto/tfctlgo/internal/util"
-	"github.com/urfave/cli/v3"
 )
 
 func InitApp(ctx context.Context, args []string) (*cli.Command, error) {

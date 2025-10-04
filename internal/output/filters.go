@@ -10,9 +10,10 @@ import (
 	"strings"
 
 	"github.com/apex/log"
+	"github.com/tidwall/gjson"
+
 	"github.com/staranto/tfctlgo/internal/attrs"
 	"github.com/staranto/tfctlgo/internal/driller"
-	"github.com/tidwall/gjson"
 )
 
 // filterRegex is the pattern used to parse filter expressions into key, operator, and target components.
@@ -65,7 +66,7 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter
 		}
 
 		// Get the value from the candidate for the key. If it's nil, fail early.
-		//value := candidate.Get(key).Value()
+		// go value := candidate.Get(key).Value()
 		value := driller.Driller(candidate.Raw, key).Value()
 		if value == nil {
 			return false
