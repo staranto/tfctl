@@ -212,13 +212,13 @@ specloop:
 
 // SetGlobalTransformSpec inserts a global transform spec at the front of all
 // attrs in the list.
-func (alist *AttrList) SetGlobalTransformSpec() error {
+func (a *AttrList) SetGlobalTransformSpec() error {
 	spec := ""
 
 	// Find the global transform spec. If there is more than one, take the first.
-	for a := range *alist {
-		if (*alist)[a].Key == "*" {
-			spec = (*alist)[a].TransformSpec
+	for attr := range *a {
+		if (*a)[attr].Key == "*" {
+			spec = (*a)[attr].TransformSpec
 			break
 		}
 	}
@@ -229,8 +229,8 @@ func (alist *AttrList) SetGlobalTransformSpec() error {
 	}
 
 	// Prepend the global spec onto each attribute's spec.
-	for a := range *alist {
-		(*alist)[a].TransformSpec = spec + "," + (*alist)[a].TransformSpec
+	for attr := range *a {
+		(*a)[attr].TransformSpec = spec + "," + (*a)[attr].TransformSpec
 	}
 
 	return nil

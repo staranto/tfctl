@@ -156,17 +156,22 @@ func DumpSchemaWalker(holder string, typ reflect.Type, depth int) []Tag {
 		tags = append(tags, tag)
 
 		if depth < maxSchemaDepth {
-			if field.Type.Kind() == reflect.Struct {
+
+			switch field.Type.Kind() {
+			case reflect.Struct:
 				tags = append(tags, DumpSchemaWalker(tag.Name, field.Type, depth+1)...)
-			} else if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
-				holder := tag.Name
-				if tag.Kind == "relation" {
-					holder = fmt.Sprintf(".relationships.%s.data", tag.Name)
+			case reflect.Ptr:
+				if field.Type.Elem().Kind() == reflect.Struct {
+					holder := tag.Name
+					if tag.Kind == "relation" {
+						holder = fmt.Sprintf(".relationships.%s.data", tag.Name)
+					}
+					tags = append(tags, DumpSchemaWalker(holder, field.Type.Elem(), depth+1)...)
 				}
-				tags = append(tags, DumpSchemaWalker(holder, field.Type.Elem(), depth+1)...)
-			} else if strings.Contains(field.Type.String(), ".") {
-				continue
-			} else {
+			default:
+				if strings.Contains(field.Type.String(), ".") {
+					continue
+				}
 				log.Debugf("Presumed primitive field type: %s for %v", field.Type.Kind(), tag)
 			}
 		}
