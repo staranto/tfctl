@@ -78,4 +78,10 @@ else
   echo "[pre-commit] golangci-lint not found; skipping. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest" >&2
 fi
 
-echo "[pre-commit] Go code quality checks passed." >&2
+# 5) Do a test build and check return code
+echo "[pre-commit] running go test build..." >&2
+if ! go build ./... > /dev/null; then
+  echo "[pre-commit] go build failed!" >&2
+  exit 1
+fi
+

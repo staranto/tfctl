@@ -26,5 +26,7 @@ linters-settings:
       - name: receiver-naming
 
 issues:
+  exclude-files:
+    - ^tools/docgen/.*\.go$
   exclude-rules:
     # Reserved for future, currently no path-specific excludes
