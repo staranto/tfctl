@@ -26,7 +26,9 @@ The native Terraform CLI provides essential infrastructure-as-code tooling, but 
 
 ## Demonstration
 
-<script id="asciicast-iKnjimkIsWxq1NqwzU91qRSg3" src="https://asciinema.org/a/iKnjimkIsWxq1NqwzU91qRSg3.js" async></script>
+<p align="center">
+  <img src="docs/asciinema/sq-intro.gif" alt="tfctl state query demo" autoplay loop>
+</p>
 
 ## Key Features
 

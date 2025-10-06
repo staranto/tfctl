@@ -1,4 +1,4 @@
-{"version": 2, "width": 177, "height": 23, "timestamp": 1759656944, "env": {"SHELL": "/usr/bin/zsh", "TERM": "xterm-256color"}}
+{"version": 2, "width": 144, "height": 25, "timestamp": 1759656944, "env": {"SHELL": "/usr/bin/zsh", "TERM": "xterm-256color"}}
 [0.00, "o", "\u001b[H\u001b[2J\u001b[3J"]
 
 [1.00, "o", "\u001b[2;38;5;208m"]
@@ -231,7 +231,5 @@
 [40.00, "o", "# Plus, you can query TFE/HCP resources like organizations, projects, workspaces, run\r\n"]
 [40.00, "o", "# histories, state version histories and the module registries.\r\n"]
 
-
 [41.00, "o", "    _      __          _     _ \r\n   | |_   / _|   ___  | |_  | |\r\n   | __| | |_   / __| | __| | |\r\n   | |_  |  _| | (__  | |_  | |\r\n    \\__| |_|    \\___|  \\__| |_|\r\n                               \r\n"]
 [41.00, "o", " https://github.com/staranto/tfctl\r\n"]
-[41.00, "x", 0]
