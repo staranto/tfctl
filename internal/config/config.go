@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
+	"github.com/apex/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -27,12 +29,9 @@ func init() {
 
 func Load(cfgFilePath ...string) (Type, error) {
 
-	path := filepath.Join(os.Getenv("HOME"), ".config/tfctl.yaml")
+	// Figure out the base dir for config file.
 
-	// THINK
-	// if len(cfgFilePath) > 0 {
-	// 	path = cfgFilePath[0]
-	// }
+	path := getConfigPath()
 
 	bytes, err := os.ReadFile(path)
 	if err != nil {
@@ -141,4 +140,31 @@ func GetInt(key string, defaultValue ...int) (int, error) {
 	default:
 		return 0, errors.New("value is not an int")
 	}
+}
+
+func getConfigPath() string {
+	var configDir string
+
+	// Check XDG_CONFIG_HOME on Linux/macOS
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		configDir = filepath.Join(xdg, "tfctl")
+	} else if runtime.GOOS == "windows" {
+		// Use %APPDATA% on Windows
+		if appData := os.Getenv("APPDATA"); appData != "" {
+			configDir = filepath.Join(appData, "tfctl")
+		} else {
+			// Fallback to HOME on Windows if APPDATA is not set
+			configDir = filepath.Join(os.Getenv("HOME"), ".tfctl")
+		}
+	} else {
+		// Default to $HOME/.config on Linux/macOS
+		configDir = filepath.Join(os.Getenv("HOME"), ".config")
+	}
+
+	// Ensure the directory exists
+	_ = os.MkdirAll(configDir, 0755)
+
+	log.Debugf("Using config dir: %s", configDir)
+
+	return filepath.Join(configDir, "config.yaml")
 }

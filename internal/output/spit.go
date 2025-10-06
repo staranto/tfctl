@@ -317,6 +317,7 @@ func TableWriter(
 		rows = append(rows, row)
 	}
 
+	pad, _ := config.GetInt("padding", 0)
 	t := table.New().
 		BorderBottom(false).
 		BorderTop(false).
@@ -324,10 +325,6 @@ func TableWriter(
 		BorderRight(false).
 		Border(lipgloss.HiddenBorder()).
 		StyleFunc(func(row, col int) lipgloss.Style {
-
-			pad, _ := config.GetInt("padding", 0)
-			log.Debugf("padding: %v", pad)
-
 			var style lipgloss.Style
 			switch {
 			case row == table.HeaderRow:
