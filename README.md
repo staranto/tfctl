@@ -1,5 +1,5 @@
 <div align="center">
-	
+
 # tfctl
 
 **Supercharge your Terraform workflow with powerful CLI queries**
@@ -8,7 +8,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/staranto/tfctlgo)](https://goreportcard.com/report/github.com/staranto/tfctlgo)
 [![Release](https://img.shields.io/github/v/release/staranto/tfctlgo?include_prereleases)](https://github.com/staranto/tfctlgo/releases)
 [![CodeQL](https://github.com/staranto/tfctlgo/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/staranto/tfctlgo/actions/workflows/github-code-scanning/codeql)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 </div>
 
@@ -118,7 +118,7 @@ Contributions are welcome! Whether it's:
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
 
 *Questions? Contact: [staranto@gmail.com](mailto:staranto@gmail.com)*
 

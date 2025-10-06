@@ -1,5 +1,5 @@
 # Copyright © 2025 Steve Taranto staranto@gmail.com
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: Apache-2.0
 
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 
@@ -69,7 +69,7 @@ brews:
       name: homebrew-tfctlgo
     homepage: https://github.com/staranto/tfctlgo
     description: CLI to query Terraform/OpenTofu state across backends
-    license: MIT
+    license: Apache-2.0
     url_template: "https://github.com/staranto/homebrew-tfctlgo/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     install: |
       bin.install "tfctl"
@@ -87,7 +87,7 @@ nfpms:
     maintainer: Steve Taranto <staranto@gmail.com>
     homepage: https://github.com/staranto/tfctlgo
     description: CLI to query Terraform/OpenTofu state across backends
-    license: MIT
+    license: Apache-2.0
     bindir: /usr/local/bin
     formats:
       - deb

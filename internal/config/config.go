@@ -1,5 +1,5 @@
 // Copyright © 2025 Steve Taranto staranto@gmail.com
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
 package config
 
@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/apex/log"
@@ -28,10 +27,10 @@ func init() {
 }
 
 func Load(cfgFilePath ...string) (Type, error) {
-
-	// Figure out the base dir for config file.
-
-	path := getConfigPath()
+	path, err := getConfigPath()
+	if err != nil {
+		return Type{}, err
+	}
 
 	bytes, err := os.ReadFile(path)
 	if err != nil {
@@ -142,29 +141,22 @@ func GetInt(key string, defaultValue ...int) (int, error) {
 	}
 }
 
-func getConfigPath() string {
-	var configDir string
+func getConfigPath() (string, error) {
 
-	// Check XDG_CONFIG_HOME on Linux/macOS
-	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		configDir = filepath.Join(xdg, "tfctl")
-	} else if runtime.GOOS == "windows" {
-		// Use %APPDATA% on Windows
-		if appData := os.Getenv("APPDATA"); appData != "" {
-			configDir = filepath.Join(appData, "tfctl")
-		} else {
-			// Fallback to HOME on Windows if APPDATA is not set
-			configDir = filepath.Join(os.Getenv("HOME"), ".tfctl")
-		}
-	} else {
-		// Default to $HOME/.config on Linux/macOS
-		configDir = filepath.Join(os.Getenv("HOME"), ".config")
+	var candidates []string = []string{
+		os.Getenv("XDG_CONFIG_HOME"),
+		os.Getenv("APPDATA"),
+		os.Getenv("HOME"),
 	}
 
-	// Ensure the directory exists
-	_ = os.MkdirAll(configDir, 0755)
-
-	log.Debugf("Using config dir: %s", configDir)
-
-	return filepath.Join(configDir, "config.yaml")
+	for _, c := range candidates {
+		file := filepath.Join(c, "tfctl.yaml")
+		if fileInfo, err := os.Stat(file); err == nil {
+			if !fileInfo.IsDir() {
+				log.Debugf("using config file: %s", file)
+				return file, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("no config file found in standard locations")
 }

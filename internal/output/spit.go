@@ -1,5 +1,5 @@
 // Copyright © 2025 Steve Taranto staranto@gmail.com
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
 package output
 
@@ -295,7 +295,7 @@ func TableWriter(
 	}
 
 	var (
-		headerStyle  = lipgloss.NewStyle().Align(lipgloss.Left)
+		headerStyle  = lipgloss.NewStyle().Align(lipgloss.Left).Bold(true)
 		cellStyle    = lipgloss.NewStyle().Padding(0, 0).Align(lipgloss.Left)
 		evenRowStyle = cellStyle
 		oddRowStyle  = cellStyle
