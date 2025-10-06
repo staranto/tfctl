@@ -125,6 +125,10 @@ func DumpSchema(prefix string, typ reflect.Type) {
 		return tags[i].Kind < tags[j].Kind
 	})
 
+	for _, tag := range tags {
+		fmt.Println(tag.Name)
+	}
+
 	fmt.Println("")
 	fmt.Println(
 		`Resource level attributes that are directly available to the --attrs flag.
