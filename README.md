@@ -11,11 +11,22 @@
 
 **tfctl** is a command-line tool for querying Terraform and OpenTofu infrastructure. State querying is a main use-case, but tfctl also lets you query the broader Terraform ecosystem —workspaces, organizations, and modules—across multiple backends to power reporting and automation.
 
+## Status • Roadmap • History
+
+- Status: This is a beta. It isn’t functionally complete (especially around backend coverage), but it’s complete enough to support the use cases it was built for.
+- `tfctl` is currently used by a handful of DevOps teams to manage large Terraform automation workflows and daily operations. Over the years new functionality has been bolted on, as needed.
+- Contributions: Contributions are welcome—issues, PRs, docs, and ideas.
+- Note: Most of the documentation and the interactive `si` command were generated with AI as an experiment. It will slowly be cleaned up.
+
 ## Why tfctl?
 
 The native Terraform CLI provides essential infrastructure-as-code tooling, but it lacks powerful state querying tools and offers no way to query other elements of the Terraform ecosystem like workspaces, organizations, or module registries. This is especially problematic for automation use cases, where you need programmatic access to infrastructure metadata, state history, or cross-workspace insights.
 
 **tfctl fills these gaps** by providing a unified, high-performance CLI for deep querying and analysis of the Terraform ecosystem, enabling better automation, reporting, and operational workflows.
+
+## Demonstration
+
+<script id="asciicast-iKnjimkIsWxq1NqwzU91qRSg3" src="https://asciinema.org/a/iKnjimkIsWxq1NqwzU91qRSg3.js" async></script>
 
 ## Key Features
 
