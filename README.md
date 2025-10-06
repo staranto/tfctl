@@ -1,26 +1,37 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/staranto/tfctlgo)](https://golang.org/)
-[![Release](https://img.shields.io/github/v/release/staranto/tfctlgo?include_prereleases)](https://github.com/staranto/tfctlgo/releases)
-[![CodeQL](https://github.com/staranto/tfctlgo/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/staranto/tfctlgo/actions/workflows/github-code-scanning/codeql)
-[![Go Report Card](https://goreportcard.com/badge/github.com/staranto/tfctlgo)](https://goreportcard.com/report/github.com/staranto/tfctlgo)
-
+<div align="center">
+	
 # tfctl
 
-> **Supercharge your Terraform workflow with powerful CLI queries**
+**Supercharge your Terraform workflow with powerful CLI queries**
+
+[![Go Version](https://img.shields.io/github/go-mod/go-version/staranto/tfctlgo)](https://golang.org/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/staranto/tfctlgo)](https://goreportcard.com/report/github.com/staranto/tfctlgo)
+[![Release](https://img.shields.io/github/v/release/staranto/tfctlgo?include_prereleases)](https://github.com/staranto/tfctlgo/releases)
+[![CodeQL](https://github.com/staranto/tfctlgo/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/staranto/tfctlgo/actions/workflows/github-code-scanning/codeql)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+</div>
+
+**tfctl** is a command-line tool for querying Terraform and OpenTofu infrastructure. State querying of multiple backends is a main use-case, but tfctl also lets you query the broader Terraform ecosystem - modules, organizations, and workspaces - to power reporting and automation.
+
+## Key Features
+
+**Multiple Backend Support** - Works with HCP Terraform, Terraform Enterprise, local state files, S3 backends, and module registries.
+
+**Fast Performance** - Built-in Go with concurrent operations and intelligent caching.
+
+**Flexible Output** - Filter, sort, and transform results as JSON, YAML, or formatted tables.
+
+**Secure** - Supports OpenTofu encrypted state files and multiple authentication methods.
+
+**Comprehensive** - Query any attribute available through the Terraform APIs.
 
 
-**tfctl** is a command-line tool for querying Terraform and OpenTofu infrastructure. State querying is a main use-case, but tfctl also lets you query the broader Terraform ecosystem —workspaces, organizations, and modules—across multiple backends to power reporting and automation.
-
-## Status • Roadmap • History
-
-- Status: This is a beta. It isn’t functionally complete (especially around backend coverage), but it’s complete enough to support the use cases it was built for.
-- `tfctl` is currently used by a handful of DevOps teams to manage large Terraform automation workflows and daily operations. Over the years new functionality has been bolted on, as needed.
-- Contributions: Contributions are welcome—issues, PRs, docs, and ideas.
-- Note: Most of the documentation and the interactive `si` command were generated with AI as an experiment. It will slowly be cleaned up.
+XXX XXX XXX XXX XXX XXX
 
 ## Why tfctl?
 
-The native Terraform CLI provides essential infrastructure-as-code tooling, but it lacks powerful state querying tools and offers no way to query other elements of the Terraform ecosystem like workspaces, organizations, or module registries. This is especially problematic for automation use cases, where you need programmatic access to infrastructure metadata, state history, or cross-workspace insights.
+The native Terraform CLI provides essential IAC tooling for managing the resources it creates. But it lacks powerful state querying tools and offers no easily accessible way to query other elements of the Terraform ecosystem like workspaces, organizations, or module registries. This is especially problematic for automation use cases, where you need programmatic access to infrastructure metadata, state history, or cross-workspace insights.
 
 **tfctl fills these gaps** by providing a unified, high-performance CLI for deep querying and analysis of the Terraform ecosystem, enabling better automation, reporting, and operational workflows.
 
@@ -30,17 +41,20 @@ The native Terraform CLI provides essential infrastructure-as-code tooling, but 
   <img src="docs/asciinema/sq-intro.gif" alt="tfctl state query demo" autoplay loop>
 </p>
 
-## Key Features
+## Installation
 
-**Multiple Backend Support** - Works with HCP Terraform, Terraform Enterprise, local state files, S3 backends, and module registries
-
-**Fast Performance** - Built-in Go with concurrent operations and intelligent caching
-
-**Flexible Output** - Filter, sort, and transform results as JSON, YAML, or formatted tables
-
-**Secure** - Supports OpenTofu encrypted state files and multiple authentication methods
-
-**Comprehensive** - Query any attribute available through the Terraform APIs
+- Homebrew (recommended):
+	```bash
+	brew install staranto/tfctlgo/tfctl
+	```
+- Debian/Ubuntu (.deb):
+	- Visit https://github.com/staranto/tfctlgo/releases/latest and download the
+	  .deb matching your architecture (for example, amd64 or arm64).
+	- Then install it:
+	```bash
+	sudo dpkg -i /path/to/download/deb
+	```
+- See the full [Installation Guide](docs/installation.md) for other options (tarball, build from source), plus installing man and TLDR pages.
 
 ## Common Examples
 
@@ -71,39 +85,6 @@ tfctl wq --attrs created-at,updated-at --output json
 | **`svq`** | State version query | `tfctl svq --limit 10` |
 | **`wq`** | Workspace query | `tfctl wq --filter 'status@applied'` |
 
-## Installation
-
-For a quick start:
-
-- Homebrew (recommended):
-	```bash
-	brew install staranto/tfctlgo/tfctl
-	```
-- Debian/Ubuntu (.deb):
-	- Visit https://github.com/staranto/tfctlgo/releases/latest and download the
-	  .deb matching your architecture (for example, amd64 or arm64).
-	- Then install it:
-	```bash
-	sudo dpkg -i /path/to/tfctl_<version>_<arch>.deb || sudo apt-get -f install
-	```
-- Other methods (tarball, build from source), plus installing man and TLDR pages:
-	see the full guide at [docs/installation.md](docs/installation.md).
-
-### Setup Authentication
-
-Configure and login in to your TFE/HCP account as described [here](https://developer.hashicorp.com/terraform/cli/commands/login)
-
-### First Steps
-
-```bash
-# List all your workspaces
-tfctl wq
-
-# Get help anytime
-tfctl --help
-tfctl sq --help
-```
-
 ## Documentation
 
 - **[Quick Start Tutorial](docs/quickstart.md)** - Detailed walkthrough with examples
@@ -113,13 +94,13 @@ tfctl sq --help
 
 ## Roadmap
 
-**tfctl** is currently read-only and focused on querying. Version 1.x provides stable query functionality across all major Terraform backends.
+**tfctl** is currently read-only and focused on querying. Version 1.x provides stable query functionality for local, TFE/HCP and S3 backends.
 
 **Planned features:**
-- Workspace and state manipulation
-- Enhanced S3 backend configuration options
-- Real-time state monitoring
-- Advanced reporting and dashboards
+- Workspace and state manipulation.
+- Enhanced S3 backend configuration options.
+- Real-time state monitoring.
+- Advanced reporting and dashboards.
 
 *Want a feature? [Open an issue](https://github.com/staranto/tfctlgo/issues) and help us prioritize!*
 
