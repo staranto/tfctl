@@ -14,20 +14,40 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Type is the in-memory representation of the loaded configuration.
+//
+// Fields:
+//   - Source: absolute path of the YAML file loaded.
+//   - Namespace: optional dot-prefixed keyspace used to prefer namespaced
+//     lookups (e.g. "backend.s3.region").
+//   - Data: raw key/value tree unmarshaled from YAML.
+//
+// Note: Data is intentionally kept as map[string]any to allow flexible shapes.
+// Callers should use typed getters (GetString, GetInt) for convenience.
 type Type struct {
 	Source    string
 	Namespace string
 	Data      map[string]interface{}
 }
 
+// Config holds the global, lazily-initialized configuration instance.
 var Config Type
 
+// init attempts to load configuration at process start. Errors are ignored so
+// the application can still run without a config file; callers of getters will
+// trigger a lazy reload when needed.
 func init() {
 	_, _ = Load()
 }
 
+// Load reads the YAML configuration file from the standard user config
+// directory and populates the global Config. If cfgFilePath is provided in the
+// future, it can be used to override the path selection (currently ignored).
+//
+// Returns the loaded Type or an error if the file could not be located or
+// parsed.
 func Load(cfgFilePath ...string) (Type, error) {
-	path, err := getConfigPath()
+	path, err := getConfigFile()
 	if err != nil {
 		return Type{}, err
 	}
@@ -49,7 +69,10 @@ func Load(cfgFilePath ...string) (Type, error) {
 	return Config, nil
 }
 
-// get traverses the map using a dotted key path
+// get traverses the configuration tree using a dotted key path (e.g.
+// "backend.s3.bucket"). If Namespace is set, a namespaced candidate key is
+// attempted first (Namespace + "." + kspec), then the unnamespaced key.
+// Returns the raw value (any) if found.
 func (cfg *Type) get(kspec string) (any, error) {
 	if len(cfg.Data) == 0 {
 		_, _ = Load(cfg.Source)
@@ -80,16 +103,15 @@ func (cfg *Type) get(kspec string) (any, error) {
 
 		if success {
 			return current, nil
-			// if str, ok := current.(string); ok {
-			// 	return str, nil
-			// }
-			// return "", fmt.Errorf("value at path '%s' is not a string", key)
 		}
 	}
 
 	return nil, fmt.Errorf("no valid path found among: %v", candidateKeys)
 }
 
+// GetString returns the string value for the given dotted key path. If the key
+// is not found and a single defaultValue is provided, the default is returned.
+// Returns an error if the value exists but is not a string.
 func GetString(key string, defaultValue ...string) (string, error) {
 	if len(Config.Data) == 0 {
 		_, _ = Load()
@@ -111,6 +133,9 @@ func GetString(key string, defaultValue ...string) (string, error) {
 	return s, nil
 }
 
+// GetInt returns the integer value for the given dotted key path. A single
+// defaultValue may be provided and is returned when the key is missing.
+// YAML numbers may decode as int, int64, or float64; common cases are handled.
 func GetInt(key string, defaultValue ...int) (int, error) {
 	if len(Config.Data) == 0 {
 		_, _ = Load()
@@ -141,22 +166,23 @@ func GetInt(key string, defaultValue ...int) (int, error) {
 	}
 }
 
-func getConfigPath() (string, error) {
-
-	var candidates []string = []string{
-		os.Getenv("XDG_CONFIG_HOME"),
-		os.Getenv("APPDATA"),
-		os.Getenv("HOME"),
+// getConfigFile returns the absolute path to the YAML config file according to
+// the OS-specific user configuration directory returned by os.UserConfigDir.
+// Expected path is <UserConfigDir>/tfctl.yaml. The file must exist and not be
+// a directory.
+func getConfigFile() (string, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
 	}
 
-	for _, c := range candidates {
-		file := filepath.Join(c, "tfctl.yaml")
-		if fileInfo, err := os.Stat(file); err == nil {
-			if !fileInfo.IsDir() {
-				log.Debugf("using config file: %s", file)
-				return file, nil
-			}
+	file := filepath.Join(dir, "tfctl.yaml")
+	if fileInfo, err := os.Stat(file); err == nil {
+		if !fileInfo.IsDir() {
+			log.Debugf("using config file: %s", file)
+			return file, nil
 		}
 	}
+
 	return "", fmt.Errorf("no config file found in standard locations")
 }

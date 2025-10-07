@@ -1,6 +1,12 @@
 // Copyright © 2025 Steve Taranto staranto@gmail.com
 // SPDX-License-Identifier: Apache-2.0
 
-// Package config loads and provides access to tfctl configuration values from
-// files and environment variables.
+// Package config provides loading and typed accessors for tfctl's user
+// configuration. The configuration is expected to be a YAML document located
+// in the user's configuration directory, typically:
+//   - Linux/macOS: $XDG_CONFIG_HOME/tfctl.yaml or $HOME/.config/tfctl.yaml
+//   - Windows: %APPDATA%/tfctl/tfctl.yaml
+//
+// Actual resolution relies on os.UserConfigDir which follows platform
+// conventions.
 package config
