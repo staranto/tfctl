@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/staranto/tfctlgo/internal/cacheutil"
 	"github.com/staranto/tfctlgo/internal/command"
 	mylog "github.com/staranto/tfctlgo/internal/log"
 	"github.com/staranto/tfctlgo/internal/version"
@@ -23,6 +24,12 @@ func realMain() int {
 	mylog.InitLogger()
 
 	args := os.Args
+
+	// Best-effort: pre-create cache directory when caching is enabled.
+	if _, ok, err := cacheutil.EnsureBaseDir(); err != nil && ok {
+		// Non-fatal: print to stderr and continue.
+		fmt.Fprintln(os.Stderr, err)
+	}
 
 	// TODO Let urfave do this
 	// Short-circuit --version/-v.
