@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/apex/log"
@@ -77,6 +78,8 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter
 			result = checkStringOperand(v, filter)
 		} else if v, ok := value.(bool); ok {
 			result = checkStringOperand(fmt.Sprintf("%v", v), filter)
+		} else if num, ok := toFloat64(value); ok {
+			result = checkNumericOperand(num, filter)
 		} else if filter.Operand == "@" {
 			result = checkContainsOperand(value, filter)
 		}
@@ -89,8 +92,8 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter
 	return true
 }
 
-// checkContainsOperand checks the value against the target for "membership". Does
-// the target "have" the value?
+// checkContainsOperand checks the value against the target for "membership".
+// Does the target "have" the value?
 // checkContainsOperand evaluates a membership style filter (operand '@')
 // against slice or map values.
 func checkContainsOperand(value interface{}, filter Filter) bool {
@@ -145,6 +148,66 @@ func checkStringOperand(value string, filter Filter) bool {
 
 	default:
 		log.Error("unsupported filtering operand: " + filter.Operand)
+		return false
+	}
+}
+
+// toFloat64 attempts to normalize various numeric types to float64.
+// Returns (0, false) if v is not a recognized numeric type.
+func toFloat64(v interface{}) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case float32:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	case int8:
+		return float64(n), true
+	case int16:
+		return float64(n), true
+	case int32:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case uint:
+		return float64(n), true
+	case uint8:
+		return float64(n), true
+	case uint16:
+		return float64(n), true
+	case uint32:
+		return float64(n), true
+	case uint64:
+		return float64(n), true
+	default:
+		return 0, false
+	}
+}
+
+// checkNumericOperand compares a numeric value against the filter target using
+// numeric semantics. Supported operands: =, >, < and the negated form via
+// filter.Negate (e.g., != is represented as Negate + "="). If the operand is
+// explicitly "!=", it is also handled for clarity.
+func checkNumericOperand(value float64, filter Filter) bool {
+	// Parse the target as a float64
+	tgt, err := strconv.ParseFloat(strings.TrimSpace(filter.Target), 64)
+	if err != nil {
+		log.Error("invalid numeric target: " + filter.Target)
+		return false
+	}
+
+	switch filter.Operand {
+	case "=":
+		return (value == tgt) == !filter.Negate
+	case ">":
+		return (value > tgt) == !filter.Negate
+	case "<":
+		return (value < tgt) == !filter.Negate
+	case "!=":
+		return (value != tgt) == !filter.Negate
+	default:
+		log.Error("unsupported numeric operand: " + filter.Operand)
 		return false
 	}
 }
