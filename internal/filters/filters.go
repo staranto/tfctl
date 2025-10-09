@@ -19,7 +19,9 @@ import (
 
 // filterRegex is the pattern used to parse filter expressions into key, operator, and target components.
 // It matches: key + operator + target, where operator can be negated with !
-var filterRegex = regexp.MustCompile(`^(.*?)([!/]{1,2}|[=^~><!@]{1,2})(.*)$`)
+// Operators are one of = ^ ~ < > @ or /, optionally prefixed with '!'.
+// This allows forms like '=', '!=', '^', '!^', etc.
+var filterRegex = regexp.MustCompile(`^(.*?)(!?[=^~<>@/])(.*)$`)
 
 // Filter represents a single parsed --filter expression including the key,
 // operand, optional negation and target value.
