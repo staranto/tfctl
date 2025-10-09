@@ -98,8 +98,7 @@ tfctl wq --attrs created-at,updated-at --output json
 
 **Planned features:**
 - Workspace and state manipulation.
-- Enhanced S3 backend configuration options.
-- Real-time state monitoring.
+- Enhanced S3 backend configuration options
 - Advanced reporting and dashboards.
 
 *Want a feature? [Open an issue](https://github.com/staranto/tfctlgo/issues) and help us prioritize!*
