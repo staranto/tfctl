@@ -1,4 +1,4 @@
-// Copyright © 2025 Steve Taranto staranto@gmail.com
+// Copyright (c) 2025 Steve Taranto staranto@gmail.com.
 // SPDX-License-Identifier: Apache-2.0
 
 package s3
@@ -32,9 +32,6 @@ func CacheReader(be *BackendS3, key string) (*cacheutil.Entry, bool) {
 }
 
 func CacheWriter(be *BackendS3, key string, data []byte) error {
-	if !cacheutil.Enabled() {
-		return nil
-	}
 	sub := []string{be.Backend.Config.Bucket, be.Backend.Config.Prefix, be.Backend.Config.Key}
 	return cacheutil.Write(sub, key, data)
 }

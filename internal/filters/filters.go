@@ -1,4 +1,4 @@
-// Copyright © 2025 Steve Taranto staranto@gmail.com
+// Copyright (c) 2025 Steve Taranto staranto@gmail.com.
 // SPDX-License-Identifier: Apache-2.0
 
 package filters
@@ -206,8 +206,6 @@ func checkNumericOperand(value float64, filter Filter) bool {
 		return (value > tgt) == !filter.Negate
 	case "<":
 		return (value < tgt) == !filter.Negate
-	case "!=":
-		return (value != tgt) == !filter.Negate
 	default:
 		log.Error("unsupported numeric operand: " + filter.Operand)
 		return false

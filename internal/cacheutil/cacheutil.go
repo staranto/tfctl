@@ -1,4 +1,4 @@
-// Copyright © 2025 Steve Taranto <staranto@gmail.com>
+// Copyright (c) 2025 Steve Taranto <staranto@gmail.com>.
 // SPDX-License-Identifier: Apache-2.0
 
 package cacheutil
@@ -111,11 +111,11 @@ func Read(subdirs []string, clearKey string) (*Entry, bool) {
 // Write stores data for the given key beneath subdirs. Creates directories as needed.
 func Write(subdirs []string, clearKey string, data []byte) error {
 	if !Enabled() {
-		return nil // treat as disabled
+		return nil // treat as disabled.
 	}
 	base, ok := Dir()
 	if !ok {
-		return nil // treat as disabled
+		return nil // treat as disabled.
 	}
 	encoded := encodeKey(clearKey)
 	dir := filepath.Join(append([]string{base}, subdirs...)...)
