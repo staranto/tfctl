@@ -1,0 +1,111 @@
+.nh
+.TH tfctl sq — state query
+.PP
+Synopsis
+
+.EX
+tfctl sq [RootDir] [options]
+
+.EE
+
+.PP
+Short description
+
+.PP
+Query Terraform/OpenTofu state files in a local IaC root. Supports listing resources, filtering, and comparing state versions.
+
+.PP
+Flags and related docs
+
+.RS
+.IP \(bu 2
+See the common flag reference: Flags
+\[la]../flags.md\[ra]
+.IP \(bu 2
+Attributes: Attributes
+\[la]../attrs.md\[ra]
+.IP \(bu 2
+Filtering: Filters
+\[la]../filters.md\[ra]
+
+.RE
+
+.PP
+Flags
+
+.TS
+allbox;
+l l l l l 
+l l l l l .
+\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
+\fB--attrs\fR	\fB-a\fR	T{
+Comma-separated list of attributes to include
+T}
+	(none)	Global flag
+\fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
+\fB--concrete\fR	\fB-k\fR	T{
+Only include concrete (managed) resources
+T}
+	false	sq-specific
+\fB--diff\fR		T{
+Show diff between state versions
+T}
+	false	sq-specific
+\fB--diff_filter\fR		Hidden, internal diff filter	\fBcheck_results\fR	Hidden / internal
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}
+	(none)	See Filters
+\[la]../filters.md\[ra]
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
+\fB--limit\fR		Limit state versions returned	99999	sq-specific, hidden default
+\fB--noshort\fR		T{
+Include full resource name paths
+T}
+	false	sq-specific
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
+\fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
+\fB--passphrase\fR		Passphrase for encrypted state	(none)	T{
+sq-specific; falls back to TF_VAR_passphrase or interactive prompt
+T}
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
+\fB--sv\fR		State version to query	\fB0\fR	sq-specific
+\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
+\fB--workspace\fR	\fB-w\fR	T{
+Workspace to use (overrides backend)
+T}
+	(none)	Command flag
+.TE
+
+.PP
+Quick examples
+
+.EX
+# Query the current directory's state
+ tfctl sq
+
+# See state-specific flags (e.g., --concrete, --diff)
+ tfctl sq --help
+
+.EE
+
+.PP
+Notes
+
+.RS
+.IP \(bu 2
+\fBsq\fR operates against an IaC root directory (defaults to CWD when not provided).
+.IP \(bu 2
+When using encrypted state, \fBsq\fR will prompt for a passphrase or use \fBTF_VAR_passphrase\fR\&.
+
+.RE
+
+.PP
+See also
+
+.RS
+.IP \(bu 2
+Quickstart
+\[la]../quickstart.md\[ra]
+
+.RE

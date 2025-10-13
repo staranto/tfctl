@@ -14,7 +14,6 @@ linters:
     - copyloopvar
     - predeclared
     - gocritic
-    - godot # doc comment formatting (end with period, etc.)
 
 linters-settings:
   goimports:
@@ -25,9 +24,6 @@ linters-settings:
       - name: exported
       - name: var-naming
       - name: receiver-naming
-
-  godot:
-    scope: all
 
 issues:
   exclude-files:

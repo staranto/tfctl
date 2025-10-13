@@ -1,0 +1,103 @@
+.nh
+.TH tfctl si — interactive state console
+.PP
+Synopsis
+
+.EX
+tfctl si [RootDir]
+
+.EE
+
+.PP
+Short description
+
+.PP
+Start an interactive console to explore state data (search resources, run ad-hoc queries, and view results inline).
+
+.PP
+Flags and related docs
+
+.RS
+.IP \(bu 2
+See the common flag reference: Flags
+\[la]../flags.md\[ra]
+.IP \(bu 2
+Attributes: Attributes
+\[la]../attrs.md\[ra]
+
+.RE
+
+.PP
+Quick examples
+
+.EX
+# Start interactive console in CWD
+ tfctl si
+
+# Exit the console
+ Type `exit` or press Ctrl+C
+
+.EE
+
+.PP
+Notes
+
+.RS
+.IP \(bu 2
+\fBsi\fR uses a terminal UI and stores history in \fB~/.tfctl_si_history\fR\&.
+.IP \(bu 2
+For scripted/extractable output, prefer \fBsq --output json\fR\&.
+
+.RE
+
+.PP
+See also
+
+.RS
+.IP \(bu 2
+Quickstart
+\[la]../quickstart.md\[ra]
+
+.RE
+
+.PP
+Flags
+
+.TS
+allbox;
+l l l l 
+l l l l .
+\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBNotes\fP
+\fB--attrs\fR	\fB-a\fR	T{
+Comma-separated list of attributes to include
+T}
+	Global flag
+\fB--color\fR	\fB-c\fR	Enable colored text output	Global flag
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}
+	See Filters
+\[la]../filters.md\[ra]
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	Global flag
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	Global flag
+\fB--titles\fR	\fB-t\fR	Show titles with text output	Global flag
+Flag	Alias	Description	Default
+------	-------	-------------	---------
+\fB--attrs\fR	\fB-a\fR	T{
+Comma-separated list of attributes to include
+T}
+	(none)
+\fB--color\fR	\fB-c\fR	Enable colored text output	false
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}
+	(none)
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR
+\fB--passphrase\fR	\fB-p\fR	T{
+Passphrase for encrypted state files
+T}
+	(none)
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)
+\fB--sv\fR		State version to query	\fB0\fR
+\fB--titles\fR	\fB-t\fR	Show titles with text output	false
+.TE

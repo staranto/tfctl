@@ -43,18 +43,29 @@ The native Terraform CLI provides essential IAC tooling for managing the resourc
 
 ## Installation
 
-- Homebrew (recommended):
+- Homebrew (Linux or macOS):
 	```bash
-	brew install staranto/tfctlgo/tfctl
+	brew tap staranto/tfctlgo
+  brew install tfctl
 	```
 - Debian/Ubuntu (.deb):
-	- Visit https://github.com/staranto/tfctlgo/releases/latest and download the
-	  .deb matching your architecture (for example, amd64 or arm64).
+	- Visit https://github.com/staranto/tfctlgo/releases and download the
+	  .deb matching your architecture.
 	- Then install it:
 	```bash
-	sudo dpkg -i /path/to/download/deb
+	sudo dpkg -i /path/to/downloaded/deb
 	```
-- See the full [Installation Guide](docs/installation.md) for other options (tarball, build from source), plus installing man and TLDR pages.
+- Directly install from a tarball:
+
+	- Visit https://github.com/staranto/tfctlgo/releases and download the .tar.gz matching your OS and architecture.
+	- Then install it:
+	```bash
+  tar xvzf /path/to/downloaded/tarball --directory /directory/in/you/path tfctl
+  ```
+  - The tarball also contains man pages. If you'd like to install them:
+  ```bash
+
+	```
 
 ## Common Examples
 

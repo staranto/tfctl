@@ -37,10 +37,14 @@ archives:
       - goos: windows
         formats: [zip]
     files:
-      - LICENSE*
-      - README.md
-      - docs/man/**/*
-      - docs/tldr/**/*
+      - src: LICENSE*
+        dst: .
+      - src: README.md
+        dst: .
+      - src: docs/man/**/*
+        dst: man
+      - src: docs/tldr/*.md
+        dst: tldr
 
 changelog:
   sort: asc
@@ -73,8 +77,8 @@ brews:
     url_template: "https://github.com/staranto/homebrew-tfctlgo/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     install: |
       bin.install "tfctl"
-      man1.install Dir["docs/man/share/man1/*"] if File.directory?("docs/man/share/man1")
-      man7.install Dir["docs/man/share/man7/*"] if File.directory?("docs/man/share/man7")
+      man1.install Dir["man/man1/*"] if File.directory?("man/man1")
+      man7.install Dir["man/man7/*"] if File.directory?("man/man7")
     test: |
       system "#{bin}/tfctl", "--version"
 
@@ -92,9 +96,9 @@ nfpms:
     formats:
       - deb
     contents:
-      - src: docs/man/share/man1/*
+      - src: docs/man/man1/*
         dst: /usr/share/man/man1/
-      - src: docs/man/share/man7/*
+      - src: docs/man/man7/*
         dst: /usr/share/man/man7/
       # Optionally include license/readme too
       - src: LICENSE*
