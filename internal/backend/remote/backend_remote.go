@@ -388,9 +388,16 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 
 	var results []*tfe.StateVersion
 
+	// Include related resources with each page so callers can access them
+	// without issuing per-item reads.
+	includes := []tfe.StateVersionIncludeOpt{
+		tfe.SVrun,
+		tfe.SVoutputs,
+	}
+
 	// Paginate through the dataset
 	for {
-		page, err := client.StateVersions.List(be.Ctx, &options)
+		page, err := listStateVersionsWithInclude(be.Ctx, client, &options, includes)
 		if err != nil {
 			ctxErr := ErrorContext{
 				Host:      be.Backend.Config.Hostname,
@@ -418,6 +425,34 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 	}
 
 	return results, nil
+}
+
+// listStateVersionsWithInclude calls the TFE state-versions list endpoint with
+// support for the "include" query parameter to load related resources.
+func listStateVersionsWithInclude(ctx context.Context, client *tfe.Client, base *tfe.StateVersionListOptions, include []tfe.StateVersionIncludeOpt) (*tfe.StateVersionList, error) {
+	// Build a local options struct that mirrors StateVersionListOptions and adds include.
+	type listOpts struct {
+		tfe.ListOptions
+		Organization string                       `url:"filter[organization][name]"`
+		Workspace    string                       `url:"filter[workspace][name]"`
+		Include      []tfe.StateVersionIncludeOpt `url:"include,omitempty"`
+	}
+	lo := listOpts{
+		ListOptions:  base.ListOptions,
+		Organization: base.Organization,
+		Workspace:    base.Workspace,
+		Include:      include,
+	}
+
+	req, err := client.NewRequest("GET", "state-versions", &lo)
+	if err != nil {
+		return nil, err
+	}
+	svl := &tfe.StateVersionList{}
+	if err := req.Do(ctx, svl); err != nil {
+		return nil, err
+	}
+	return svl, nil
 }
 
 func (be *BackendRemote) String() string {
