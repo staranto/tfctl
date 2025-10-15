@@ -68,6 +68,11 @@ func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			"meta": meta,
 		},
 		Flags: append([]cli.Flag{
+			&cli.BoolFlag{
+				Name:    "deep",
+				Aliases: []string{"d"},
+				Usage:   "enrich results with related data (slower)",
+			},
 			&cli.IntFlag{
 				Name:    "limit",
 				Aliases: []string{"l"},

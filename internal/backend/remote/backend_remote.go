@@ -181,6 +181,74 @@ func (be *BackendRemote) States(specs ...string) ([][]byte, error) {
 	return results, nil
 }
 
+func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
+	if len(be.RunList) > 0 {
+		log.Errorf("be.RunList: preloaded with %d", len(be.RunList))
+		return be.RunList, nil
+	}
+
+	if be.Backend.Config.Hostname == "" {
+		be.Backend.Config.Hostname = be.Cmd.String("host")
+	}
+
+	client, err := be.Client()
+	if err != nil {
+		log.WithError(err).Error("can't get client")
+		return nil, err
+	}
+
+	limit := be.Cmd.Int("limit")
+
+	pageSize := 100
+	if limit > 0 && limit < pageSize {
+		pageSize = limit
+	}
+
+	// organization, err := be.Organization()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get organization: %w", err)
+	// }
+
+	workspace, err := be.Workspace()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workspace name: %w", err)
+	}
+
+	log.Debugf("workspace: %v", workspace)
+
+	options := tfe.RunListForOrganizationOptions{
+		WorkspaceNames: workspace.Name,
+		ListOptions:    tfe.ListOptions{PageNumber: 1, PageSize: pageSize},
+	}
+
+	var results []*tfe.Run
+
+	// Paginate through the dataset
+	for {
+		page, err := client.Runs.ListForOrganization(be.Ctx, "tfctl", &options)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, page.Items...)
+
+		if len(results) >= limit {
+			results = results[:limit]
+			break
+		}
+
+		log.Debugf("page: %d, total: %d", page.CurrentPage, len(results))
+
+		if page.NextPage == 0 {
+			break
+		}
+		options.ListOptions.PageNumber++
+	}
+
+	return results, nil
+
+}
+
 func (be *BackendRemote) StateVersion(svSpecs ...string) (tfe.StateVersion, error) {
 	if len(svSpecs) == 0 {
 		svSpecs = []string{"CSV~0"}
@@ -270,74 +338,6 @@ func (be *BackendRemote) StateVersion(svSpecs ...string) (tfe.StateVersion, erro
 	return *stateVersion, nil
 }
 
-func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
-	if len(be.RunList) > 0 {
-		log.Errorf("be.RunList: preloaded with %d", len(be.RunList))
-		return be.RunList, nil
-	}
-
-	if be.Backend.Config.Hostname == "" {
-		be.Backend.Config.Hostname = be.Cmd.String("host")
-	}
-
-	client, err := be.Client()
-	if err != nil {
-		log.WithError(err).Error("can't get client")
-		return nil, err
-	}
-
-	limit := be.Cmd.Int("limit")
-
-	pageSize := 100
-	if limit > 0 && limit < pageSize {
-		pageSize = limit
-	}
-
-	// organization, err := be.Organization()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get organization: %w", err)
-	// }
-
-	workspace, err := be.Workspace()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workspace name: %w", err)
-	}
-
-	log.Debugf("workspace: %v", workspace)
-
-	options := tfe.RunListForOrganizationOptions{
-		WorkspaceNames: workspace.Name,
-		ListOptions:    tfe.ListOptions{PageNumber: 1, PageSize: pageSize},
-	}
-
-	var results []*tfe.Run
-
-	// Paginate through the dataset
-	for {
-		page, err := client.Runs.ListForOrganization(be.Ctx, "tfctl", &options)
-		if err != nil {
-			return nil, err
-		}
-
-		results = append(results, page.Items...)
-
-		if len(results) >= limit {
-			results = results[:limit]
-			break
-		}
-
-		log.Debugf("page: %d, total: %d", page.CurrentPage, len(results))
-
-		if page.NextPage == 0 {
-			break
-		}
-		options.ListOptions.PageNumber++
-	}
-
-	return results, nil
-
-}
-
 // StateVersions implements backend.Backend.
 func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 	if len(be.StateVersionList) > 0 {
@@ -388,16 +388,9 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 
 	var results []*tfe.StateVersion
 
-	// Include related resources with each page so callers can access them
-	// without issuing per-item reads.
-	includes := []tfe.StateVersionIncludeOpt{
-		tfe.SVrun,
-		tfe.SVoutputs,
-	}
-
 	// Paginate through the dataset
 	for {
-		page, err := listStateVersionsWithInclude(be.Ctx, client, &options, includes)
+		page, err := client.StateVersions.List(be.Ctx, &options)
 		if err != nil {
 			ctxErr := ErrorContext{
 				Host:      be.Backend.Config.Hostname,
@@ -407,6 +400,26 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 				Resource:  "stateversion",
 			}
 			return nil, FriendlyTFE(err, ctxErr)
+		}
+
+		// Right here
+		// Enrich each item by fetching its full details with includes if --deep is enabled.
+		if be.Cmd.Bool("deep") {
+			for i := range page.Items {
+				ro := &tfe.StateVersionReadOptions{
+					Include: []tfe.StateVersionIncludeOpt{
+						tfe.SVoutputs,
+						tfe.SVrun,
+						tfe.SVcreatedby,
+					},
+				}
+				full, err := client.StateVersions.ReadWithOptions(be.Ctx, page.Items[i].ID, ro)
+				if err != nil {
+					log.WithError(err).Warnf("failed to read state version (with includes) %s; using list item", page.Items[i].ID)
+					continue
+				}
+				page.Items[i] = full
+			}
 		}
 
 		results = append(results, page.Items...)
@@ -425,34 +438,6 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 	}
 
 	return results, nil
-}
-
-// listStateVersionsWithInclude calls the TFE state-versions list endpoint with
-// support for the "include" query parameter to load related resources.
-func listStateVersionsWithInclude(ctx context.Context, client *tfe.Client, base *tfe.StateVersionListOptions, include []tfe.StateVersionIncludeOpt) (*tfe.StateVersionList, error) {
-	// Build a local options struct that mirrors StateVersionListOptions and adds include.
-	type listOpts struct {
-		tfe.ListOptions
-		Organization string                       `url:"filter[organization][name]"`
-		Workspace    string                       `url:"filter[workspace][name]"`
-		Include      []tfe.StateVersionIncludeOpt `url:"include,omitempty"`
-	}
-	lo := listOpts{
-		ListOptions:  base.ListOptions,
-		Organization: base.Organization,
-		Workspace:    base.Workspace,
-		Include:      include,
-	}
-
-	req, err := client.NewRequest("GET", "state-versions", &lo)
-	if err != nil {
-		return nil, err
-	}
-	svl := &tfe.StateVersionList{}
-	if err := req.Do(ctx, svl); err != nil {
-		return nil, err
-	}
-	return svl, nil
 }
 
 func (be *BackendRemote) String() string {
