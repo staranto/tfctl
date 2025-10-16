@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Steve Taranto staranto@gmail.com.
+// Copyright (c) 2025 Steve Taranto <staranto@gmail.com>.
 // SPDX-License-Identifier: Apache-2.0
 
 package filters
@@ -288,8 +288,9 @@ func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) [
 		result := make(map[string]interface{})
 		for i := range attrs {
 			attr := attrs[i]
-			// THINK Should we Transform here or in a separate loop back in
-			// SliceDiceSpit()? This func is filtering, not filtering & transforming.
+			// Intentionally defer Transform to SliceDiceSpit output phase.
+			// This function is responsible for filtering only; transformations
+			// are applied downstream during output formatting.
 			// value := attr.Transform(candidate.Get(attr.Key).Value())
 			value := driller.Driller(candidate.Raw, attr.Key)
 			result[attr.OutputKey] = value.Value()

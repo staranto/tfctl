@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Steve Taranto staranto@gmail.com.
+// Copyright (c) 2025 Steve Taranto <staranto@gmail.com>.
 // SPDX-License-Identifier: Apache-2.0
 
 package command
@@ -55,32 +55,24 @@ func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to resolve organization: %w", err)
 	}
 
-	options := tfe.ProjectListOptions{
-		ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 100},
-	}
-
-	var results []*tfe.Project
-
-	// Paginate through the dataset
-	for {
-		page, err := client.Projects.List(ctx, org, &options)
-		if err != nil {
+	results, err := PaginateAndCollect(ctx, 0, 100, func(pageNumber, pageSize int) ([]*tfe.Project, int, error) {
+		opts := tfe.ProjectListOptions{
+			ListOptions: tfe.ListOptions{PageNumber: pageNumber, PageSize: pageSize},
+		}
+		page, listErr := client.Projects.List(ctx, org, &opts)
+		if listErr != nil {
 			ctxErr := remote.ErrorContext{
 				Host:      be.Backend.Config.Hostname,
 				Org:       org,
 				Operation: "list projects",
 				Resource:  "organization",
 			}
-			return remote.FriendlyTFE(err, ctxErr)
+			return nil, 0, remote.FriendlyTFE(listErr, ctxErr)
 		}
-
-		results = append(results, page.Items...)
-		log.Debugf("page: %d, total: %d", page.CurrentPage, len(results))
-
-		if page.Pagination.NextPage == 0 {
-			break
-		}
-		options.ListOptions.PageNumber++
+		return page.Items, page.Pagination.NextPage, nil
+	})
+	if err != nil {
+		return err
 	}
 
 	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {

@@ -84,7 +84,7 @@ nfpms:
     package_name: tfctl
     file_name_template: '{{ .Binary }}_{{ .Version }}_{{- if eq .Arch "amd64" }}amd64{{ else }}{{ .Arch }}{{ end }}{{ .ConventionalExtension }}'
     vendor: Steve Taranto
-    maintainer: Steve Taranto <staranto@gmail.com>
+    maintainer: Steve Taranto staranto@gmail.com
     homepage: https://github.com/staranto/tfctlgo
     description: CLI to query Terraform/OpenTofu state across backends
     license: Apache-2.0

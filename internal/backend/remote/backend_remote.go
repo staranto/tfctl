@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Steve Taranto staranto@gmail.com.
+// Copyright (c) 2025 Steve Taranto <staranto@gmail.com>.
 // SPDX-License-Identifier: Apache-2.0
 
 package remote
@@ -335,7 +335,6 @@ func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
 	}
 
 	return results, nil
-
 }
 
 // StateVersions implements backend.Backend.
@@ -415,6 +414,25 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 			break
 		}
 		options.ListOptions.PageNumber++
+	}
+
+	// Enrich each item by fetching its full details with includes if --deep is enabled.
+	if be.Cmd.Bool("deep") {
+		for i := range results {
+			ro := &tfe.StateVersionReadOptions{
+				Include: []tfe.StateVersionIncludeOpt{
+					tfe.SVoutputs,
+					tfe.SVrun,
+					tfe.SVcreatedby,
+				},
+			}
+			full, enrichErr := client.StateVersions.ReadWithOptions(be.Ctx, results[i].ID, ro)
+			if enrichErr != nil {
+				log.WithError(enrichErr).Warnf("failed to read state version (with includes) %s; using list item", results[i].ID)
+				continue
+			}
+			results[i] = full
+		}
 	}
 
 	return results, nil

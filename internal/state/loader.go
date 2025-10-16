@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Steve Taranto staranto@gmail.com.
+// Copyright (c) 2025 Steve Taranto <staranto@gmail.com>.
 // SPDX-License-Identifier: Apache-2.0
 
 package state
@@ -40,7 +40,7 @@ func LoadStateData(ctx context.Context, cmd *cli.Command, rootDir string) (map[s
 		return nil, err
 	}
 
-	// Get the state data
+	// Get the state data.
 	doc, err := be.State()
 	if err != nil {
 		log.Errorf("err: %v", err)

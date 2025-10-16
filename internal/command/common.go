@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Steve Taranto staranto@gmail.com.
+// Copyright (c) 2025 Steve Taranto <staranto@gmail.com>.
 // SPDX-License-Identifier: Apache-2.0
 
 package command
@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"reflect"
 
+	"github.com/apex/log"
 	"github.com/hashicorp/jsonapi"
 	"github.com/urfave/cli/v3"
 
@@ -81,4 +82,40 @@ func GetMeta(cmd *cli.Command) meta.Meta {
 		return m
 	}
 	return meta.Meta{}
+}
+
+// PaginateAndCollect is a generic helper that drives paginated list calls and
+// collects results until either the end of the list or the provided limit is
+// reached. Pass limit <= 0 to disable limiting.
+//
+// fetch must return the items for the given page, the next page number (0 if
+// there are no more pages), and an error.
+func PaginateAndCollect[T any](ctx context.Context, limit int, pageSize int, fetch func(pageNumber, pageSize int) ([]*T, int, error)) ([]*T, error) {
+	if pageSize <= 0 {
+		pageSize = 100
+	}
+	if limit > 0 && limit < pageSize {
+		pageSize = limit
+	}
+
+	var results []*T
+	pageNumber := 1
+	for {
+		items, nextPage, err := fetch(pageNumber, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, items...)
+		log.Debugf("page: %d, total: %d", pageNumber, len(results))
+
+		if limit > 0 && len(results) >= limit {
+			return results[:limit], nil
+		}
+		if nextPage == 0 {
+			break
+		}
+		pageNumber = nextPage
+	}
+	return results, nil
 }

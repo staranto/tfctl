@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Steve Taranto staranto@gmail.com.
+// Copyright (c) 2025 Steve Taranto <staranto@gmail.com>.
 // SPDX-License-Identifier: Apache-2.0
 
 package command
@@ -50,26 +50,18 @@ func OqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	}
 	log.Debugf("client: %v", client.BaseURL())
 
-	options := tfe.OrganizationListOptions{
-		ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 100},
-	}
-
-	var results []*tfe.Organization
-
-	// Paginate through the dataset
-	for {
-		page, err := client.Organizations.List(ctx, &options)
-		if err != nil {
-			return fmt.Errorf("failed to list organizations: %w", err)
+	results, err := PaginateAndCollect(ctx, 0, 100, func(pageNumber, pageSize int) ([]*tfe.Organization, int, error) {
+		opts := tfe.OrganizationListOptions{
+			ListOptions: tfe.ListOptions{PageNumber: pageNumber, PageSize: pageSize},
 		}
-
-		results = append(results, page.Items...)
-		log.Debugf("page: %d, total: %d", page.CurrentPage, len(results))
-
-		if page.Pagination.NextPage == 0 {
-			break
+		page, listErr := client.Organizations.List(ctx, &opts)
+		if listErr != nil {
+			return nil, 0, fmt.Errorf("failed to list organizations: %w", listErr)
 		}
-		options.ListOptions.PageNumber++
+		return page.Items, page.Pagination.NextPage, nil
+	})
+	if err != nil {
+		return err
 	}
 
 	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {

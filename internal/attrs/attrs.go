@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Steve Taranto staranto@gmail.com.
+// Copyright (c) 2025 Steve Taranto <staranto@gmail.com>.
 // SPDX-License-Identifier: Apache-2.0
 
 package attrs
@@ -48,7 +48,7 @@ func (a *Attr) Transform(value interface{}) interface{} {
 
 		// See if there is a timezone in the config or via a TFCTL_ or TF_ env
 		// variable. If there is not, look for a plain TZ env variable.
-		tz := "" // TODO rt.GetRuntimeVar("timezone", true, "")
+		tz := "" // TODO rt.GetRuntimeVar("timezone", true, "").
 		if tz == "" {
 			tz = os.Getenv("TZ")
 		}
