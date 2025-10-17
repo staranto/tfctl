@@ -1,6 +1,6 @@
 # Contributing to tfctl
 
-Thanks for your interest in improving `tfctl`! We welcome contributions of all kinds:
+Thanks for your interest in improving `tfctl`! All contributions are welcome:
 
 - Bug reports & fixes
 - New features & enhancements
