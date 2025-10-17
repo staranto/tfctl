@@ -192,9 +192,6 @@ func SliceDiceSpit(raw bytes.Buffer,
 	parent string,
 	w io.Writer) {
 
-	noshort, _ := config.GetString("noshort", "ccc")
-	log.Debugf("noshort: %v", noshort)
-
 	if w == nil {
 		w = os.Stdout
 	}
@@ -278,7 +275,99 @@ func SliceDiceSpit(raw bytes.Buffer,
 		}
 		os.Stdout.Write(yamlOutput)
 	default:
+		chop := cmd.Bool("chop")
+		if chop {
+			chopResourcePrefix(filteredDataset)
+		}
+
 		TableWriter(filteredDataset, attrs, cmd, w) // TODO
+	}
+}
+
+// chopResourcePrefix finds common leading dot-delimited segments in the
+// "resource" attribute values. If at least 50% of entries share at least 2
+// common leading segments, those segments (and the trailing dot) are removed
+// and replaced with "// ".
+func chopResourcePrefix(dataset []map[string]interface{}) {
+	if len(dataset) == 0 {
+		return
+	}
+
+	// Collect all resource values with their indices.
+	type resourceEntry struct {
+		idx   int
+		value string
+	}
+	var resourceValues []resourceEntry
+	for i, entry := range dataset {
+		if val, ok := entry["resource"]; ok {
+			if str, ok := val.(string); ok {
+				resourceValues = append(resourceValues, resourceEntry{idx: i, value: str})
+			}
+		}
+	}
+
+	if len(resourceValues) == 0 {
+		return
+	}
+
+	// Calculate the 50% threshold.
+	threshold := (len(resourceValues) + 1) / 2
+
+	// Split each resource value by dots and find common leading segments.
+	// First, split all values into segments.
+	type segmentedValue struct {
+		idx      int
+		value    string
+		segments []string
+	}
+	var segmented []segmentedValue
+	maxSegments := 0
+	for _, rv := range resourceValues {
+		segs := strings.Split(rv.value, ".")
+		segmented = append(segmented, segmentedValue{idx: rv.idx, value: rv.value, segments: segs})
+		if len(segs) > maxSegments {
+			maxSegments = len(segs)
+		}
+	}
+
+	// Find the longest common prefix of segments that appears in at least 50%.
+	var commonSegments []string
+	for segIdx := 0; segIdx < maxSegments; segIdx++ {
+		// Count how many values have a segment at this position and what it is.
+		segmentCounts := make(map[string]int)
+		for _, sv := range segmented {
+			if segIdx < len(sv.segments) {
+				segmentCounts[sv.segments[segIdx]]++
+			}
+		}
+
+		// Find the most common segment at this position.
+		var bestSegment string
+		var bestCount int
+		for seg, count := range segmentCounts {
+			if count > bestCount {
+				bestSegment = seg
+				bestCount = count
+			}
+		}
+
+		// If this segment appears in at least 50% of values, add it to common.
+		if bestCount >= threshold {
+			commonSegments = append(commonSegments, bestSegment)
+		} else {
+			break // Stop if we can't maintain the 50% threshold.
+		}
+	}
+
+	// If we have at least 2 common segments, strip them from matching entries.
+	if len(commonSegments) >= 2 {
+		prefixToRemove := strings.Join(commonSegments, ".") + "."
+		for _, sv := range segmented {
+			if strings.HasPrefix(sv.value, prefixToRemove) {
+				dataset[sv.idx]["resource"] = ".." + sv.value[len(prefixToRemove):]
+			}
+		}
 	}
 }
 

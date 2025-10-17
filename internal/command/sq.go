@@ -119,6 +119,14 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		},
 		Flags: append([]cli.Flag{
 			&cli.BoolFlag{
+				Name:  "chop",
+				Usage: "chop common resource prefix from names",
+				Sources: cli.NewValueSourceChain(
+					yaml.YAML("sq.chop", altsrc.StringSourcer(meta.Config.Source)),
+				),
+				Value: false,
+			},
+			&cli.BoolFlag{
 				Name:    "concrete",
 				Aliases: []string{"k"},
 				Usage:   "only include concrete resources",
