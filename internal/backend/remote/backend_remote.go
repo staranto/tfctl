@@ -293,10 +293,11 @@ func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
 		pageSize = limit
 	}
 
-	// organization, err := be.Organization()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get organization: %w", err)
-	// }
+	organization, err := be.Organization()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+	log.Debugf("organization: %v", organization)
 
 	workspace, err := be.Workspace()
 	if err != nil {
@@ -314,7 +315,7 @@ func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
 
 	// Paginate through the dataset
 	for {
-		page, err := client.Runs.ListForOrganization(be.Ctx, "tfctl", &options)
+		page, err := client.Runs.ListForOrganization(be.Ctx, organization, &options)
 		if err != nil {
 			return nil, err
 		}

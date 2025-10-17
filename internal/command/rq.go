@@ -42,7 +42,7 @@ func RqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	log.Debugf("typBe: %v", be)
+	log.Debugf("be: %v", be)
 
 	results, err := be.Runs()
 	if err != nil {
