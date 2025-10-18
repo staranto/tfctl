@@ -277,44 +277,44 @@ func SliceDiceSpit(raw bytes.Buffer,
 	default:
 		chop := cmd.Bool("chop")
 		if chop {
-			chopResourcePrefix(filteredDataset)
+			chopPrefix(filteredDataset, "resource")
 		}
 
 		TableWriter(filteredDataset, attrs, cmd, w) // TODO
 	}
 }
 
-// chopResourcePrefix finds common leading dot-delimited segments in the
-// "resource" attribute values. If at least 50% of entries share at least 2
-// common leading segments, those segments (and the trailing dot) are removed
-// and replaced with "// ".
-func chopResourcePrefix(dataset []map[string]interface{}) {
+// chopPrefix finds common leading dot-delimited segments in the
+// attribute values. If at least 50% of entries share at least 2 common leading
+// segments, those segments (and the trailing dot) are removed and replaced with
+// "// ".
+func chopPrefix(dataset []map[string]interface{}, attribute string) {
 	if len(dataset) == 0 {
 		return
 	}
 
 	// Collect all resource values with their indices.
-	type resourceEntry struct {
+	type attributeEntry struct {
 		idx   int
 		value string
 	}
-	var resourceValues []resourceEntry
+	var attributeValues []attributeEntry
 	for i, entry := range dataset {
-		if val, ok := entry["resource"]; ok {
+		if val, ok := entry[attribute]; ok {
 			if str, ok := val.(string); ok {
-				resourceValues = append(resourceValues, resourceEntry{idx: i, value: str})
+				attributeValues = append(attributeValues, attributeEntry{idx: i, value: str})
 			}
 		}
 	}
 
-	if len(resourceValues) == 0 {
+	if len(attributeValues) == 0 {
 		return
 	}
 
 	// Calculate the 50% threshold.
-	threshold := (len(resourceValues) + 1) / 2
+	threshold := (len(attributeValues) + 1) / 2
 
-	// Split each resource value by dots and find common leading segments.
+	// Split each value by dots and find common leading segments.
 	// First, split all values into segments.
 	type segmentedValue struct {
 		idx      int
@@ -323,9 +323,9 @@ func chopResourcePrefix(dataset []map[string]interface{}) {
 	}
 	var segmented []segmentedValue
 	maxSegments := 0
-	for _, rv := range resourceValues {
-		segs := strings.Split(rv.value, ".")
-		segmented = append(segmented, segmentedValue{idx: rv.idx, value: rv.value, segments: segs})
+	for _, av := range attributeValues {
+		segs := strings.Split(av.value, ".")
+		segmented = append(segmented, segmentedValue{idx: av.idx, value: av.value, segments: segs})
 		if len(segs) > maxSegments {
 			maxSegments = len(segs)
 		}
@@ -365,7 +365,7 @@ func chopResourcePrefix(dataset []map[string]interface{}) {
 		prefixToRemove := strings.Join(commonSegments, ".") + "."
 		for _, sv := range segmented {
 			if strings.HasPrefix(sv.value, prefixToRemove) {
-				dataset[sv.idx]["resource"] = ".." + sv.value[len(prefixToRemove):]
+				dataset[sv.idx][attribute] = ".." + sv.value[len(prefixToRemove):]
 			}
 		}
 	}
