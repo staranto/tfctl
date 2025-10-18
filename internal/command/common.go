@@ -68,7 +68,7 @@ func EmitJSONAPISlice(results any, al attrs.AttrList, cmd *cli.Command) error {
 	if err := jsonapi.MarshalPayload(&raw, results); err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
-	output.SliceDiceSpit(raw, al, cmd, "data", os.Stdout)
+	output.SliceDiceSpit(raw, al, cmd, "data", os.Stdout, nil)
 	return nil
 }
 

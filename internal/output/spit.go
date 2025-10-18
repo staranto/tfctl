@@ -186,11 +186,14 @@ func DumpSchemaWalker(holder string, typ reflect.Type, depth int) []Tag {
 
 // SliceDiceSpit orchestrates filtering, transforming, sorting and rendering
 // of a dataset according to command flags and attribute specifications.
+// The optional postProcess callback allows commands to apply custom transformations
+// to the filtered dataset before rendering.
 func SliceDiceSpit(raw bytes.Buffer,
 	attrs attrs.AttrList,
 	cmd *cli.Command,
 	parent string,
-	w io.Writer) {
+	w io.Writer,
+	postProcess func([]map[string]interface{}) error) {
 
 	if w == nil {
 		w = os.Stdout
@@ -275,99 +278,14 @@ func SliceDiceSpit(raw bytes.Buffer,
 		}
 		os.Stdout.Write(yamlOutput)
 	default:
-		chop := cmd.Bool("chop")
-		if chop {
-			chopPrefix(filteredDataset, "resource")
+		// Apply command-specific post-processing
+		if postProcess != nil {
+			if err := postProcess(filteredDataset); err != nil {
+				slog.Error("PostProcess", "err", err)
+			}
 		}
 
 		TableWriter(filteredDataset, attrs, cmd, w) // TODO
-	}
-}
-
-// chopPrefix finds common leading dot-delimited segments in the
-// attribute values. If at least 50% of entries share at least 2 common leading
-// segments, those segments (and the trailing dot) are removed and replaced with
-// "// ".
-func chopPrefix(dataset []map[string]interface{}, attribute string) {
-	if len(dataset) == 0 {
-		return
-	}
-
-	// Collect all resource values with their indices.
-	type attributeEntry struct {
-		idx   int
-		value string
-	}
-	var attributeValues []attributeEntry
-	for i, entry := range dataset {
-		if val, ok := entry[attribute]; ok {
-			if str, ok := val.(string); ok {
-				attributeValues = append(attributeValues, attributeEntry{idx: i, value: str})
-			}
-		}
-	}
-
-	if len(attributeValues) == 0 {
-		return
-	}
-
-	// Calculate the 50% threshold.
-	threshold := (len(attributeValues) + 1) / 2
-
-	// Split each value by dots and find common leading segments.
-	// First, split all values into segments.
-	type segmentedValue struct {
-		idx      int
-		value    string
-		segments []string
-	}
-	var segmented []segmentedValue
-	maxSegments := 0
-	for _, av := range attributeValues {
-		segs := strings.Split(av.value, ".")
-		segmented = append(segmented, segmentedValue{idx: av.idx, value: av.value, segments: segs})
-		if len(segs) > maxSegments {
-			maxSegments = len(segs)
-		}
-	}
-
-	// Find the longest common prefix of segments that appears in at least 50%.
-	var commonSegments []string
-	for segIdx := 0; segIdx < maxSegments; segIdx++ {
-		// Count how many values have a segment at this position and what it is.
-		segmentCounts := make(map[string]int)
-		for _, sv := range segmented {
-			if segIdx < len(sv.segments) {
-				segmentCounts[sv.segments[segIdx]]++
-			}
-		}
-
-		// Find the most common segment at this position.
-		var bestSegment string
-		var bestCount int
-		for seg, count := range segmentCounts {
-			if count > bestCount {
-				bestSegment = seg
-				bestCount = count
-			}
-		}
-
-		// If this segment appears in at least 50% of values, add it to common.
-		if bestCount >= threshold {
-			commonSegments = append(commonSegments, bestSegment)
-		} else {
-			break // Stop if we can't maintain the 50% threshold.
-		}
-	}
-
-	// If we have at least 2 common segments, strip them from matching entries.
-	if len(commonSegments) >= 2 {
-		prefixToRemove := strings.Join(commonSegments, ".") + "."
-		for _, sv := range segmented {
-			if strings.HasPrefix(sv.value, prefixToRemove) {
-				dataset[sv.idx][attribute] = ".." + sv.value[len(prefixToRemove):]
-			}
-		}
 	}
 }
 

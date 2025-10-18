@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/apex/log"
 	altsrc "github.com/urfave/cli-altsrc/v3"
@@ -102,7 +103,14 @@ func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	var raw bytes.Buffer
 	raw.Write(doc)
 
-	output.SliceDiceSpit(raw, attrs, cmd, "", os.Stdout)
+	postProcess := func(dataset []map[string]interface{}) error {
+		if cmd.Bool("chop") {
+			chopPrefix(dataset, "resource")
+		}
+		return nil
+	}
+
+	output.SliceDiceSpit(raw, attrs, cmd, "", os.Stdout, postProcess)
 
 	return nil
 }
@@ -194,4 +202,90 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 // GlobalFlagsValidator.
 func SqCommandValidator(ctx context.Context, cmd *cli.Command) error {
 	return GlobalFlagsValidator(ctx, cmd)
+}
+
+// chopPrefix finds common leading dot-delimited segments in the
+// given attribute of dataset values. If at least 50% of entries share
+// at least 2 common leading segments, those segments (and the trailing dot)
+// are removed and replaced with ".. ".
+func chopPrefix(dataset []map[string]interface{}, attribute string) {
+	if len(dataset) == 0 {
+		return
+	}
+
+	// Collect all attribute values with their indices.
+	type attributeEntry struct {
+		idx   int
+		value string
+	}
+	var attributeValues []attributeEntry
+	for i, entry := range dataset {
+		if val, ok := entry[attribute]; ok {
+			if str, ok := val.(string); ok {
+				attributeValues = append(attributeValues, attributeEntry{idx: i, value: str})
+			}
+		}
+	}
+
+	if len(attributeValues) == 0 {
+		return
+	}
+
+	// Calculate the 50% threshold.
+	threshold := (len(attributeValues) + 1) / 2
+
+	// Split each value by dots and find common leading segments.
+	type segmentedValue struct {
+		idx      int
+		value    string
+		segments []string
+	}
+	var segmented []segmentedValue
+	maxSegments := 0
+	for _, av := range attributeValues {
+		segs := strings.Split(av.value, ".")
+		segmented = append(segmented, segmentedValue{idx: av.idx, value: av.value, segments: segs})
+		if len(segs) > maxSegments {
+			maxSegments = len(segs)
+		}
+	}
+
+	// Find the longest common prefix of segments that appears in at least 50%.
+	var commonSegments []string
+	for segIdx := 0; segIdx < maxSegments; segIdx++ {
+		// Count how many values have a segment at this position and what it is.
+		segmentCounts := make(map[string]int)
+		for _, sv := range segmented {
+			if segIdx < len(sv.segments) {
+				segmentCounts[sv.segments[segIdx]]++
+			}
+		}
+
+		// Find the most common segment at this position.
+		var bestSegment string
+		var bestCount int
+		for seg, count := range segmentCounts {
+			if count > bestCount {
+				bestSegment = seg
+				bestCount = count
+			}
+		}
+
+		// If this segment appears in at least 50% of values, add it to common.
+		if bestCount >= threshold {
+			commonSegments = append(commonSegments, bestSegment)
+		} else {
+			break // Stop if we can't maintain the 50% threshold.
+		}
+	}
+
+	// If we have at least 2 common segments, strip them from matching entries.
+	if len(commonSegments) >= 2 {
+		prefixToRemove := strings.Join(commonSegments, ".") + "."
+		for _, sv := range segmented {
+			if strings.HasPrefix(sv.value, prefixToRemove) {
+				dataset[sv.idx][attribute] = ".." + sv.value[len(prefixToRemove):]
+			}
+		}
+	}
 }
