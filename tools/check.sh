@@ -50,14 +50,26 @@ fi
 
 echo "[pre-commit] running Go code quality checks..." >&2
 
+# ANSI color codes
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Track failures
+declare -a FAILURES
+FAILURES=()
+
 # 1) go vet with custom printf funcs so apex/log *f calls are validated
 echo "[pre-commit] running Go Vet..." >&2
-go vet -printfuncs='Debugf,Infof,Warnf,Errorf' ./...
+if ! go vet -printfuncs='Debugf,Infof,Warnf,Errorf' ./...; then
+  FAILURES+=("${RED}✗${NC} go vet")
+fi
 
 # 2) shadow analyzer (optional)
 echo "[pre-commit] running shadow..." >&2
 if command -v shadow >/dev/null 2>&1; then
-  shadow ./...
+  if ! shadow ./...; then
+    FAILURES+=("${RED}✗${NC} shadow")
+  fi
 else
   echo "[pre-commit] shadow not found; skipping. Install with: go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest" >&2
 fi
@@ -65,7 +77,9 @@ fi
 # 3) staticcheck (optional)
 echo "[pre-commit] running staticcheck..." >&2
 if command -v staticcheck >/dev/null 2>&1; then
-  staticcheck ./...
+  if ! staticcheck ./...; then
+    FAILURES+=("${RED}✗${NC} staticcheck")
+  fi
 else
   echo "[pre-commit] staticcheck not found; skipping. Install with: go install honnef.co/go/tools/cmd/staticcheck@latest" >&2
 fi
@@ -73,15 +87,38 @@ fi
 # 4) golangci-lint (optional)
 echo "[pre-commit] running golangci-lint..." >&2
 if command -v golangci-lint >/dev/null 2>&1; then
-  golangci-lint run
+  if ! golangci-lint run; then
+    FAILURES+=("${RED}✗${NC} golangci-lint")
+  fi
 else
   echo "[pre-commit] golangci-lint not found; skipping. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest" >&2
 fi
 
-# 5) Do a test build and check return code
-echo "[pre-commit] running go test build..." >&2
-if ! go build ./... > /dev/null; then
-  echo "[pre-commit] go build failed!" >&2
+# 5) Run tests
+echo "[pre-commit] running go test..." >&2
+if ! go test ./...; then
+  FAILURES+=("${RED}✗${NC} go test")
+fi
+
+# 6) Do a test build and check return code
+echo "[pre-commit] running go build..." >&2
+if ! go build ./...; then
+  FAILURES+=("${RED}✗${NC} go build")
+fi
+
+# Print failures if any
+if [ ${#FAILURES[@]} -gt 0 ]; then
+  echo "" >&2
+  echo "Failures:" >&2
+  echo "---------" >&2
+  for failure in "${FAILURES[@]}"; do
+    echo -e "  $failure" >&2
+  done
+  echo "" >&2
+  echo "[pre-commit] Some checks failed!" >&2
   exit 1
 fi
+
+echo "" >&2
+echo "[pre-commit] All checks passed!" >&2
 
