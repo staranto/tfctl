@@ -97,24 +97,58 @@ func TestAttrList_Set(t *testing.T) {
 			},
 		},
 		{
-			name:    "mixed formats",
+			name:    "mixed formats - multiple attrs",
 			initial: AttrList{},
-			value:   ".id,name::u,!internal,created-at:date:t",
+			value:   ".id,name::U,!internal,created-at:date:t",
 			wantLen: 4,
 			wantAttrs: []Attr{
 				{Key: "id", OutputKey: "id", Include: true, TransformSpec: ""},
-				{Key: "attributes.name", OutputKey: "name", Include: true, TransformSpec: "u"},
+				{Key: "attributes.name", OutputKey: "name", Include: true, TransformSpec: "U"},
 				{Key: "attributes.internal", OutputKey: "internal", Include: false, TransformSpec: ""},
 				{Key: "attributes.created-at", OutputKey: "date", Include: true, TransformSpec: "t"},
 			},
 		},
 		{
+			name:    "multiple attrs with transforms",
+			initial: AttrList{},
+			value:   "resource:r:U,id:identifier:12",
+			wantLen: 2,
+			wantAttrs: []Attr{
+				{Key: "attributes.resource", OutputKey: "r", Include: true, TransformSpec: "U"},
+				{Key: "attributes.id", OutputKey: "identifier", Include: true, TransformSpec: "12"},
+			},
+		},
+		{
+			name:    "multiple attrs with combined transforms",
+			initial: AttrList{},
+			value:   "name::U20,email::l,status::-10",
+			wantLen: 3,
+			wantAttrs: []Attr{
+				{Key: "attributes.name", OutputKey: "name", Include: true, TransformSpec: "U20"},
+				{Key: "attributes.email", OutputKey: "email", Include: true, TransformSpec: "l"},
+				{Key: "attributes.status", OutputKey: "status", Include: true, TransformSpec: "-10"},
+			},
+		},
+		{
 			name:    "global transform with wildcard",
 			initial: AttrList{},
-			value:   "*::u",
+			value:   "*::U",
 			wantLen: 1,
 			wantAttrs: []Attr{
-				{Key: "*", OutputKey: "*", Include: false, TransformSpec: "u"},
+				{Key: "*", OutputKey: "*", Include: false, TransformSpec: "U"},
+			},
+		},
+		{
+			name:    "complex real-world example",
+			initial: AttrList{},
+			value:   ".id:ID,name:Name:U,created-at:Created:t,!internal-field,status::20",
+			wantLen: 5,
+			wantAttrs: []Attr{
+				{Key: "id", OutputKey: "ID", Include: true, TransformSpec: ""},
+				{Key: "attributes.name", OutputKey: "Name", Include: true, TransformSpec: "U"},
+				{Key: "attributes.created-at", OutputKey: "Created", Include: true, TransformSpec: "t"},
+				{Key: "attributes.internal-field", OutputKey: "internal-field", Include: false, TransformSpec: ""},
+				{Key: "attributes.status", OutputKey: "status", Include: true, TransformSpec: "20"},
 			},
 		},
 		{
@@ -131,10 +165,10 @@ func TestAttrList_Set(t *testing.T) {
 			initial: AttrList{
 				{Key: "attributes.name", OutputKey: "name", Include: true, TransformSpec: ""},
 			},
-			value:   "name::u",
+			value:   "name::U",
 			wantLen: 1,
 			wantAttrs: []Attr{
-				{Key: "attributes.name", OutputKey: "name", Include: true, TransformSpec: "u"},
+				{Key: "attributes.name", OutputKey: "name", Include: true, TransformSpec: "U"},
 			},
 		},
 		{
@@ -151,10 +185,10 @@ func TestAttrList_Set(t *testing.T) {
 		{
 			name:    "whitespace trimming",
 			initial: AttrList{},
-			value:   " name : display : u ",
+			value:   " name : display : U ",
 			wantLen: 1,
 			wantAttrs: []Attr{
-				{Key: "attributes.name", OutputKey: "display", Include: true, TransformSpec: "u"},
+				{Key: "attributes.name", OutputKey: "display", Include: true, TransformSpec: "U"},
 			},
 		},
 		{
@@ -165,6 +199,26 @@ func TestAttrList_Set(t *testing.T) {
 			wantAttrs: []Attr{
 				{Key: "attributes.name", OutputKey: "name", Include: true, TransformSpec: ""},
 			},
+		},
+		{
+			name:    "invalid transform spec accepted - will be ignored during transform",
+			initial: AttrList{},
+			value:   "resource::(",
+			wantLen: 1,
+			wantAttrs: []Attr{
+				{Key: "attributes.resource", OutputKey: "resource", Include: true, TransformSpec: "("},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "mixed valid and invalid in transform spec",
+			initial: AttrList{},
+			value:   "name::U5xyz",
+			wantLen: 1,
+			wantAttrs: []Attr{
+				{Key: "attributes.name", OutputKey: "name", Include: true, TransformSpec: "U5xyz"},
+			},
+			wantErr: false,
 		},
 	}
 
@@ -211,29 +265,29 @@ func TestAttrList_SetGlobalTransformSpec(t *testing.T) {
 		{
 			name: "global uppercase",
 			initial: AttrList{
-				{Key: "*", TransformSpec: "u"},
+				{Key: "*", TransformSpec: "U"},
 				{Key: "attributes.name", TransformSpec: ""},
 				{Key: "attributes.email", TransformSpec: "l"},
 			},
-			wantSpecs: []string{"u,u", "u,", "u,l"},
+			wantSpecs: []string{"U,U", "U,", "U,l"},
 		},
 		{
 			name: "global with length transform",
 			initial: AttrList{
 				{Key: "*", TransformSpec: "10"},
 				{Key: "attributes.name", TransformSpec: ""},
-				{Key: "attributes.title", TransformSpec: "u"},
+				{Key: "attributes.title", TransformSpec: "U"},
 			},
-			wantSpecs: []string{"10,10", "10,", "10,u"},
+			wantSpecs: []string{"10,10", "10,", "10,U"},
 		},
 		{
 			name: "global with multiple transforms",
 			initial: AttrList{
-				{Key: "*", TransformSpec: "u,20"},
+				{Key: "*", TransformSpec: "U20"},
 				{Key: "attributes.name", TransformSpec: ""},
 				{Key: "attributes.email", TransformSpec: "l"},
 			},
-			wantSpecs: []string{"u,20,u,20", "u,20,", "u,20,l"},
+			wantSpecs: []string{"U20,U20", "U20,", "U20,l"},
 		},
 		{
 			name:      "empty list",
@@ -243,9 +297,9 @@ func TestAttrList_SetGlobalTransformSpec(t *testing.T) {
 		{
 			name: "only global attr",
 			initial: AttrList{
-				{Key: "*", TransformSpec: "u"},
+				{Key: "*", TransformSpec: "U"},
 			},
-			wantSpecs: []string{"u,u"},
+			wantSpecs: []string{"U,U"},
 		},
 	}
 
@@ -295,7 +349,7 @@ func TestAttr_Transform(t *testing.T) {
 		// Case transformations
 		{
 			name:  "uppercase transform",
-			attr:  Attr{TransformSpec: "u"},
+			attr:  Attr{TransformSpec: "U"},
 			input: "hello world",
 			want:  "HELLO WORLD",
 		},
@@ -319,13 +373,13 @@ func TestAttr_Transform(t *testing.T) {
 		},
 		{
 			name:  "last case transform wins - lower",
-			attr:  Attr{TransformSpec: "u,l"},
+			attr:  Attr{TransformSpec: "Ul"},
 			input: "Hello",
 			want:  "hello",
 		},
 		{
 			name:  "last case transform wins - upper",
-			attr:  Attr{TransformSpec: "l,u"},
+			attr:  Attr{TransformSpec: "lU"},
 			input: "Hello",
 			want:  "HELLO",
 		},
@@ -365,25 +419,26 @@ func TestAttr_Transform(t *testing.T) {
 		// Combined transformations
 		{
 			name:  "uppercase and truncate",
-			attr:  Attr{TransformSpec: "u,10"},
+			attr:  Attr{TransformSpec: "U10"},
 			input: "hello world",
 			want:  "HELLO WORL",
 		},
 		{
 			name:  "lowercase and truncate",
-			attr:  Attr{TransformSpec: "l,5"},
+			attr:  Attr{TransformSpec: "l5"},
 			input: "HELLO",
 			want:  "hello",
 		},
 		{
-			name:  "multiple length specs - last wins",
-			attr:  Attr{TransformSpec: "10,5"},
-			input: "hello world",
-			want:  "hello",
+			name:        "multiple length specs - last wins",
+			attr:        Attr{TransformSpec: "10 5"},
+			input:       "hello world",
+			want:        "hello",
+			description: "when multiple length specs present, last one wins",
 		},
 		{
 			name:  "case and length with last case wins",
-			attr:  Attr{TransformSpec: "u,10,l"},
+			attr:  Attr{TransformSpec: "U10l"},
 			input: "Hello World",
 			want:  "hello worl",
 		},
@@ -430,6 +485,42 @@ func TestAttr_Transform(t *testing.T) {
 			input: "hello world",
 			want:  "hello world",
 		},
+
+		// Invalid transform specs (silently ignored)
+		{
+			name:        "invalid chars in spec - ignored",
+			attr:        Attr{TransformSpec: "("},
+			input:       "hello world",
+			want:        "hello world",
+			description: "invalid chars like ( are silently ignored",
+		},
+		{
+			name:        "unknown letters in spec - ignored",
+			attr:        Attr{TransformSpec: "xyz"},
+			input:       "Hello World",
+			want:        "Hello World",
+			description: "only u/U/l/L/t/T and numbers are recognized",
+		},
+		{
+			name:  "special chars in spec - ignored",
+			attr:  Attr{TransformSpec: "@#$%"},
+			input: "test",
+			want:  "test",
+		},
+		{
+			name:        "valid mixed with invalid - valid applied",
+			attr:        Attr{TransformSpec: "U(@xyz"},
+			input:       "hello",
+			want:        "HELLO",
+			description: "U is applied, invalid chars ignored",
+		},
+		{
+			name:        "number with invalid chars - number applied",
+			attr:        Attr{TransformSpec: "5abc"},
+			input:       "hello world",
+			want:        "hello",
+			description: "5 is extracted and applied, abc ignored",
+		},
 	}
 
 	for _, tt := range tests {
@@ -459,18 +550,18 @@ func TestAttrList_String(t *testing.T) {
 		{
 			name: "single attr",
 			attrList: AttrList{
-				{Key: "attributes.name", OutputKey: "name", TransformSpec: "u"},
+				{Key: "attributes.name", OutputKey: "name", TransformSpec: "U"},
 			},
-			want: "attributes.name:name:u",
+			want: "attributes.name:name:U",
 		},
 		{
 			name: "multiple attrs",
 			attrList: AttrList{
 				{Key: "id", OutputKey: "id", TransformSpec: ""},
-				{Key: "attributes.name", OutputKey: "name", TransformSpec: "u"},
+				{Key: "attributes.name", OutputKey: "name", TransformSpec: "U"},
 				{Key: "attributes.email", OutputKey: "email", TransformSpec: "l"},
 			},
-			want: "id:id:,attributes.name:name:u,attributes.email:email:l",
+			want: "id:id:,attributes.name:name:U,attributes.email:email:l",
 		},
 		{
 			name: "attr with empty transform",
