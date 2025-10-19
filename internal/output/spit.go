@@ -5,7 +5,6 @@ package output
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -82,32 +81,6 @@ func (t Tag) Print() (out string) {
 		parts = append(parts, t.Name)
 	}
 	return strings.Join(parts, ",")
-}
-
-// DumpExamples renders a table of example command usages.
-func DumpExamples(ctx context.Context, cmd *cli.Command, examples [][2]string) {
-	if len(examples) == 0 {
-		return
-	}
-	// Build rows for the lipgloss table renderer used elsewhere in the project.
-	var rows [][]string
-	for _, ex := range examples {
-		rows = append(rows, []string{ex[0], ex[1]})
-	}
-
-	t := table.New().
-		BorderBottom(false).
-		BorderTop(false).
-		BorderLeft(false).
-		BorderRight(false).
-		Border(lipgloss.HiddenBorder()).
-		Headers().
-		Rows(rows...)
-
-	// Set headers and disable the header border for a cleaner look.
-	t = t.Headers("Command", "Description").BorderHeader(false)
-
-	fmt.Println(t)
 }
 
 // DumpSchema prints a sorted list of attribute tags for the provided type.
@@ -206,10 +179,8 @@ func SliceDiceSpit(raw bytes.Buffer,
 		return
 	}
 
-	// THINK sq specific, so here is probably not best place for this.
-	// This will transform the hiearchical state schema instances[].attributes
-	// into a schema that is the same as all the others. We can now have common
-	// code to handle all of them.
+	// Note: This schema transformation is handled by the sq command via postProcess callback,
+	// which allows resource hierarchies to be flattened for consistent processing.
 	if resources := gjson.Parse(raw.String()).Get("resources"); resources.Exists() {
 		raw = flattenState(resources, cmd.Bool("noshort"))
 	}
@@ -227,7 +198,8 @@ func SliceDiceSpit(raw bytes.Buffer,
 
 	filter := cmd.String("filter")
 
-	// THINK sq specific, so here is probably not best place for this.
+	// Note: The concrete filter is applied here to match sq command semantics.
+	// Command-specific logic like --chop is handled via postProcess callback in sq.go.
 	if cmd.Bool("concrete") {
 		if filter != "" {
 			filter += ","

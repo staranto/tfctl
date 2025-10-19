@@ -58,11 +58,13 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter
 		}
 
 		// If an attribute matching the filter key was not found, log the condition
-		// and fail early.
-		// THINK Don't we allow a bad operand to be ignored? Be consistent.
+		// and skip this filter (continue processing other filters).
+		// This allows invalid filters to be reported without rejecting the entire row.
 		if key == "" {
-			log.Error("filterkey not found: " + filter.Key)
-			return false
+			msg := fmt.Sprintf("filter key not found: %s", filter.Key)
+			log.Error(msg)
+			fmt.Fprintf(os.Stderr, "warning: %s\n", msg)
+			continue
 		}
 
 		// Get the value from the candidate for the key. If it's nil, fail early.
