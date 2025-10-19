@@ -12,10 +12,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-func GlobalFlagsValidator(ctx context.Context, c *cli.Command) error {
-	return nil
-}
-
 type FlagValidatorType func(any) error
 
 func FlagValidators(value any, validators ...FlagValidatorType) error {
@@ -24,6 +20,10 @@ func FlagValidators(value any, validators ...FlagValidatorType) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func GlobalFlagsValidator(ctx context.Context, c *cli.Command) error {
 	return nil
 }
 

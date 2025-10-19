@@ -24,12 +24,6 @@ type Entry struct {
 	Data       []byte
 }
 
-// Enabled returns true unless TFCTL_CACHE explicitly disables it ("0"/"false").
-func Enabled() bool {
-	enabled, _ := os.LookupEnv("TFCTL_CACHE")
-	return enabled == "" || (enabled != "0" && enabled != "false")
-}
-
 // Dir resolves the base cache directory.
 // Precedence:
 //  1. TFCTL_CACHE_DIR, if set and non-empty
@@ -44,6 +38,12 @@ func Dir() (string, bool) {
 		return filepath.Join(dir, "tfctl"), true
 	}
 	return "", false
+}
+
+// Enabled returns true unless TFCTL_CACHE explicitly disables it ("0"/"false").
+func Enabled() bool {
+	enabled, _ := os.LookupEnv("TFCTL_CACHE")
+	return enabled == "" || (enabled != "0" && enabled != "false")
 }
 
 // EnsureBaseDir creates the base cache directory if caching is enabled and
@@ -63,13 +63,6 @@ func EnsureBaseDir() (string, bool, error) {
 	return base, true, nil
 }
 
-// encodeKey hashes k with MD5 and returns the hex string.
-func encodeKey(k string) string {
-	h := md5.New()
-	_, _ = h.Write([]byte(k))
-	return hex.EncodeToString(h.Sum(nil))
-}
-
 // EntryPath returns the absolute path where a cache entry would live given
 // subdirectory components and the clear-text key. It also returns true if a
 // file currently exists at that path.
@@ -84,6 +77,33 @@ func EntryPath(subdirs []string, clearKey string) (string, bool) {
 		return p, true
 	}
 	return p, false
+}
+
+// Purge removes files older than the provided number of hours.
+// If hours <= 0 or the cache dir cannot be resolved, it is a no-op.
+func Purge(hours int) error {
+	if hours <= 0 {
+		log.Debug("cache cleaning disabled")
+		return nil
+	}
+	base, ok := Dir()
+	if !ok {
+		return nil
+	}
+	maxAge := time.Duration(hours) * time.Hour
+	if err := filepath.Walk(base, func(path string, info os.FileInfo, _ error) error {
+		if !info.IsDir() && time.Since(info.ModTime()) > maxAge {
+			if err := os.Remove(path); err == nil {
+				log.Debugf("removed cache file %s", path)
+			} else {
+				log.WithError(err).Warnf("failed to remove cache file %s", path)
+			}
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to purge cache: %w", err)
+	}
+	return nil
 }
 
 // Read attempts to read a cached entry.
@@ -129,29 +149,9 @@ func Write(subdirs []string, clearKey string, data []byte) error {
 	return nil
 }
 
-// Purge removes files older than the provided number of hours.
-// If hours <= 0 or the cache dir cannot be resolved, it is a no-op.
-func Purge(hours int) error {
-	if hours <= 0 {
-		log.Debug("cache cleaning disabled")
-		return nil
-	}
-	base, ok := Dir()
-	if !ok {
-		return nil
-	}
-	maxAge := time.Duration(hours) * time.Hour
-	if err := filepath.Walk(base, func(path string, info os.FileInfo, _ error) error {
-		if !info.IsDir() && time.Since(info.ModTime()) > maxAge {
-			if err := os.Remove(path); err == nil {
-				log.Debugf("removed cache file %s", path)
-			} else {
-				log.WithError(err).Warnf("failed to remove cache file %s", path)
-			}
-		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("failed to purge cache: %w", err)
-	}
-	return nil
+// encodeKey hashes k with MD5 and returns the hex string.
+func encodeKey(k string) string {
+	h := md5.New()
+	_, _ = h.Write([]byte(k))
+	return hex.EncodeToString(h.Sum(nil))
 }

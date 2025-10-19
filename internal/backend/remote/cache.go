@@ -38,6 +38,11 @@ func CacheWriter(be *BackendRemote, key string, data []byte) error {
 	return cacheutil.Write([]string{hostname, organization}, key, data)
 }
 
+func PurgeCache() error {
+	cleanHours, _ := config.GetInt("cache.clean")
+	return cacheutil.Purge(cleanHours)
+}
+
 func getOverrides(be *BackendRemote) (hostname, organization string) {
 	hostname = be.Backend.Config.Hostname
 	if h, ok := os.LookupEnv("TFE_HOSTNAME"); ok {
@@ -50,9 +55,4 @@ func getOverrides(be *BackendRemote) (hostname, organization string) {
 	}
 
 	return
-}
-
-func PurgeCache() error {
-	cleanHours, _ := config.GetInt("cache.clean")
-	return cacheutil.Purge(cleanHours)
 }

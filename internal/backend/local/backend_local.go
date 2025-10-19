@@ -83,6 +83,10 @@ func (be *BackendLocal) DiffStates(ctx context.Context, cmd *cli.Command) ([][]b
 	return states, nil
 }
 
+func (be *BackendLocal) Runs() ([]*tfe.Run, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 func (be *BackendLocal) State() ([]byte, error) {
 	sv := be.Cmd.String("sv")
 	states, err := be.States(sv)
@@ -90,32 +94,6 @@ func (be *BackendLocal) State() ([]byte, error) {
 		return nil, err
 	}
 	return states[0], nil
-}
-
-func (be *BackendLocal) States(specs ...string) ([][]byte, error) {
-	var results [][]byte
-
-	candidates, _ := be.StateVersions()
-	versions, err := csv.Finder(candidates, specs...)
-	if err != nil {
-		return nil, err
-	}
-	log.Debugf("versions: %v", versions)
-
-	// Now pound through the found versions and return each of their state bodies.
-	for _, v := range versions {
-		body, err := os.ReadFile(v.JSONDownloadURL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read state file: %w", err)
-		}
-		results = append(results, body)
-	}
-
-	return results, nil
-}
-
-func (be *BackendLocal) Runs() ([]*tfe.Run, error) {
-	return nil, fmt.Errorf("not implemented")
 }
 
 // StateVersions implements backend.Backend. It scans be.RootDir for state and
@@ -205,6 +183,28 @@ func (be *BackendLocal) StateVersions() ([]*tfe.StateVersion, error) {
 	}
 
 	return versions, nil
+}
+
+func (be *BackendLocal) States(specs ...string) ([][]byte, error) {
+	var results [][]byte
+
+	candidates, _ := be.StateVersions()
+	versions, err := csv.Finder(candidates, specs...)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("versions: %v", versions)
+
+	// Now pound through the found versions and return each of their state bodies.
+	for _, v := range versions {
+		body, err := os.ReadFile(v.JSONDownloadURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read state file: %w", err)
+		}
+		results = append(results, body)
+	}
+
+	return results, nil
 }
 
 func (be *BackendLocal) String() string {

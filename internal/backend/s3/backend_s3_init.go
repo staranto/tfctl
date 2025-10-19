@@ -15,22 +15,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// NewBackendS3 returns a BackendS3 object that implements the Backend
-// interface. It is load()ed from the config file found in the rootDir.
-func NewBackendS3(ctx context.Context, cmd *cli.Command, options ...BackendS3Option) (*BackendS3, error) {
-	options = append([]BackendS3Option{WithDefaults()}, options...)
-
-	be := &BackendS3{Ctx: ctx, Cmd: cmd}
-
-	for _, opt := range options {
-		if err := opt(ctx, cmd, be); err != nil {
-			return nil, err
-		}
-	}
-
-	return be, nil
-}
-
 type BackendS3Option = func(ctx context.Context, cmd *cli.Command, be *BackendS3) error
 
 func FromRootDir(rootDir string, required ...bool) BackendS3Option {
@@ -53,6 +37,22 @@ func FromRootDir(rootDir string, required ...bool) BackendS3Option {
 		}
 		return err
 	}
+}
+
+// NewBackendS3 returns a BackendS3 object that implements the Backend
+// interface. It is load()ed from the config file found in the rootDir.
+func NewBackendS3(ctx context.Context, cmd *cli.Command, options ...BackendS3Option) (*BackendS3, error) {
+	options = append([]BackendS3Option{WithDefaults()}, options...)
+
+	be := &BackendS3{Ctx: ctx, Cmd: cmd}
+
+	for _, opt := range options {
+		if err := opt(ctx, cmd, be); err != nil {
+			return nil, err
+		}
+	}
+
+	return be, nil
 }
 
 func WithDefaults() BackendS3Option {

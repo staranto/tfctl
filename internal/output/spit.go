@@ -36,44 +36,6 @@ type Tag struct {
 	Encoding string
 }
 
-// NewTag constructs a Tag from a raw struct tag value and an optional holder
-// prefix used to build hierarchical attribute names.
-func NewTag(h string, s string) Tag {
-	allowed := []string{"attr"}
-
-	tag := Tag{}
-
-	parts := strings.Split(s, ",")
-	if len(parts) > 0 {
-		found := false
-		for _, a := range allowed {
-			if a == parts[0] {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			return tag
-		}
-
-		tag.Kind = parts[0]
-	}
-
-	if len(parts) > 1 {
-		if h != "" {
-			parts[1] = fmt.Sprintf("%s.%s", h, parts[1])
-		}
-		tag.Name = parts[1]
-	}
-
-	if len(parts) > 2 {
-		tag.Encoding = parts[2]
-	}
-
-	return tag
-}
-
 // Print renders the tag into its display form.
 func (t Tag) Print() (out string) {
 	parts := []string{}
@@ -155,6 +117,77 @@ func DumpSchemaWalker(holder string, typ reflect.Type, depth int) []Tag {
 	}
 
 	return tags
+}
+
+// InterfaceToString converts supported primitive or composite values to a
+// string. A custom empty value may be provided.
+func InterfaceToString(value interface{}, emptyValue ...string) string {
+	if len(emptyValue) == 0 {
+		emptyValue = []string{""}
+	}
+
+	if value == nil || reflect.ValueOf(value).IsZero() {
+		return emptyValue[0]
+	}
+
+	// THINK This doesn't do what you think it does. int and bool paths are never
+	// taken?
+	switch value := value.(type) {
+	case string:
+		return value
+	case int:
+		return strconv.Itoa(value)
+	case float64:
+		// Our current use cases have no use for an actual float, so we're just
+		// going to return an integer.
+		return fmt.Sprintf("%.0f", value)
+	case bool:
+		return strconv.FormatBool(value)
+	default:
+		jsonBytes, err := json.Marshal(value)
+		if err != nil {
+			return fmt.Sprintf("%v", value)
+		}
+		return string(jsonBytes)
+	}
+}
+
+// NewTag constructs a Tag from a raw struct tag value and an optional holder
+// prefix used to build hierarchical attribute names.
+func NewTag(h string, s string) Tag {
+	allowed := []string{"attr"}
+
+	tag := Tag{}
+
+	parts := strings.Split(s, ",")
+	if len(parts) > 0 {
+		found := false
+		for _, a := range allowed {
+			if a == parts[0] {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return tag
+		}
+
+		tag.Kind = parts[0]
+	}
+
+	if len(parts) > 1 {
+		if h != "" {
+			parts[1] = fmt.Sprintf("%s.%s", h, parts[1])
+		}
+		tag.Name = parts[1]
+	}
+
+	if len(parts) > 2 {
+		tag.Encoding = parts[2]
+	}
+
+	return tag
 }
 
 // SliceDiceSpit orchestrates filtering, transforming, sorting and rendering
@@ -341,22 +374,9 @@ func TableWriter(
 	fmt.Println(t)
 }
 
-// getColors returns configured color values for table rendering.
-func getColors(key string) (header string, even string, odd string) {
-	header, _ = config.GetString(fmt.Sprintf("%s.title", key), "#f6be00")
-	even, _ = config.GetString(fmt.Sprintf("%s.even", key), "#ffffff")
-	odd, _ = config.GetString(fmt.Sprintf("%s.odd", key), "#00c8f0")
-	return
-}
-
 // flattenState takes the state schema of each entry and flattens it into a
-// schema with parent and attributes.	This is done so that we can have a common
-// schema for all the different types of resources. The state schema is
-// resources[].instances[].attribute. We'll throw away all the top level
-// attributes that are siblings of resources[]. And then the siblings of
-// instances[] become the new top level and the attributes of instances[] become
-// the new siblings of that. One resource with many instances will produce many
-// flat resources and entries in the result.
+// schema with parent and attributes. This is done so that we can have a common
+// schema for all the different types of resources.
 func flattenState(resources gjson.Result, short bool) bytes.Buffer {
 	var flatResources []map[string]interface{}
 
@@ -374,16 +394,11 @@ func flattenState(resources gjson.Result, short bool) bytes.Buffer {
 				flatResource[key] = value.Value()
 			}
 
-			// Build the developers view of the full path to the resource. The logic
-			// being, in .tf source, you'd refer to a data resource as
-			// "data.<name>.<type>", so we need to include the mode in the ID path.
 			module := ""
 			if flatResource["module"] != nil {
 				module = InterfaceToString(flatResource["module"]) + "."
 			}
 
-			// We only want to include mode for non-managed resources. This,
-			// currently, only includes "data".
 			mode := ""
 			if flatResource["mode"] != "managed" {
 				mode = InterfaceToString(flatResource["mode"]) + "."
@@ -392,7 +407,6 @@ func flattenState(resources gjson.Result, short bool) bytes.Buffer {
 			indexKey := ""
 			if flatResource["index_key"] != nil {
 				switch v := flatResource["index_key"].(type) {
-				// terraform state list doesn't show the quotes for an integer index.
 				case int, int64, float64:
 					indexKey = fmt.Sprintf("[%v]", v)
 				default:
@@ -410,6 +424,7 @@ func flattenState(resources gjson.Result, short bool) bytes.Buffer {
 			flatResources = append(flatResources, flatResource)
 		}
 	}
+
 	jsonBytes, err := json.Marshal(flatResources)
 	if err != nil {
 		slog.Error("flattenState()", "err", err)
@@ -420,6 +435,14 @@ func flattenState(resources gjson.Result, short bool) bytes.Buffer {
 	return raw
 }
 
+// getColors returns configured color values for table rendering.
+func getColors(key string) (header string, even string, odd string) {
+	header, _ = config.GetString(fmt.Sprintf("%s.title", key), "#f6be00")
+	even, _ = config.GetString(fmt.Sprintf("%s.even", key), "#ffffff")
+	odd, _ = config.GetString(fmt.Sprintf("%s.odd", key), "#00c8f0")
+	return
+}
+
 func getCommonFields(resource gjson.Result) map[string]interface{} {
 	var common = make(map[string]interface{})
 	for key, value := range resource.Map() {
@@ -428,37 +451,4 @@ func getCommonFields(resource gjson.Result) map[string]interface{} {
 		}
 	}
 	return common
-}
-
-// InterfaceToString converts supported primitive or composite values to a
-// string. A custom empty value may be provided.
-func InterfaceToString(value interface{}, emptyValue ...string) string {
-	if len(emptyValue) == 0 {
-		emptyValue = []string{""}
-	}
-
-	if value == nil || reflect.ValueOf(value).IsZero() {
-		return emptyValue[0]
-	}
-
-	// THINK This doesn't do what you think it does. int and bool paths are never
-	// taken?
-	switch value := value.(type) {
-	case string:
-		return value
-	case int:
-		return strconv.Itoa(value)
-	case float64:
-		// Our current use cases have no use for an actual float, so we're just
-		// going to return an integer.
-		return fmt.Sprintf("%.0f", value)
-	case bool:
-		return strconv.FormatBool(value)
-	default:
-		jsonBytes, err := json.Marshal(value)
-		if err != nil {
-			return fmt.Sprintf("%v", value)
-		}
-		return string(jsonBytes)
-	}
 }

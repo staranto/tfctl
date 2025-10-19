@@ -186,57 +186,6 @@ func (m siModel) View() string {
 	return strings.Join(lines, "\n")
 }
 
-func runSiInteractiveConsole(stateData map[string]interface{}) error {
-	p := tea.NewProgram(initialSiModel(stateData))
-	_, err := p.Run()
-	return err
-}
-
-// getSiHistoryFile returns the path to the si history file
-func getSiHistoryFile() string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return ".tfctl_si_history"
-	}
-	return filepath.Join(homeDir, ".tfctl_si_history")
-}
-
-// processSiQuery processes a query and returns the result as a string
-func processSiQuery(stateData map[string]interface{}, query string) string {
-	var result strings.Builder
-
-	// Capture fmt.Print output by temporarily redirecting
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	// Process the query (this will write to our pipe instead of stdout)
-	si.ProcessQuery(stateData, query)
-
-	// Restore stdout and read what was written
-	w.Close()
-	os.Stdout = oldStdout
-
-	// Read the captured output
-	buf := make([]byte, 4096)
-	for {
-		n, err := r.Read(buf)
-		if n > 0 {
-			result.Write(buf[:n])
-		}
-		if err != nil {
-			break
-		}
-	}
-	r.Close()
-
-	output := result.String()
-	if output == "" {
-		return "No results found."
-	}
-	return strings.TrimSuffix(output, "\n")
-}
-
 // getSiHelp returns the help text as a string
 func getSiHelp() string {
 	return `Query syntax:
@@ -276,6 +225,15 @@ func getSiHelp() string {
      /coalesce(null, "fallback")      - Function evaluation`
 }
 
+// getSiHistoryFile returns the path to the si history file
+func getSiHistoryFile() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ".tfctl_si_history"
+	}
+	return filepath.Join(homeDir, ".tfctl_si_history")
+}
+
 func loadSiHistory(filename string) []string {
 	var history []string
 
@@ -294,6 +252,47 @@ func loadSiHistory(filename string) []string {
 	}
 
 	return history
+}
+
+func processSiQuery(stateData map[string]interface{}, query string) string {
+	var result strings.Builder
+
+	// Capture fmt.Print output by temporarily redirecting
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	// Process the query (this will write to our pipe instead of stdout)
+	si.ProcessQuery(stateData, query)
+
+	// Restore stdout and read what was written
+	w.Close()
+	os.Stdout = oldStdout
+
+	// Read the captured output
+	buf := make([]byte, 4096)
+	for {
+		n, err := r.Read(buf)
+		if n > 0 {
+			result.Write(buf[:n])
+		}
+		if err != nil {
+			break
+		}
+	}
+	r.Close()
+
+	output := result.String()
+	if output == "" {
+		return "No results found."
+	}
+	return strings.TrimSuffix(output, "\n")
+}
+
+func runSiInteractiveConsole(stateData map[string]interface{}) error {
+	p := tea.NewProgram(initialSiModel(stateData))
+	_, err := p.Run()
+	return err
 }
 
 func saveSiHistory(filename string, history []string) {

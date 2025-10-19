@@ -46,10 +46,6 @@ type BackendS3 struct {
 	} `json:"backend"`
 }
 
-func (be *BackendS3) Runs() ([]*tfe.Run, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
 func (be *BackendS3) DiffStates(ctx context.Context, cmd *cli.Command) ([][]byte, error) {
 	// Fixup diffArgs
 	svSpecs := []string{"CSV~1", "CSV~0"}
@@ -93,6 +89,10 @@ func (be *BackendS3) DiffStates(ctx context.Context, cmd *cli.Command) ([][]byte
 	return states, nil
 }
 
+func (be *BackendS3) Runs() ([]*tfe.Run, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 func (be *BackendS3) State() ([]byte, error) {
 	sv := be.Cmd.String("sv")
 	states, err := be.States(sv)
@@ -100,28 +100,6 @@ func (be *BackendS3) State() ([]byte, error) {
 		return nil, err
 	}
 	return states[0], nil
-}
-
-func (be *BackendS3) States(specs ...string) ([][]byte, error) {
-	var results [][]byte
-
-	candidates, _ := be.StateVersions()
-	versions, err := csv.Finder(candidates, specs...)
-	if err != nil {
-		return nil, err
-	}
-	log.Debugf("versions: %v", versions)
-
-	// Now pound through the found versions and return each of their state bodies.
-	for _, v := range versions {
-		body, err := be.StateBody(v.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get state: %w", err)
-		}
-		results = append(results, body)
-	}
-
-	return results, nil
 }
 
 func (be *BackendS3) StateBody(svID string) ([]byte, error) {
@@ -323,6 +301,28 @@ func (be *BackendS3) StateVersions() ([]*tfe.StateVersion, error) {
 	}
 
 	return currentVersions, nil
+}
+
+func (be *BackendS3) States(specs ...string) ([][]byte, error) {
+	var results [][]byte
+
+	candidates, _ := be.StateVersions()
+	versions, err := csv.Finder(candidates, specs...)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("versions: %v", versions)
+
+	// Now pound through the found versions and return each of their state bodies.
+	for _, v := range versions {
+		body, err := be.StateBody(v.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get state: %w", err)
+		}
+		results = append(results, body)
+	}
+
+	return results, nil
 }
 
 func (be *BackendS3) String() string {

@@ -15,22 +15,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// NewBackendCloud returns a BackendCloud object that implements the Backend
-// interface. It is load()ed from the config file found in the rootDir.
-func NewBackendCloud(ctx context.Context, cmd *cli.Command, options ...BackendCloudOption) (*BackendCloud, error) {
-	options = append([]BackendCloudOption{WithDefaults()}, options...)
-
-	be := &BackendCloud{Ctx: ctx, Cmd: cmd}
-
-	for _, opt := range options {
-		if err := opt(ctx, cmd, be); err != nil {
-			return nil, err
-		}
-	}
-
-	return be, nil
-}
-
 type BackendCloudOption = func(ctx context.Context, cmd *cli.Command, be *BackendCloud) error
 
 func FromRootDir(rootDir string, required ...bool) BackendCloudOption {
@@ -53,6 +37,22 @@ func FromRootDir(rootDir string, required ...bool) BackendCloudOption {
 		}
 		return err
 	}
+}
+
+// NewBackendCloud returns a BackendCloud object that implements the Backend
+// interface. It is load()ed from the config file found in the rootDir.
+func NewBackendCloud(ctx context.Context, cmd *cli.Command, options ...BackendCloudOption) (*BackendCloud, error) {
+	options = append([]BackendCloudOption{WithDefaults()}, options...)
+
+	be := &BackendCloud{Ctx: ctx, Cmd: cmd}
+
+	for _, opt := range options {
+		if err := opt(ctx, cmd, be); err != nil {
+			return nil, err
+		}
+	}
+
+	return be, nil
 }
 
 func WithDefaults() BackendCloudOption {

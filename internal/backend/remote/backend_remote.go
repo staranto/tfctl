@@ -86,20 +86,6 @@ func (be *BackendRemote) Client(validate ...bool) (*tfe.Client, error) {
 	return client, nil
 }
 
-func (be *BackendRemote) Organization() (string, error) {
-	org := be.Cmd.String("org")
-	if org != "" {
-		return org, nil
-	}
-
-	org = be.Backend.Config.Organization
-	if org == "" {
-		return "", fmt.Errorf("organization is not set (precedence: --org > backend block > tfctl.yaml). Set --org or backend.config.organization: %w", ErrOrganizationNotSet)
-	}
-
-	return org, nil
-}
-
 func (be *BackendRemote) DiffStates(ctx context.Context, cmd *cli.Command) ([][]byte, error) {
 	// Fixup diffArgs
 	svSpecs := []string{"CSV~1", "CSV~0"}
@@ -147,6 +133,88 @@ func (be *BackendRemote) DiffStates(ctx context.Context, cmd *cli.Command) ([][]
 	return states, nil
 }
 
+func (be *BackendRemote) Organization() (string, error) {
+	org := be.Cmd.String("org")
+	if org != "" {
+		return org, nil
+	}
+
+	org = be.Backend.Config.Organization
+	if org == "" {
+		return "", fmt.Errorf("organization is not set (precedence: --org > backend block > tfctl.yaml). Set --org or backend.config.organization: %w", ErrOrganizationNotSet)
+	}
+
+	return org, nil
+}
+
+func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
+	if len(be.RunList) > 0 {
+		log.Errorf("be.RunList: preloaded with %d", len(be.RunList))
+		return be.RunList, nil
+	}
+
+	if be.Backend.Config.Hostname == "" {
+		be.Backend.Config.Hostname = be.Cmd.String("host")
+	}
+
+	client, err := be.Client()
+	if err != nil {
+		log.WithError(err).Error("can't get client")
+		return nil, err
+	}
+
+	limit := be.Cmd.Int("limit")
+
+	pageSize := 100
+	if limit > 0 && limit < pageSize {
+		pageSize = limit
+	}
+
+	organization, err := be.Organization()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+	log.Debugf("organization: %v", organization)
+
+	workspace, err := be.Workspace()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workspace name: %w", err)
+	}
+
+	log.Debugf("workspace: %v", workspace)
+
+	options := tfe.RunListForOrganizationOptions{
+		WorkspaceNames: workspace.Name,
+		ListOptions:    tfe.ListOptions{PageNumber: 1, PageSize: pageSize},
+	}
+
+	var results []*tfe.Run
+
+	// Paginate through the dataset
+	for {
+		page, err := client.Runs.ListForOrganization(be.Ctx, organization, &options)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, page.Items...)
+
+		if len(results) >= limit {
+			results = results[:limit]
+			break
+		}
+
+		log.Debugf("page: %d, total: %d", page.CurrentPage, len(results))
+
+		if page.NextPage == 0 {
+			break
+		}
+		options.ListOptions.PageNumber++
+	}
+
+	return results, nil
+}
+
 func (be *BackendRemote) State() ([]byte, error) {
 	sv := be.Cmd.String("sv")
 	states, err := be.States(sv)
@@ -154,31 +222,6 @@ func (be *BackendRemote) State() ([]byte, error) {
 		return nil, err
 	}
 	return states[0], nil
-}
-
-func (be *BackendRemote) States(specs ...string) ([][]byte, error) {
-	var results [][]byte
-
-	candidates, err := be.StateVersions()
-	if err != nil {
-		return nil, err
-	}
-	versions, err := csv.Finder(candidates, specs...)
-	if err != nil {
-		return nil, err
-	}
-	log.Debugf("versions: %v", versions)
-
-	// Now pound through the found versions and return each of their state bodies.
-	for _, v := range versions {
-		doc, err := Hitter(be, v.DownloadURL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get state: %w", err)
-		}
-		results = append(results, doc.Bytes())
-	}
-
-	return results, nil
 }
 
 func (be *BackendRemote) StateVersion(svSpecs ...string) (tfe.StateVersion, error) {
@@ -268,74 +311,6 @@ func (be *BackendRemote) StateVersion(svSpecs ...string) (tfe.StateVersion, erro
 	}
 
 	return *stateVersion, nil
-}
-
-func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
-	if len(be.RunList) > 0 {
-		log.Errorf("be.RunList: preloaded with %d", len(be.RunList))
-		return be.RunList, nil
-	}
-
-	if be.Backend.Config.Hostname == "" {
-		be.Backend.Config.Hostname = be.Cmd.String("host")
-	}
-
-	client, err := be.Client()
-	if err != nil {
-		log.WithError(err).Error("can't get client")
-		return nil, err
-	}
-
-	limit := be.Cmd.Int("limit")
-
-	pageSize := 100
-	if limit > 0 && limit < pageSize {
-		pageSize = limit
-	}
-
-	organization, err := be.Organization()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get organization: %w", err)
-	}
-	log.Debugf("organization: %v", organization)
-
-	workspace, err := be.Workspace()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workspace name: %w", err)
-	}
-
-	log.Debugf("workspace: %v", workspace)
-
-	options := tfe.RunListForOrganizationOptions{
-		WorkspaceNames: workspace.Name,
-		ListOptions:    tfe.ListOptions{PageNumber: 1, PageSize: pageSize},
-	}
-
-	var results []*tfe.Run
-
-	// Paginate through the dataset
-	for {
-		page, err := client.Runs.ListForOrganization(be.Ctx, organization, &options)
-		if err != nil {
-			return nil, err
-		}
-
-		results = append(results, page.Items...)
-
-		if len(results) >= limit {
-			results = results[:limit]
-			break
-		}
-
-		log.Debugf("page: %d, total: %d", page.CurrentPage, len(results))
-
-		if page.NextPage == 0 {
-			break
-		}
-		options.ListOptions.PageNumber++
-	}
-
-	return results, nil
 }
 
 // StateVersions implements backend.Backend.
@@ -434,6 +409,31 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 			}
 			results[i] = full
 		}
+	}
+
+	return results, nil
+}
+
+func (be *BackendRemote) States(specs ...string) ([][]byte, error) {
+	var results [][]byte
+
+	candidates, err := be.StateVersions()
+	if err != nil {
+		return nil, err
+	}
+	versions, err := csv.Finder(candidates, specs...)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("versions: %v", versions)
+
+	// Now pound through the found versions and return each of their state bodies.
+	for _, v := range versions {
+		doc, err := Hitter(be, v.DownloadURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get state: %w", err)
+		}
+		results = append(results, doc.Bytes())
 	}
 
 	return results, nil

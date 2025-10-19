@@ -15,22 +15,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// NewBackendRemote returns a BackendRemote object that implements the Backend
-// interface. It is load()ed from the config file found in the rootDir.
-func NewBackendRemote(ctx context.Context, cmd *cli.Command, options ...BackendRemoteOption) (*BackendRemote, error) {
-	options = append([]BackendRemoteOption{WithDefaults()}, options...)
-
-	be := &BackendRemote{Ctx: ctx, Cmd: cmd}
-
-	for _, opt := range options {
-		if err := opt(ctx, cmd, be); err != nil {
-			return nil, err
-		}
-	}
-
-	return be, nil
-}
-
 type BackendRemoteOption = func(ctx context.Context, cmd *cli.Command, be *BackendRemote) error
 
 // BuckNaked gives non-state related commands a bare minimum remote config so
@@ -67,6 +51,22 @@ func FromRootDir(rootDir string, required ...bool) BackendRemoteOption {
 		}
 		return err
 	}
+}
+
+// NewBackendRemote returns a BackendRemote object that implements the Backend
+// interface. It is load()ed from the config file found in the rootDir.
+func NewBackendRemote(ctx context.Context, cmd *cli.Command, options ...BackendRemoteOption) (*BackendRemote, error) {
+	options = append([]BackendRemoteOption{WithDefaults()}, options...)
+
+	be := &BackendRemote{Ctx: ctx, Cmd: cmd}
+
+	for _, opt := range options {
+		if err := opt(ctx, cmd, be); err != nil {
+			return nil, err
+		}
+	}
+
+	return be, nil
 }
 
 func WithDefaults() BackendRemoteOption {

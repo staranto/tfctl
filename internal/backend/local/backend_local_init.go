@@ -15,22 +15,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// NewBackendLocal returns a BackendLocal object that implements the Backend
-// interface. It is load()ed from the config file found in the rootDir.
-func NewBackendLocal(ctx context.Context, cmd *cli.Command, options ...BackendLocalOption) (*BackendLocal, error) {
-	options = append([]BackendLocalOption{WithDefaults()}, options...)
-
-	be := &BackendLocal{Ctx: ctx, Cmd: cmd}
-
-	for _, opt := range options {
-		if err := opt(ctx, cmd, be); err != nil {
-			return nil, err
-		}
-	}
-
-	return be, nil
-}
-
 type BackendLocalOption = func(ctx context.Context, cmd *cli.Command, be *BackendLocal) error
 
 func FromRootDir(rootDir string) BackendLocalOption {
@@ -50,6 +34,22 @@ func FromRootDir(rootDir string) BackendLocalOption {
 		// backend.
 		return be.load(ctx, cmd)
 	}
+}
+
+// NewBackendLocal returns a BackendLocal object that implements the Backend
+// interface. It is load()ed from the config file found in the rootDir.
+func NewBackendLocal(ctx context.Context, cmd *cli.Command, options ...BackendLocalOption) (*BackendLocal, error) {
+	options = append([]BackendLocalOption{WithDefaults()}, options...)
+
+	be := &BackendLocal{Ctx: ctx, Cmd: cmd}
+
+	for _, opt := range options {
+		if err := opt(ctx, cmd, be); err != nil {
+			return nil, err
+		}
+	}
+
+	return be, nil
 }
 
 func WithDefaults() BackendLocalOption {

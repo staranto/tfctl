@@ -32,6 +32,88 @@ type Filter struct {
 	Target  string
 }
 
+// BuildFilters parses a filter specification string into a slice of Filter.
+// Invalid specs (unsupported operand or malformed expression) are skipped.
+func BuildFilters(spec string) []Filter {
+	// Don't prealloc because we don't know what len will be and performance is
+	// not critical.
+	//nolint:prealloc
+	var filters []Filter
+
+	// If there are no filters specified, go home early.
+	if spec == "" {
+		return filters
+	}
+
+	// Default delimiter is ",", allow an override.
+	delim := ","
+	if d, ok := os.LookupEnv("TFCTL_FILTER_DELIM"); ok {
+		delim = d
+	}
+
+	// Split the spec and iterate over each filter spec entry.
+	filterSpecs := strings.Split(spec, delim)
+	for _, filterSpec := range filterSpecs {
+		parts := filterRegex.FindStringSubmatch(filterSpec)
+
+		// If a supported operand was not found, log an error and throw it away.
+		if parts == nil {
+			log.Error("invalid filter: " + filterSpec)
+			continue
+		}
+
+		// parts[2] is the operand. It may have a leading negation. If so, trim it
+		// and just use the remainder as the working operand.
+		negate := strings.HasPrefix(parts[2], "!")
+		if negate {
+			parts[2] = strings.TrimPrefix(parts[2], "!")
+		}
+
+		// We've got a valid filter, append it to the result set.
+		filters = append(filters, Filter{
+			Key:     parts[1],
+			Negate:  negate,
+			Operand: parts[2],
+			Target:  parts[3],
+		})
+	}
+
+	return filters
+}
+
+// FilterDataset returns a result set filtered per the provided spec. It is the
+// public entry point used by SliceDiceSpit.
+func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) []map[string]interface{} {
+	//nolint:prealloc // Don't prealloc because we don't know what len will be.
+	var filteredResults []map[string]interface{}
+
+	// Build a slice of filters from the spec once so we can discard invalid
+	// entries and avoid reparsing for each candidate row.
+	filters := BuildFilters(spec)
+
+	// Iterate over the candidate dataset, checking each against the filters.
+	for _, candidate := range candidates.Array() {
+		if !applyFilters(candidate, attrs, filters) {
+			continue
+		}
+
+		// If the filter check was successful, add each attribute from the candidate
+		// to the filtered result set.
+		result := make(map[string]interface{})
+		for i := range attrs {
+			attr := attrs[i]
+			// Intentionally defer Transform to SliceDiceSpit output phase.
+			// This function is responsible for filtering only; transformations
+			// are applied downstream during output formatting.
+			value := driller.Driller(candidate.Raw, attr.Key)
+			result[attr.OutputKey] = value.Value()
+		}
+		filteredResults = append(filteredResults, result)
+	}
+
+	return filteredResults
+}
+
 // applyFilters returns true if the candidate row matches all of the provided
 // filters. Native TF API filter keys (prefixed with _) are ignored here.
 func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter) bool {
@@ -69,7 +151,6 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter
 		}
 
 		// Get the value from the candidate for the key. If it's nil, fail early.
-		// value := candidate.Get(key).Value()
 		value := driller.Driller(candidate.Raw, key).Value()
 		if value == nil {
 			return false
@@ -96,8 +177,6 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter
 	return true
 }
 
-// checkContainsOperand checks the value against the target for "membership".
-// Does the target "have" the value?
 // checkContainsOperand evaluates a membership style filter (operand '@')
 // against slice or map values.
 func checkContainsOperand(value interface{}, filter Filter) bool {
@@ -121,11 +200,30 @@ func checkContainsOperand(value interface{}, filter Filter) bool {
 	return false
 }
 
-// checkStringOperand checks the value against the target using the provided
-// operand and returns a bool indicating if the check was successful. The
-// value is normalized to a string before the check is performed. All operands,
-// including '@', support normalized string values. `@` is a special case that
-// also supports other types.
+// checkNumericOperand compares a numeric value against the filter target using
+// numeric semantics. Supported operands: =, >, < and the negated form via
+// filter.Negate (e.g., != is represented as Negate + "=").
+func checkNumericOperand(value float64, filter Filter) bool {
+	// Parse the target as a float64
+	tgt, err := strconv.ParseFloat(strings.TrimSpace(filter.Target), 64)
+	if err != nil {
+		log.Error("invalid numeric target: " + filter.Target)
+		return false
+	}
+
+	switch filter.Operand {
+	case "=":
+		return (value == tgt) == !filter.Negate
+	case ">":
+		return (value > tgt) == !filter.Negate
+	case "<":
+		return (value < tgt) == !filter.Negate
+	default:
+		log.Error("unsupported numeric operand: " + filter.Operand)
+		return false
+	}
+}
+
 // checkStringOperand evaluates a string comparison style filter against the
 // provided value using the operand semantics.
 func checkStringOperand(value string, filter Filter) bool {
@@ -149,7 +247,6 @@ func checkStringOperand(value string, filter Filter) bool {
 			return false
 		}
 		return matched == !filter.Negate
-
 	default:
 		log.Error("unsupported filtering operand: " + filter.Operand)
 		return false
@@ -187,118 +284,4 @@ func toFloat64(v interface{}) (float64, bool) {
 	default:
 		return 0, false
 	}
-}
-
-// checkNumericOperand compares a numeric value against the filter target using
-// numeric semantics. Supported operands: =, >, < and the negated form via
-// filter.Negate (e.g., != is represented as Negate + "="). If the operand is
-// explicitly "!=", it is also handled for clarity.
-func checkNumericOperand(value float64, filter Filter) bool {
-	// Parse the target as a float64
-	tgt, err := strconv.ParseFloat(strings.TrimSpace(filter.Target), 64)
-	if err != nil {
-		log.Error("invalid numeric target: " + filter.Target)
-		return false
-	}
-
-	switch filter.Operand {
-	case "=":
-		return (value == tgt) == !filter.Negate
-	case ">":
-		return (value > tgt) == !filter.Negate
-	case "<":
-		return (value < tgt) == !filter.Negate
-	default:
-		log.Error("unsupported numeric operand: " + filter.Operand)
-		return false
-	}
-}
-
-// BuildFilters parses the filter spec and returns a slice of filter structs.
-// Invalid specs (currently determined by an unsupported operand) are ignored.
-// BuildFilters parses a filter specification string into a slice of Filter.
-// Invalid specs (unsupported operand or malformed expression) are skipped.
-func BuildFilters(spec string) []Filter {
-	// Don't prealloc because we don't know what len will be and performance is
-	// not critical.
-	//nolint:prealloc
-	var filters []Filter
-
-	// If there are no filters specified, go home early.
-	if spec == "" {
-		return filters
-	}
-
-	// Default delimiter is ",", allow an override.
-	delim := ","
-	if d, ok := os.LookupEnv("TFCTL_FILTER_DELIM"); ok {
-		delim = d
-	}
-
-	// Split the spec and iterate over each filter spec entry.
-	filterSpecs := strings.Split(spec, delim)
-	for _, filterSpec := range filterSpecs {
-		parts := filterRegex.FindStringSubmatch(filterSpec)
-
-		// If a supported operand was not found, log an error and throw it away.
-		if parts == nil {
-			log.Error("invalid filter: " + filterSpec)
-			continue
-		}
-
-		// parts[2] is the operand. It may have a leading negation. If so, chop it
-		// off and just use the remainder as the working operand.
-		// Check if the operand begins with a negation.
-		negate := strings.HasPrefix(parts[2], "!")
-		if negate {
-			parts[2] = strings.TrimPrefix(parts[2], "!")
-		}
-
-		// We've got a good filter, append it to the result set.
-		filters = append(filters, Filter{
-			Key:     parts[1],
-			Negate:  negate,
-			Operand: parts[2],
-			Target:  parts[3],
-		})
-	}
-
-	return filters
-}
-
-// FilterDataset filters the candidate dataset based on the provided spec. This
-// is the entry point by SliceDiceSpit() for filtering.
-// FilterDataset returns a result set filtered per the provided spec. It is the
-// public entry point used by SliceDiceSpit.
-func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) []map[string]interface{} {
-	//nolint:prealloc // Don't prealloc because we don't know what len will be.
-	var filteredResults []map[string]interface{}
-
-	// Build a slice of filters from the spec. We're doing this here so we don't
-	// have to reparse for each candidate row and so we can remove any invalid
-	// filters.
-	filters := BuildFilters(spec)
-
-	// Iterate over the candidate dataset, checking each against the filters.
-	for _, candidate := range candidates.Array() {
-		if !applyFilters(candidate, attrs, filters) {
-			continue
-		}
-
-		// If the filter check was successful, add each attribute from the candidate
-		// to the filtered result set.
-		result := make(map[string]interface{})
-		for i := range attrs {
-			attr := attrs[i]
-			// Intentionally defer Transform to SliceDiceSpit output phase.
-			// This function is responsible for filtering only; transformations
-			// are applied downstream during output formatting.
-			// value := attr.Transform(candidate.Get(attr.Key).Value())
-			value := driller.Driller(candidate.Raw, attr.Key)
-			result[attr.OutputKey] = value.Value()
-		}
-		filteredResults = append(filteredResults, result)
-	}
-
-	return filteredResults
 }

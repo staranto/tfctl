@@ -49,13 +49,6 @@ func FriendlyTFE(err error, ctx ErrorContext) error {
 		nonEmpty(ctx.Operation, "request"), host, ctx.Org, ctx.Workspace, err)
 }
 
-func nonEmpty(s, fallback string) string {
-	if s == "" {
-		return fallback
-	}
-	return s
-}
-
 func hostEnvKey(host string) string {
 	if host == "" {
 		return ""
@@ -64,6 +57,13 @@ func hostEnvKey(host string) string {
 	// e.g., app.terraform.io -> app_terraform_io
 	key := "TF_TOKEN_" + replaceDots(host)
 	return key
+}
+
+func nonEmpty(s, fallback string) string {
+	if s == "" {
+		return fallback
+	}
+	return s
 }
 
 func replaceDots(s string) string {

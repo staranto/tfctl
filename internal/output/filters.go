@@ -29,132 +29,6 @@ type Filter struct {
 	Target  string
 }
 
-// applyFilters checks the candidate against the filters and returns a bool
-// indicating if the candidate should be included in the result set.
-// applyFilters returns true if the candidate row matches all of the provided
-// filters. Native TF API filter keys (prefixed with _) are ignored here.
-func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter) bool {
-	// No filters, so go home early.
-	if len(filters) == 0 {
-		return true
-	}
-
-	// Iterate over the filters, checking each against the candidate.
-	for _, filter := range filters {
-		var key string
-
-		// If Key starts with _, it's a native filter used by the TF API and should
-		// be ignored here.
-		if strings.HasPrefix(filter.Key, "_") {
-			continue
-		}
-
-		// Find the attribute that matches the filter key.
-		for _, attr := range attrs {
-			if attr.OutputKey == filter.Key {
-				key = attr.Key
-				break
-			}
-		}
-
-		// If an attribute matching the filter key was not found, log the condition
-		// and skip this filter (continue processing other filters).
-		// This allows invalid filters to be reported without rejecting the entire row.
-		if key == "" {
-			msg := fmt.Sprintf("filter key not found: %s", filter.Key)
-			log.Error(msg)
-			fmt.Fprintf(os.Stderr, "warning: %s\n", msg)
-			continue
-		}
-
-		// Get the value from the candidate for the key. If it's nil, fail early.
-		// go value := candidate.Get(key).Value()
-		value := driller.Driller(candidate.Raw, key).Value()
-		if value == nil {
-			return false
-		}
-
-		// Check the value against the filter. If it fails the check, fail early as
-		// there's no need to continue checking the remaining filters.
-		result := true
-		if v, ok := value.(string); ok {
-			result = checkStringOperand(v, filter)
-		} else if v, ok := value.(bool); ok {
-			result = checkStringOperand(fmt.Sprintf("%v", v), filter)
-		} else if filter.Operand == "@" {
-			result = checkContainsOperand(value, filter)
-		}
-
-		if !result {
-			return false
-		}
-	}
-
-	return true
-}
-
-// checkContainsOperand checks the value against the target for "membership". Does
-// the target "have" the value?
-// checkContainsOperand evaluates a membership style filter (operand '@')
-// against slice or map values.
-func checkContainsOperand(value interface{}, filter Filter) bool {
-	switch val := value.(type) {
-	case []any:
-		for _, item := range val {
-			if item == filter.Target && !filter.Negate {
-				return true
-			}
-		}
-	case map[string]any:
-		_, found := val[filter.Target]
-		if filter.Negate {
-			return !found
-		}
-		return found
-	default:
-		log.Error(fmt.Sprintf("unsupported type for contains filtering: %T", value))
-		return false
-	}
-	return false
-}
-
-// checkStringOperand checks the value against the target using the provided
-// operand and returns a bool indicating if the check was successful. The
-// value is normalized to a string before the check is performed. All operands,
-// including '@', support normalized string values. `@` is a special case that
-// also supports other types.
-// checkStringOperand evaluates a string comparison style filter against the
-// provided value using the operand semantics.
-func checkStringOperand(value string, filter Filter) bool {
-	switch filter.Operand {
-	case "=":
-		return value == filter.Target == !filter.Negate
-	case "~":
-		return strings.EqualFold(value, filter.Target) == !filter.Negate
-	case "^":
-		return strings.HasPrefix(value, filter.Target) == !filter.Negate
-	case ">":
-		return value > filter.Target == !filter.Negate
-	case "<":
-		return value < filter.Target == !filter.Negate
-	case "@":
-		return strings.Contains(value, filter.Target) == !filter.Negate
-	case "/":
-		matched, err := regexp.MatchString(filter.Target, value)
-		if err != nil {
-			log.Error("invalid regex: " + filter.Target)
-			return false
-		}
-		return matched == !filter.Negate
-
-	default:
-		log.Error("unsupported filtering operand: " + filter.Operand)
-		return false
-	}
-}
-
-// BuildFilters parses the filter spec and returns a slice of filter structs.
-// Invalid specs (currently determined by an unsupported operand) are ignored.
 // BuildFilters parses a filter specification string into a slice of Filter.
 // Invalid specs (unsupported operand or malformed expression) are skipped.
 func BuildFilters(spec string) []Filter {
@@ -205,17 +79,14 @@ func BuildFilters(spec string) []Filter {
 	return filters
 }
 
-// FilterDataset filters the candidate dataset based on the provided spec. This
-// is the entry point by SliceDiceSpit() for filtering.
 // FilterDataset returns a result set filtered per the provided spec. It is the
 // public entry point used by SliceDiceSpit.
 func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) []map[string]interface{} {
 	//nolint:prealloc // Don't prealloc because we don't know what len will be.
 	var filteredResults []map[string]interface{}
 
-	// Build a slice of filters from the spec. We're doing this here so we don't
-	// have to reparse for each candidate row and so we can remove any invalid
-	// filters.
+	// Build a slice of filters from the spec once so we can discard invalid
+	// entries and avoid reparsing for each candidate row.
 	filters := BuildFilters(spec)
 
 	// Iterate over the candidate dataset, checking each against the filters.
@@ -240,4 +111,115 @@ func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) [
 	}
 
 	return filteredResults
+}
+
+// applyFilters returns true if the candidate row matches all of the provided
+// filters. Native TF API filter keys (prefixed with _) are ignored here.
+func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter) bool {
+	// No filters, so go home early.
+	if len(filters) == 0 {
+		return true
+	}
+
+	// Iterate over the filters, checking each against the candidate.
+	for _, filter := range filters {
+		var key string
+
+		// If Key starts with _, it's a native filter used by the TF API and should
+		// be ignored here.
+		if strings.HasPrefix(filter.Key, "_") {
+			continue
+		}
+
+		// Find the attribute that matches the filter key.
+		for _, attr := range attrs {
+			if attr.OutputKey == filter.Key {
+				key = attr.Key
+				break
+			}
+		}
+
+		// If an attribute matching the filter key was not found, log the condition
+		// and skip this filter (continue processing other filters).
+		if key == "" {
+			msg := fmt.Sprintf("filter key not found: %s", filter.Key)
+			log.Error(msg)
+			fmt.Fprintf(os.Stderr, "warning: %s\n", msg)
+			continue
+		}
+
+		// Get the value from the candidate for the key. If it's nil, fail early.
+		value := driller.Driller(candidate.Raw, key).Value()
+		if value == nil {
+			return false
+		}
+
+		// Check the value against the filter. If it fails the check, fail early.
+		result := true
+		if v, ok := value.(string); ok {
+			result = checkStringOperand(v, filter)
+		} else if v, ok := value.(bool); ok {
+			result = checkStringOperand(fmt.Sprintf("%v", v), filter)
+		} else if filter.Operand == "@" {
+			result = checkContainsOperand(value, filter)
+		}
+
+		if !result {
+			return false
+		}
+	}
+
+	return true
+}
+
+// checkContainsOperand evaluates a membership style filter (operand '@')
+// against slice or map values.
+func checkContainsOperand(value interface{}, filter Filter) bool {
+	switch val := value.(type) {
+	case []any:
+		for _, item := range val {
+			if item == filter.Target && !filter.Negate {
+				return true
+			}
+		}
+	case map[string]any:
+		_, found := val[filter.Target]
+		if filter.Negate {
+			return !found
+		}
+		return found
+	default:
+		log.Error(fmt.Sprintf("unsupported type for contains filtering: %T", value))
+		return false
+	}
+	return false
+}
+
+// checkStringOperand evaluates a string comparison style filter against the
+// provided value using the operand semantics.
+func checkStringOperand(value string, filter Filter) bool {
+	switch filter.Operand {
+	case "=":
+		return value == filter.Target == !filter.Negate
+	case "~":
+		return strings.EqualFold(value, filter.Target) == !filter.Negate
+	case "^":
+		return strings.HasPrefix(value, filter.Target) == !filter.Negate
+	case ">":
+		return value > filter.Target == !filter.Negate
+	case "<":
+		return value < filter.Target == !filter.Negate
+	case "@":
+		return strings.Contains(value, filter.Target) == !filter.Negate
+	case "/":
+		matched, err := regexp.MatchString(filter.Target, value)
+		if err != nil {
+			log.Error("invalid regex: " + filter.Target)
+			return false
+		}
+		return matched == !filter.Negate
+	default:
+		log.Error("unsupported filtering operand: " + filter.Operand)
+		return false
+	}
 }

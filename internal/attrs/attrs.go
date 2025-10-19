@@ -112,16 +112,6 @@ func (a *Attr) Transform(value interface{}) interface{} {
 // AttrList is a collection of Attr used to shape output fields.
 type AttrList []Attr
 
-// String returns a string representation of the AttrList. This matches the format
-// of the original --attrs flag.
-func (a *AttrList) String() string {
-	result := make([]string, 0, len(*a))
-	for _, attr := range *a {
-		result = append(result, fmt.Sprintf("%s:%s:%s", attr.Key, attr.OutputKey, attr.TransformSpec))
-	}
-	return strings.Join(result, ",")
-}
-
 // Set parses each spec from --attrs and adds it to the AttrList.
 func (a *AttrList) Set(value string) error {
 	if value == "" || value == "*" {
@@ -234,6 +224,16 @@ func (a *AttrList) SetGlobalTransformSpec() error {
 	}
 
 	return nil
+}
+
+// String returns a string representation of the AttrList. This matches the format
+// of the original --attrs flag.
+func (a *AttrList) String() string {
+	result := make([]string, 0, len(*a))
+	for _, attr := range *a {
+		result = append(result, fmt.Sprintf("%s:%s:%s", attr.Key, attr.OutputKey, attr.TransformSpec))
+	}
+	return strings.Join(result, ",")
 }
 
 // Type returns the flag type for use with the flag.Value interface.

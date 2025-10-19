@@ -23,24 +23,6 @@ type options struct {
 // config chain (AWS_PROFILE, ~/.aws/config, ~/.aws/credentials, IMDS, etc.).
 type Option func(*options)
 
-// WithProfile sets the shared config profile. Defaults to AWS_PROFILE/env chain.
-func WithProfile(profile string) Option {
-	return func(o *options) { o.profile = profile }
-}
-
-// WithRegion sets the region override. Defaults to env/profile/metadata chain.
-func WithRegion(region string) Option {
-	return func(o *options) { o.region = region }
-}
-
-// Endpoint resolution is service-specific in AWS SDK v2.
-// For S3, pass an option to NewS3 that sets Options.EndpointResolverV2.
-
-// WithRetryer injects a custom retryer; if not set, SDK defaults are used.
-func WithRetryer(newRetryer func() awsv2.Retryer) Option {
-	return func(o *options) { o.retryer = newRetryer }
-}
-
 // LoadAWSConfig loads AWS SDK v2 config. By default it inherits the shell's
 // AWS setup (AWS_PROFILE, shared config, env, IMDS). Options can override
 // profile, region, and retryer without changing callers.
@@ -69,6 +51,24 @@ func LoadAWSConfig(ctx context.Context, opts ...Option) (awsv2.Config, error) {
 func NewS3(cfg awsv2.Config, optFns ...func(*s3v2.Options)) *s3v2.Client {
 	return s3v2.NewFromConfig(cfg, optFns...)
 }
+
+// WithProfile sets the shared config profile. Defaults to AWS_PROFILE/env chain.
+func WithProfile(profile string) Option {
+	return func(o *options) { o.profile = profile }
+}
+
+// WithRegion sets the region override. Defaults to env/profile/metadata chain.
+func WithRegion(region string) Option {
+	return func(o *options) { o.region = region }
+}
+
+// WithRetryer injects a custom retryer; if not set, SDK defaults are used.
+func WithRetryer(newRetryer func() awsv2.Retryer) Option {
+	return func(o *options) { o.retryer = newRetryer }
+}
+
+// Endpoint resolution is service-specific in AWS SDK v2.
+// For S3, pass an option to NewS3 that sets Options.EndpointResolverV2.
 
 // WithS3EndpointResolver allows callers to set the S3 EndpointResolverV2
 // in a type-safe way when constructing the client.

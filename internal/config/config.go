@@ -40,6 +40,63 @@ func init() {
 	_, _ = Load()
 }
 
+// GetInt returns the integer value for the given dotted key path. A single
+// defaultValue may be provided and is returned when the key is missing.
+// YAML numbers may decode as int, int64, or float64; common cases are handled.
+func GetInt(key string, defaultValue ...int) (int, error) {
+	if len(Config.Data) == 0 {
+		_, _ = Load()
+	}
+
+	val, err := Config.get(key)
+	if err != nil && Config.Namespace != "" {
+		val, err = Config.get(Config.Namespace + "." + key)
+	}
+
+	if err != nil {
+		if len(defaultValue) == 1 {
+			return defaultValue[0], nil
+		}
+		return 0, err
+	}
+
+	// YAML numbers may be unmarshaled as int/float64 depending on content.
+	switch v := val.(type) {
+	case int:
+		return v, nil
+	case int64:
+		return int(v), nil
+	case float64:
+		return int(v), nil
+	default:
+		return 0, errors.New("value is not an int")
+	}
+}
+
+// GetString returns the string value for the given dotted key path. If the key
+// is not found and a single defaultValue is provided, the default is returned.
+// Returns an error if the value exists but is not a string.
+func GetString(key string, defaultValue ...string) (string, error) {
+	if len(Config.Data) == 0 {
+		_, _ = Load()
+	}
+
+	val, err := Config.get(key)
+	if err != nil {
+		if len(defaultValue) == 1 {
+			return defaultValue[0], nil
+		}
+		return "", err
+	}
+
+	s, ok := val.(string)
+	if !ok {
+		return "", errors.New("value is not a string")
+	}
+
+	return s, nil
+}
+
 // Load reads the YAML configuration file from the standard user config
 // directory and populates the global Config. If cfgFilePath is provided in the
 // future, it can be used to override the path selection (currently ignored).
@@ -107,63 +164,6 @@ func (cfg *Type) get(kspec string) (any, error) {
 	}
 
 	return nil, fmt.Errorf("no valid path found among: %v", candidateKeys)
-}
-
-// GetString returns the string value for the given dotted key path. If the key
-// is not found and a single defaultValue is provided, the default is returned.
-// Returns an error if the value exists but is not a string.
-func GetString(key string, defaultValue ...string) (string, error) {
-	if len(Config.Data) == 0 {
-		_, _ = Load()
-	}
-
-	val, err := Config.get(key)
-	if err != nil {
-		if len(defaultValue) == 1 {
-			return defaultValue[0], nil
-		}
-		return "", err
-	}
-
-	s, ok := val.(string)
-	if !ok {
-		return "", errors.New("value is not a string")
-	}
-
-	return s, nil
-}
-
-// GetInt returns the integer value for the given dotted key path. A single
-// defaultValue may be provided and is returned when the key is missing.
-// YAML numbers may decode as int, int64, or float64; common cases are handled.
-func GetInt(key string, defaultValue ...int) (int, error) {
-	if len(Config.Data) == 0 {
-		_, _ = Load()
-	}
-
-	val, err := Config.get(key)
-	if err != nil && Config.Namespace != "" {
-		val, err = Config.get(Config.Namespace + "." + key)
-	}
-
-	if err != nil {
-		if len(defaultValue) == 1 {
-			return defaultValue[0], nil
-		}
-		return 0, err
-	}
-
-	// YAML numbers may be unmarshaled as int/float64 depending on content.
-	switch v := val.(type) {
-	case int:
-		return v, nil
-	case int64:
-		return int(v), nil
-	case float64:
-		return int(v), nil
-	default:
-		return 0, errors.New("value is not an int")
-	}
 }
 
 // getConfigFile returns the absolute path to the YAML config file according to
