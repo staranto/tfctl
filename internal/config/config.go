@@ -166,11 +166,25 @@ func (cfg *Type) get(kspec string) (any, error) {
 	return nil, fmt.Errorf("no valid path found among: %v", candidateKeys)
 }
 
-// getConfigFile returns the absolute path to the YAML config file according to
-// the OS-specific user configuration directory returned by os.UserConfigDir.
-// Expected path is <UserConfigDir>/tfctl.yaml. The file must exist and not be
-// a directory.
+// getConfigFile returns the absolute path to the YAML config file. If the
+// TFCTL_CFG environment variable is set, it is treated as the full path to the
+// config file. Otherwise, the OS-specific user configuration directory returned
+// by os.UserConfigDir is used with the filename "tfctl.yaml". The file must
+// exist and not be a directory.
 func getConfigFile() (string, error) {
+	// Check for TFCTL_CFG environment variable first
+	if cfgPath := os.Getenv("TFCTL_CFG"); cfgPath != "" {
+		if fileInfo, err := os.Stat(cfgPath); err == nil {
+			if !fileInfo.IsDir() {
+				log.Debugf("using config file from TFCTL_CFG: %s", cfgPath)
+				return cfgPath, nil
+			}
+			return "", fmt.Errorf("TFCTL_CFG points to a directory: %s", cfgPath)
+		}
+		return "", fmt.Errorf("config file not found at TFCTL_CFG path: %s", cfgPath)
+	}
+
+	// Fall back to user config directory
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
