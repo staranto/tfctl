@@ -18,8 +18,8 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/csv"
 	"github.com/staranto/tfctlgo/internal/differ"
+	"github.com/staranto/tfctlgo/internal/svutil"
 )
 
 type BackendRemote struct {
@@ -421,7 +421,7 @@ func (be *BackendRemote) States(specs ...string) ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	versions, err := csv.Finder(candidates, specs...)
+	versions, err := svutil.Resolve(candidates, specs...)
 	if err != nil {
 		return nil, err
 	}

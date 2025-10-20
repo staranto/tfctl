@@ -1,5 +1,6 @@
 // Copyright (c) 2025 Steve Taranto <staranto@gmail.com>.
 // SPDX-License-Identifier: Apache-2.0
+// no-cloc
 
 // Package config provides loading and typed accessors for tfctl's user
 // configuration. The configuration is expected to be a YAML document located

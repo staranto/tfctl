@@ -22,8 +22,8 @@ import (
 	"github.com/urfave/cli/v3"
 
 	awsx "github.com/staranto/tfctlgo/internal/aws"
-	"github.com/staranto/tfctlgo/internal/csv"
 	"github.com/staranto/tfctlgo/internal/differ"
+	"github.com/staranto/tfctlgo/internal/svutil"
 )
 
 type BackendS3 struct {
@@ -307,7 +307,7 @@ func (be *BackendS3) States(specs ...string) ([][]byte, error) {
 	var results [][]byte
 
 	candidates, _ := be.StateVersions()
-	versions, err := csv.Finder(candidates, specs...)
+	versions, err := svutil.Resolve(candidates, specs...)
 	if err != nil {
 		return nil, err
 	}

@@ -17,8 +17,8 @@ import (
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/csv"
 	"github.com/staranto/tfctlgo/internal/differ"
+	"github.com/staranto/tfctlgo/internal/svutil"
 )
 
 // BackendLocal is a struct that represents a local backend configuration.
@@ -189,7 +189,7 @@ func (be *BackendLocal) States(specs ...string) ([][]byte, error) {
 	var results [][]byte
 
 	candidates, _ := be.StateVersions()
-	versions, err := csv.Finder(candidates, specs...)
+	versions, err := svutil.Resolve(candidates, specs...)
 	if err != nil {
 		return nil, err
 	}

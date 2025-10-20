@@ -183,10 +183,11 @@ func checkContainsOperand(value interface{}, filter Filter) bool {
 	switch val := value.(type) {
 	case []any:
 		for _, item := range val {
-			if item == filter.Target && !filter.Negate {
-				return true
+			if item == filter.Target {
+				return !filter.Negate
 			}
 		}
+		return filter.Negate
 	case map[string]any:
 		_, found := val[filter.Target]
 		if filter.Negate {
@@ -197,7 +198,6 @@ func checkContainsOperand(value interface{}, filter Filter) bool {
 		log.Error(fmt.Sprintf("unsupported type for contains filtering: %T", value))
 		return false
 	}
-	return false
 }
 
 // checkNumericOperand compares a numeric value against the filter target using
