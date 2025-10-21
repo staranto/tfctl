@@ -4,17 +4,22 @@ run:
 
 linters:
   enable:
-    - govet
-    - staticcheck
-    - revive
-    - errcheck
-    - ineffassign
-    - gofmt
-    - goimports
     - copyloopvar
-    - predeclared
+    - cyclop
+    - deadcode
+    - dupl
+    - errcheck
     - gocritic
     - godot # doc comment formatting
+    - gofmt
+    - goimports
+    - govet
+    - ineffassign
+    - predeclared
+    - revive
+    - staticcheck
+    - unparam
+    - unused
 
 linters-settings:
   goimports:
