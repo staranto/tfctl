@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
+	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
@@ -17,7 +18,12 @@ import (
 // organizations from the configured host, supports --tldr/--schema
 // short-circuit behavior, and emits output per common flags.
 func OqCommandAction(ctx context.Context, cmd *cli.Command) error {
-	_, _, client, err := InitRemoteOrgQuery(ctx, cmd)
+	be, err := remote.NewBackendRemote(ctx, cmd, remote.BuckNaked())
+	if err != nil {
+		return err
+	}
+
+	client, err := be.Client()
 	if err != nil {
 		return err
 	}
