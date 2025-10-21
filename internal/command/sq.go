@@ -38,13 +38,6 @@ func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
 
 	config.Config.Namespace = "sq"
 
-	// Check to make sure the target directory looks like it might be a legit TF
-	// workspace.
-	tfConfigFile := fmt.Sprintf("%s/.terraform/terraform.tfstate", m.RootDir)
-	if _, err := os.Stat(tfConfigFile); err != nil {
-		return fmt.Errorf("terraform config file not found: %s", tfConfigFile)
-	}
-
 	// Figure out what type of Backend we're in.
 	be, err := backend.NewBackend(ctx, *cmd)
 	if err != nil {

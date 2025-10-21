@@ -7,13 +7,11 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
 	altsrc "github.com/urfave/cli-altsrc/v3"
 	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/backend"
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
@@ -21,76 +19,50 @@ import (
 // runs via the active backend, supports --tldr/--schema short-circuits, and
 // emits output per common flags.
 func RqCommandAction(ctx context.Context, cmd *cli.Command) error {
-	m := GetMeta(cmd)
-	log.Debugf("Executing action for %v", m.Args[1:])
-
-	// Bail out early if we're just dumping tldr.
-	if ShortCircuitTLDR(ctx, cmd, "rq") {
-		return nil
-	}
-
-	// Bail out early if we're just dumping the schema.
-	if DumpSchemaIfRequested(cmd, reflect.TypeOf(tfe.Run{})) {
-		return nil
-	}
-
-	attrs := BuildAttrs(cmd, ".id", "created-at", "status")
-	log.Debugf("attrs: %v", attrs)
-
-	// Figure out what type of Backend we're in.
-	be, err := backend.NewBackend(ctx, *cmd)
+	be, err := InitLocalBackendQuery(ctx, cmd)
 	if err != nil {
 		return err
 	}
-	log.Debugf("be: %v", be)
 
-	results, err := be.Runs()
-	if err != nil {
-		return err
+	runner := &QueryActionRunner[*tfe.Run]{
+		CommandName:  "rq",
+		SchemaType:   reflect.TypeOf(tfe.Run{}),
+		DefaultAttrs: []string{".id", "created-at", "status"},
+		FetchFn: func(ctx context.Context, cmd *cli.Command) (
+			[]*tfe.Run,
+			error,
+		) {
+			return be.Runs()
+		},
 	}
-	log.Debugf("runs: %v", results)
-
-	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {
-		return err
-	}
-
-	return nil
+	return runner.Run(ctx, cmd)
 }
 
 // RqCommandBuilder constructs the cli.Command for "rq", wiring metadata,
 // flags, and action/validator.
 func RqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
-	return &cli.Command{
+	return (&QueryCommandBuilder{
 		Name:      "rq",
 		Usage:     "run query",
 		UsageText: `tfctl rq [RootDir] [options]`,
-		Metadata: map[string]any{
-			"meta": meta,
-		},
-		Flags: append([]cli.Flag{
+		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:    "limit",
 				Aliases: []string{"l"},
 				Usage:   "limit runs returned",
 				Sources: cli.NewValueSourceChain(
-					yaml.YAML("rq.limit", altsrc.StringSourcer(cfg.Source)),
-					yaml.YAML("limit", altsrc.StringSourcer(cfg.Source)),
+					yaml.YAML("rq.limit", altsrc.StringSourcer(meta.Config.Source)),
+					yaml.YAML("limit", altsrc.StringSourcer(meta.Config.Source)),
 				),
 				Value: 99999,
 			},
 			NewHostFlag("rq", meta.Config.Source),
 			NewOrgFlag("rq", meta.Config.Source),
-			tldrFlag,
-			schemaFlag,
 			workspaceFlag,
-		}, NewGlobalFlags("rq")...),
-		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := RqCommandValidator(ctx, c); err != nil {
-				return err
-			}
-			return RqCommandAction(ctx, c)
 		},
-	}
+		Action: RqCommandAction,
+		Meta:   meta,
+	}).Build()
 }
 
 // RqCommandValidator performs validation for "rq" and delegates to

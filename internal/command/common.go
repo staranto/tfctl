@@ -12,10 +12,13 @@ import (
 	"reflect"
 
 	"github.com/apex/log"
+	"github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/jsonapi"
 	"github.com/urfave/cli/v3"
 
 	"github.com/staranto/tfctlgo/internal/attrs"
+	"github.com/staranto/tfctlgo/internal/backend"
+	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/meta"
 	"github.com/staranto/tfctlgo/internal/output"
 )
@@ -118,4 +121,146 @@ func PaginateAndCollect[T any](ctx context.Context, limit int, pageSize int, fet
 		pageNumber = nextPage
 	}
 	return results, nil
+}
+
+// OrgQueryErrorContext is a helper to construct remote.ErrorContext for
+// organization-related queries (mq, pq). It requires the backend and
+// organization.
+func OrgQueryErrorContext(
+	be *remote.BackendRemote,
+	org string,
+	operation string,
+) remote.ErrorContext {
+	return remote.ErrorContext{
+		Host:      be.Backend.Config.Hostname,
+		Org:       org,
+		Operation: operation,
+		Resource:  "organization",
+	}
+}
+
+// QueryCommandBuilder is a helper that constructs a cli.Command for query
+// subcommands (mq, pq, oq, svq, rq, wq) using a consistent pattern.
+// It accepts the command name, usage text, optional UsageText, custom flags,
+// the action handler, and meta. The builder automatically wires metadata,
+// adds tldr/schema flags, applies global flags, and sets up validators.
+type QueryCommandBuilder struct {
+	Name      string
+	Usage     string
+	UsageText string
+	Flags     []cli.Flag
+	Action    func(context.Context, *cli.Command) error
+	Meta      meta.Meta
+}
+
+// Build returns a configured cli.Command from the builder.
+func (qcb *QueryCommandBuilder) Build() *cli.Command {
+	return &cli.Command{
+		Name:      qcb.Name,
+		Usage:     qcb.Usage,
+		UsageText: qcb.UsageText,
+		Metadata: map[string]any{
+			"meta": qcb.Meta,
+		},
+		Flags: append(qcb.Flags, append([]cli.Flag{
+			tldrFlag,
+			schemaFlag,
+		}, NewGlobalFlags(qcb.Name)...)...),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if err := GlobalFlagsValidator(ctx, c); err != nil {
+				return err
+			}
+			return qcb.Action(ctx, c)
+		},
+	}
+}
+
+// QueryActionRunner[T] encapsulates the common query action pattern for all
+// query subcommands. It handles steps 1-4 and 6 (GetMeta, short-circuit
+// checks, BuildAttrs, schema dumping, and output emission), with step 5
+// (data fetching) provided by FetchFn.
+type QueryActionRunner[T any] struct {
+	CommandName  string
+	SchemaType   reflect.Type
+	DefaultAttrs []string
+	FetchFn      func(context.Context, *cli.Command) ([]T, error)
+}
+
+// Run executes the query action with the provided context and command.
+func (qar *QueryActionRunner[T]) Run(
+	ctx context.Context,
+	cmd *cli.Command,
+) error {
+	// Step 1: GetMeta + debug.
+	m := GetMeta(cmd)
+	log.Debugf("Executing action for %v", m.Args[1:])
+
+	// Step 2: Short-circuit checks.
+	if ShortCircuitTLDR(ctx, cmd, qar.CommandName) {
+		return nil
+	}
+	if DumpSchemaIfRequested(cmd, qar.SchemaType) {
+		return nil
+	}
+
+	// Step 3: BuildAttrs + debug.
+	attrs := BuildAttrs(cmd, qar.DefaultAttrs...)
+	log.Debugf("attrs: %v", attrs)
+
+	// Step 4: Fetch data.
+	results, err := qar.FetchFn(ctx, cmd)
+	if err != nil {
+		return err
+	}
+
+	// Step 5: Emit + return.
+	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {
+		return err
+	}
+	return nil
+}
+
+// InitRemoteOrgQuery initializes a remote backend connection for queries that
+// operate on organizations. It returns the backend, organization name, and
+// TFE client, or an error if initialization fails.
+func InitRemoteOrgQuery(
+	ctx context.Context,
+	cmd *cli.Command,
+) (*remote.BackendRemote, string, *tfe.Client, error) {
+	be, err := remote.NewBackendRemote(ctx, cmd, remote.BuckNaked())
+	if err != nil {
+		return nil, "", nil, err
+	}
+	log.Debugf("be: %v", be)
+
+	client, err := be.Client()
+	if err != nil {
+		return nil, "", nil, err
+	}
+	log.Debugf("client: %v", client.BaseURL())
+
+	org, err := be.Organization()
+	if err != nil {
+		return nil, "", nil, fmt.Errorf(
+			"failed to resolve organization: %w",
+			err,
+		)
+	}
+
+	return be, org, client, nil
+}
+
+// InitLocalBackendQuery initializes a local backend connection for queries
+// that operate on local state. It returns the backend or an error if
+// initialization fails.
+func InitLocalBackendQuery(ctx context.Context, cmd *cli.Command) (
+	backend.Backend,
+	error,
+) {
+	be, err := backend.NewBackend(ctx, *cmd)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("be: %v", be)
+	return be, nil
 }

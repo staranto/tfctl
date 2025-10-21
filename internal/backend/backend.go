@@ -68,8 +68,18 @@ func NewBackend(ctx context.Context, cmd cli.Command) (Backend, error) {
 	}
 
 	// If terraform.tfstate exists but .terraform/terraform.tfstate doesn't,
-	// infer local backend. This is a terraform.backend {} block situation
+	// infer local backend. This is an empty terraform.backend {} block use case.
 	if cErr != nil && sErr == nil {
+		return local.NewBackendLocal(ctx, &cmd,
+			local.FromRootDir(meta.RootDir),
+			local.WithEnvOverride(meta.Env),
+		)
+	}
+
+	// If .terraform/terraform.tfstate and terraform.tfstate don't exist but
+	// .terraform/environment does, we're in a local backend with multi-workspace
+	// configuration. The environment file points to the workspace directory.
+	if cErr != nil && sErr != nil && eErr == nil {
 		return local.NewBackendLocal(ctx, &cmd,
 			local.FromRootDir(meta.RootDir),
 			local.WithEnvOverride(meta.Env),

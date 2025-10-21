@@ -175,21 +175,6 @@ func LoadStateData(ctx context.Context, cmd *cli.Command, rootDir string) (map[s
 	return stateData, nil
 }
 
-// LoadStateDataFromFile loads an unencrypted state file from disk (test helper).
-func LoadStateDataFromFile(filepath string) (map[string]interface{}, error) {
-	data, err := os.ReadFile(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read state file: %w", err)
-	}
-
-	var stateData map[string]interface{}
-	if err := json.Unmarshal(data, &stateData); err != nil {
-		return nil, fmt.Errorf("failed to parse state file: %w", err)
-	}
-
-	return stateData, nil
-}
-
 func decryptState(encryptedData string, derivedKey []byte) ([]byte, error) {
 	// Decode base64 data
 	ciphertext, err := base64.StdEncoding.DecodeString(encryptedData)

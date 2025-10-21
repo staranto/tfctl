@@ -5,10 +5,8 @@ package command
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
-	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
 	altsrc "github.com/urfave/cli-altsrc/v3"
 	yaml "github.com/urfave/cli-altsrc/v3/yaml"
@@ -22,85 +20,62 @@ import (
 // workspaces for the selected organization, supports --tldr/--schema short-
 // circuits, and emits results per common flags.
 func WqCommandAction(ctx context.Context, cmd *cli.Command) error {
-	m := GetMeta(cmd)
-	log.Debugf("Executing action for %v", m.Args[1:])
-
-	// Bail out early if we're just dumping tldr.
-	if ShortCircuitTLDR(ctx, cmd, "wq") {
-		return nil
-	}
-
-	// Bail out early if we're just dumping the schema.
-	if DumpSchemaIfRequested(cmd, reflect.TypeOf(tfe.Workspace{})) {
-		return nil
-	}
-
-	attrs := BuildAttrs(cmd, ".id", "name")
-	log.Debugf("attrs: %v", attrs)
-
-	be, err := remote.NewBackendRemote(ctx, cmd, remote.BuckNaked())
+	be, org, client, err := InitRemoteOrgQuery(ctx, cmd)
 	if err != nil {
 		return err
 	}
-	log.Debugf("be: %v", be)
 
-	client, err := be.Client()
-	if err != nil {
-		return err
-	}
-	log.Debugf("client: %v", client.BaseURL())
-
-	org, err := be.Organization()
-	if err != nil {
-		return fmt.Errorf("failed to resolve organization: %w", err)
-	}
-
-	options := tfe.WorkspaceListOptions{
-		ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 100},
-	}
-
-	var results []*tfe.Workspace
-
-	// Paginate through the dataset
-	for {
-		page, err := client.Workspaces.List(ctx, org, &options)
-		if err != nil {
-			ctxErr := remote.ErrorContext{
-				Host:      be.Backend.Config.Hostname,
-				Org:       org,
-				Operation: "list workspaces",
-				Resource:  "organization",
+	runner := &QueryActionRunner[*tfe.Workspace]{
+		CommandName:  "wq",
+		SchemaType:   reflect.TypeOf(tfe.Workspace{}),
+		DefaultAttrs: []string{".id", "name"},
+		FetchFn: func(ctx context.Context, cmd *cli.Command) (
+			[]*tfe.Workspace,
+			error,
+		) {
+			options := tfe.WorkspaceListOptions{
+				ListOptions: tfe.ListOptions{
+					PageNumber: 1,
+					PageSize:   100,
+				},
 			}
-			return remote.FriendlyTFE(err, ctxErr)
-		}
 
-		results = append(results, page.Items...)
-		log.Debugf("page: %d, total: %d", page.CurrentPage, len(results))
+			var results []*tfe.Workspace
 
-		if page.Pagination.NextPage == 0 {
-			break
-		}
-		options.ListOptions.PageNumber++
+			// Paginate through the dataset
+			for {
+				page, err := client.Workspaces.List(ctx, org, &options)
+				if err != nil {
+					ctxErr := OrgQueryErrorContext(
+						be,
+						org,
+						"list workspaces",
+					)
+					return nil, remote.FriendlyTFE(err, ctxErr)
+				}
+
+				results = append(results, page.Items...)
+
+				if page.Pagination.NextPage == 0 {
+					break
+				}
+				options.ListOptions.PageNumber++
+			}
+
+			return results, nil
+		},
 	}
-
-	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {
-		return err
-	}
-
-	return nil
+	return runner.Run(ctx, cmd)
 }
 
 // WqCommandBuilder constructs the cli.Command for "wq", wiring metadata,
 // flags, and action/validator handlers.
 func WqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
-	return &cli.Command{
+	return (&QueryCommandBuilder{
 		Name:      "wq",
 		Usage:     "workspace query",
 		UsageText: `tfctl wq [RootDir] [options]`,
-		Metadata: map[string]any{
-			"meta": meta,
-		},
-		Flags: append([]cli.Flag{
+		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:    "limit",
 				Aliases: []string{"l"},
@@ -113,16 +88,10 @@ func WqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			},
 			NewHostFlag("wq", meta.Config.Source),
 			NewOrgFlag("wq", meta.Config.Source),
-			tldrFlag,
-			schemaFlag,
-		}, NewGlobalFlags("wq")...),
-		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := WqCommandValidator(ctx, c); err != nil {
-				return err
-			}
-			return WqCommandAction(ctx, c)
 		},
-	}
+		Action: WqCommandAction,
+		Meta:   meta,
+	}).Build()
 }
 
 // WqCommandValidator performs validation for "wq" and delegates to

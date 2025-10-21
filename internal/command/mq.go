@@ -5,10 +5,8 @@ package command
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
-	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
@@ -21,89 +19,72 @@ import (
 // behavior for --tldr and --schema, and emits results according to common
 // output/attr flags.
 func MqCommandAction(ctx context.Context, cmd *cli.Command) error {
-	m := GetMeta(cmd)
-	log.Debugf("Executing action for %v", m.Args[1:])
-
-	// Bail out early if we're just dumping tldr.
-	if ShortCircuitTLDR(ctx, cmd, "mq") {
-		return nil
-	}
-
-	// Bail out early if we're just dumping the schema.
-	if DumpSchemaIfRequested(cmd, reflect.TypeOf(tfe.RegistryModule{})) {
-		return nil
-	}
-
-	attrs := BuildAttrs(cmd, ".id", "name")
-	log.Debugf("attrs: %v", attrs)
-
-	be, err := remote.NewBackendRemote(ctx, cmd, remote.BuckNaked())
-	if err != nil {
-		return err
-	}
-	log.Debugf("be: %v", be)
-
-	client, err := be.Client()
-	if err != nil {
-		return err
-	}
-	log.Debugf("client: %v", client.BaseURL())
-
-	org, err := be.Organization()
-	if err != nil {
-		return fmt.Errorf("failed to resolve organization: %w", err)
-	}
-
-	results, err := PaginateAndCollect(ctx, 0, 100, func(pageNumber, pageSize int) ([]*tfe.RegistryModule, int, error) {
-		opts := tfe.RegistryModuleListOptions{
-			ListOptions: tfe.ListOptions{PageNumber: pageNumber, PageSize: pageSize},
-		}
-		page, listErr := client.RegistryModules.List(ctx, org, &opts)
-		if listErr != nil {
-			ctxErr := remote.ErrorContext{
-				Host:      be.Backend.Config.Hostname,
-				Org:       org,
-				Operation: "list registry modules",
-				Resource:  "organization",
-			}
-			return nil, 0, remote.FriendlyTFE(listErr, ctxErr)
-		}
-		return page.Items, page.Pagination.NextPage, nil
-	})
+	be, org, client, err := InitRemoteOrgQuery(ctx, cmd)
 	if err != nil {
 		return err
 	}
 
-	if err := EmitJSONAPISlice(results, attrs, cmd); err != nil {
-		return err
+	runner := &QueryActionRunner[*tfe.RegistryModule]{
+		CommandName:  "mq",
+		SchemaType:   reflect.TypeOf(tfe.RegistryModule{}),
+		DefaultAttrs: []string{".id", "name"},
+		FetchFn: func(ctx context.Context, cmd *cli.Command) (
+			[]*tfe.RegistryModule,
+			error,
+		) {
+			return PaginateAndCollect(
+				ctx,
+				0,
+				100,
+				func(pageNumber, pageSize int) (
+					[]*tfe.RegistryModule,
+					int,
+					error,
+				) {
+					opts := tfe.RegistryModuleListOptions{
+						ListOptions: tfe.ListOptions{
+							PageNumber: pageNumber,
+							PageSize:   pageSize,
+						},
+					}
+					page, listErr := client.RegistryModules.List(
+						ctx,
+						org,
+						&opts,
+					)
+					if listErr != nil {
+						ctxErr := OrgQueryErrorContext(
+							be,
+							org,
+							"list registry modules",
+						)
+						return nil, 0, remote.FriendlyTFE(
+							listErr,
+							ctxErr,
+						)
+					}
+					return page.Items, page.Pagination.NextPage, nil
+				},
+			)
+		},
 	}
-
-	return nil
+	return runner.Run(ctx, cmd)
 }
 
 // MqCommandBuilder constructs the cli.Command definition for the "mq" command,
 // wiring flags, metadata, and the action/validator handlers.
 func MqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
-	return &cli.Command{
+	return (&QueryCommandBuilder{
 		Name:      "mq",
 		Usage:     "module registry query",
 		UsageText: `tfctl mq [RootDir] [options]`,
-		Metadata: map[string]any{
-			"meta": meta,
-		},
-		Flags: append([]cli.Flag{
+		Flags: []cli.Flag{
 			NewHostFlag("mq", meta.Config.Source),
 			NewOrgFlag("mq", meta.Config.Source),
-			tldrFlag,
-			schemaFlag,
-		}, NewGlobalFlags("mq")...),
-		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := MqCommandValidator(ctx, c); err != nil {
-				return err
-			}
-			return MqCommandAction(ctx, c)
 		},
-	}
+		Action: MqCommandAction,
+		Meta:   meta,
+	}).Build()
 }
 
 // MqCommandValidator performs command-level validation for "mq" and currently
