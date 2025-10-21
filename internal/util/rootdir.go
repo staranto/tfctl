@@ -10,9 +10,14 @@ import (
 )
 
 // ParseRootDir parses a RootDir string and returns the absolute directory and
-// any optional environment override. It returns an error if the directory does
-// not exist or is not a directory.
+// any optional environment override. It returns an error if the fs entry does
+// not exist, is empty or is not a directory.
 func ParseRootDir(rootDir string) (string, string, error) {
+
+	if rootDir == "" {
+		return "", "", os.ErrInvalid
+	}
+
 	var dir, env string
 
 	// First, split the path to see if there is an ::env override.
