@@ -116,7 +116,9 @@ if [ ${#FAILURES[@]} -gt 0 ]; then
   done
   echo "" >&2
   echo "[pre-commit] Some checks failed!" >&2
-  exit 1
+  # If it's --hard and we've gotten here, we know we want to fail.  Getting here
+  # when not --hard is not a failure.
+  exit $HARD
 fi
 
 echo "" >&2
