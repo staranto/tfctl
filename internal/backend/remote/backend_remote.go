@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
+	"github.com/staranto/tfctlgo/internal/config"
 	"github.com/staranto/tfctlgo/internal/differ"
 	"github.com/staranto/tfctlgo/internal/svutil"
 )
@@ -133,18 +134,60 @@ func (be *BackendRemote) DiffStates(ctx context.Context, cmd *cli.Command) ([][]
 	return states, nil
 }
 
+// Organization returns the organization name following this precedence:
+// 1. --org flag value
+// 2. organization from terraform config backend remote block
+// 3. namespaced org entry from tfctl config file (backend.remote.org)
+// 4. non-namespaced org entry from tfctl config file (org)
 func (be *BackendRemote) Organization() (string, error) {
+	// Precedence 1: --org flag
 	org := be.Cmd.String("org")
 	if org != "" {
 		return org, nil
 	}
 
+	// Precedence 2: organization from backend config
 	org = be.Backend.Config.Organization
-	if org == "" {
-		return "", fmt.Errorf("organization is not set (precedence: --org > backend block > tfctl.yaml). Set --org or backend.config.organization: %w", ErrOrganizationNotSet)
+	if org != "" {
+		return org, nil
 	}
 
-	return org, nil
+	// Precedence 3 & 4: from config file (namespaced then non-namespaced)
+	org, err := config.GetString("org")
+	if err == nil && org != "" {
+		return org, nil
+	}
+
+	return "", fmt.Errorf("organization is not set (precedence: --org flag > backend.config.organization > tfctl.yaml org). Set --org or backend.config.organization: %w", ErrOrganizationNotSet)
+}
+
+// Host returns the TFE/HCP host following this precedence:
+// 1. --host flag value
+// 2. hostname from terraform config backend remote block
+// 3. namespaced host entry from tfctl config file (backend.remote.host)
+// 4. non-namespaced host entry from tfctl config file (host)
+// If no host is provided, defaults to app.terraform.io (Terraform Cloud).
+func (be *BackendRemote) Host() string {
+	// Precedence 1: --host flag
+	host := be.Cmd.String("host")
+	if host != "" {
+		return host
+	}
+
+	// Precedence 2: hostname from backend config
+	host = be.Backend.Config.Hostname
+	if host != "" {
+		return host
+	}
+
+	// Precedence 3 & 4: from config file (namespaced then non-namespaced)
+	host, err := config.GetString("host")
+	if err == nil && host != "" {
+		return host
+	}
+
+	// Default to Terraform Cloud
+	return "app.terraform.io"
 }
 
 func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
@@ -153,9 +196,7 @@ func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
 		return be.RunList, nil
 	}
 
-	if be.Backend.Config.Hostname == "" {
-		be.Backend.Config.Hostname = be.Cmd.String("host")
-	}
+	be.Backend.Config.Hostname = be.Host()
 
 	client, err := be.Client()
 	if err != nil {
@@ -320,9 +361,7 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 		return be.StateVersionList, nil
 	}
 
-	if be.Backend.Config.Hostname == "" {
-		be.Backend.Config.Hostname = be.Cmd.String("host")
-	}
+	be.Backend.Config.Hostname = be.Host()
 
 	client, err := be.Client()
 	if err != nil {
