@@ -196,6 +196,14 @@ func decryptState(encryptedData string, derivedKey []byte) ([]byte, error) {
 
 	// Extract nonce and ciphertext - no salt needed since key is already derived
 	nonceSize := aesGCM.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return nil, fmt.Errorf(
+			"ciphertext too short: expected at least %d bytes, got %d",
+			nonceSize,
+			len(ciphertext),
+		)
+	}
+
 	nonce := ciphertext[:nonceSize]
 	encrypted := ciphertext[nonceSize:]
 
