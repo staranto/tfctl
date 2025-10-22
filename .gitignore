@@ -1,11 +1,14 @@
 **/.copilot/
 **/.vscode/
-
 **/.envrc*
+
+# Go test coverage reports.
 **/*.out
-**/testdata/.cache
 
-# Temporarily ignore these working hacks.
+# Integration test binaries.
+**/*.test
 
-# Added by goreleaser init:
+# Added by goreleaser init.
 dist/
+
+
