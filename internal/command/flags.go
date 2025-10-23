@@ -101,6 +101,10 @@ func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 	return
 }
 
+// NewHostFlag constructs a cli.StringFlag for the "host" flag, optionally
+// namespaced to a command and config file.  params[1] is the config file.  Note
+// that currently the sq command does not include params[1], thereby forcing the
+// host to be derived from the backend or explicit flag.
 func NewHostFlag(params ...string) (flag *cli.StringFlag) {
 	flag = &cli.StringFlag{
 		Name:    "host",
@@ -114,12 +118,16 @@ func NewHostFlag(params ...string) (flag *cli.StringFlag) {
 	}
 
 	if len(params) == 2 {
-		flag = NameSpacedValueChainFlag(params[0], params[1], flag)
+		flag = NameSpacedValueChainFlagFromConfigFile(params[0], params[1], flag)
 	}
 
 	return
 }
 
+// NewOrgFlag constructs a cli.StringFlag for the "org" flag, optionally
+// namespaced to a command and config file. params[1] is the config file.  Note
+// that currently the sq command does not include params[1], thereby forcing the
+// org to be derived from the backend or explicit flag.
 func NewOrgFlag(params ...string) (flag *cli.StringFlag) {
 	flag = &cli.StringFlag{
 		Name:  "org",
@@ -130,14 +138,20 @@ func NewOrgFlag(params ...string) (flag *cli.StringFlag) {
 		),
 	}
 
+	// params[0] is the TFCTL config file. We only want to refer to it in non-
+	// state commands, such as mq. For state commands, such as sq, we don't want
+	// to infer a value and instead derive it from the .terraform/
+	// terraform.tfstate.
 	if len(params) == 2 {
-		flag = NameSpacedValueChainFlag(params[0], params[1], flag)
+		flag = NameSpacedValueChainFlagFromConfigFile(params[0], params[1], flag)
 	}
 
 	return
 }
 
-func NameSpacedValueChainFlag(ns string, path string, flag *cli.StringFlag) *cli.StringFlag {
+// NameSpacedValueChainFlagFromConfigFile adds namespaced and global config file
+// sources to the given flag's Sources chain.
+func NameSpacedValueChainFlagFromConfigFile(ns string, path string, flag *cli.StringFlag) *cli.StringFlag {
 	src := yaml.YAML(ns+"."+flag.Name, altsrc.StringSourcer(path))
 	flag.Sources.Chain = append(flag.Sources.Chain, src)
 

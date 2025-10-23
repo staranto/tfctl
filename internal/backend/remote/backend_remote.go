@@ -134,44 +134,22 @@ func (be *BackendRemote) DiffStates(ctx context.Context, cmd *cli.Command) ([][]
 	return states, nil
 }
 
-// Organization returns the organization name following this precedence:
-// 1. --org flag value
-// 2. organization from terraform config backend remote block
-// 3. namespaced org entry from tfctl config file (backend.remote.org)
-// 4. non-namespaced org entry from tfctl config file (org)
-func (be *BackendRemote) Organization() (string, error) {
-	// Precedence 1: --org flag
-	org := be.Cmd.String("org")
-	if org != "" {
-		return org, nil
-	}
-
-	// Precedence 2: organization from backend config
-	org = be.Backend.Config.Organization
-	if org != "" {
-		return org, nil
-	}
-
-	// Precedence 3 & 4: from config file (namespaced then non-namespaced)
-	org, err := config.GetString("org")
-	if err == nil && org != "" {
-		return org, nil
-	}
-
-	return "", fmt.Errorf("organization is not set (precedence: --org flag > backend.config.organization > tfctl.yaml org). Set --org or backend.config.organization: %w", ErrOrganizationNotSet)
-}
-
 // Host returns the TFE/HCP host following this precedence:
 // 1. --host flag value
 // 2. hostname from terraform config backend remote block
 // 3. namespaced host entry from tfctl config file (backend.remote.host)
 // 4. non-namespaced host entry from tfctl config file (host)
-// If no host is provided, defaults to app.terraform.io (Terraform Cloud).
+// 5. If no host is provided, defaults to app.terraform.io.
 func (be *BackendRemote) Host() string {
+
+	var host string
+
 	// Precedence 1: --host flag
-	host := be.Cmd.String("host")
-	if host != "" {
-		return host
+	if be.Cmd.IsSet("host") {
+		host = be.Cmd.String("host")
+		if host != "" {
+			return host
+		}
 	}
 
 	// Precedence 2: hostname from backend config
@@ -188,6 +166,38 @@ func (be *BackendRemote) Host() string {
 
 	// Default to Terraform Cloud
 	return "app.terraform.io"
+}
+
+// Organization returns the organization name following this precedence:
+// 1. --org flag value
+// 2. organization from terraform config backend remote block
+// 3. namespaced org entry from tfctl config file (backend.remote.org)
+// 4. non-namespaced org entry from tfctl config file (org)
+func (be *BackendRemote) Organization() (string, error) {
+
+	var org string
+
+	// Precedence 1: --org flag
+	if be.Cmd.IsSet("org") {
+		org = be.Cmd.String("org")
+		if org != "" {
+			return org, nil
+		}
+	}
+
+	// Precedence 2: organization from backend config
+	org = be.Backend.Config.Organization
+	if org != "" {
+		return org, nil
+	}
+
+	// Precedence 3 & 4: from config file (namespaced then non-namespaced)
+	org, err := config.GetString("org")
+	if err == nil && org != "" {
+		return org, nil
+	}
+
+	return "", fmt.Errorf("organization is not set (precedence: --org flag > backend.config.organization > tfctl.yaml org). Set --org or backend.config.organization: %w", ErrOrganizationNotSet)
 }
 
 func (be *BackendRemote) Runs() ([]*tfe.Run, error) {

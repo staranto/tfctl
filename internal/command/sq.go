@@ -177,6 +177,9 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 				Value:       "0",
 				HideDefault: true,
 			},
+			// We don't want sq to get default host and org values from the config.
+			// Instead, we'll depend on the backend or, in exceptional cases, explicit
+			// --host and --org flags.
 			NewHostFlag("sq"),
 			NewOrgFlag("sq"),
 			tldrFlag,
