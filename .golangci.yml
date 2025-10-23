@@ -5,11 +5,11 @@ run:
 linters:
   enable:
     - copyloopvar
-    - cyclop
-    - deadcode
     - dupl
     - errcheck
+    #- gocognit
     - gocritic
+    - gocyclo
     - godot # doc comment formatting
     - gofmt
     - goimports
@@ -22,6 +22,8 @@ linters:
     - unused
 
 linters-settings:
+  gocyclo:
+    min-complexity: 15
   goimports:
     local-prefixes: github.com/staranto/tfctlgo
   revive:
