@@ -159,11 +159,11 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 				),
 				Value: 99999,
 			},
-			&cli.BoolFlag{
-				Name:  "noshort",
+			&cli.BoolWithInverseFlag{
+				Name:  "short",
 				Usage: "include full resource name paths",
 				Sources: cli.NewValueSourceChain(
-					yaml.YAML("sq.noshort", altsrc.StringSourcer(meta.Config.Source)),
+					yaml.YAML("sq.short", altsrc.StringSourcer(meta.Config.Source)),
 				),
 				Value: false,
 			},

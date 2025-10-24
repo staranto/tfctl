@@ -215,7 +215,7 @@ func SliceDiceSpit(raw bytes.Buffer,
 	// Note: This schema transformation is handled by the sq command via postProcess callback,
 	// which allows resource hierarchies to be flattened for consistent processing.
 	if resources := gjson.Parse(raw.String()).Get("resources"); resources.Exists() {
-		raw = flattenState(resources, cmd.Bool("noshort"))
+		raw = flattenState(resources, !cmd.Bool("short"))
 	}
 
 	var fullDataset gjson.Result
