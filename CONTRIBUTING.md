@@ -112,7 +112,7 @@ Refs: #123 (optional)
 ```
 
 Types (suggested):
-- feat, fix, docs, refactor, test, build, chore, perf
+- bug, chore, docs, feat, refactor, revert, test.
 
 Examples:
 ```
@@ -125,7 +125,7 @@ fix(output): correct case-insensitive contains operand
 
 - `main` (or `master`): always buildable; releases cut from it.
 - Feature branches: `feat/...`
-- Fix branches: `fix/...`
+- Fix branches: `bug/...`
 - Docs-only: `docs/...`
 - Avoid long-lived branches; rebase over merge when keeping a feature branch up-to-date.
 
