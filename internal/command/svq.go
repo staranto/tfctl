@@ -64,9 +64,3 @@ func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		Meta:   meta,
 	}).Build()
 }
-
-// SvqCommandValidator performs validation for "svq" and delegates to
-// GlobalFlagsValidator.
-func SvqCommandValidator(ctx context.Context, cmd *cli.Command) error {
-	return GlobalFlagsValidator(ctx, cmd)
-}

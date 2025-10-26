@@ -80,9 +80,3 @@ func OqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		Meta:   meta,
 	}).Build()
 }
-
-// OqCommandValidator performs validation for "oq" and delegates shared checks
-// to GlobalFlagsValidator.
-func OqCommandValidator(ctx context.Context, cmd *cli.Command) error {
-	return GlobalFlagsValidator(ctx, cmd)
-}

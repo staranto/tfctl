@@ -5,9 +5,7 @@ package command
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/urfave/cli/v3"
 )
@@ -24,22 +22,6 @@ func FlagValidators(value any, validators ...FlagValidatorType) error {
 }
 
 func GlobalFlagsValidator(ctx context.Context, c *cli.Command) error {
-	return nil
-}
-
-// JammedFlagValidator verifies that the arg following a flag does not begin
-// with '--'.  urfave/cli allows this and I don't see how to turn it off.
-func JammedFlagValidator(value any) error {
-	if strings.HasPrefix(value.(string), "--") {
-		return errors.New("must not begin with '--'")
-	}
-	return nil
-}
-
-func MustBeTrueValidator(value any) error {
-	if !value.(bool) {
-		return errors.New("must be true")
-	}
 	return nil
 }
 

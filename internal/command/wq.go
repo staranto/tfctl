@@ -93,9 +93,3 @@ func WqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		Meta:   meta,
 	}).Build()
 }
-
-// WqCommandValidator performs validation for "wq" and delegates to
-// GlobalFlagsValidator.
-func WqCommandValidator(ctx context.Context, cmd *cli.Command) error {
-	return GlobalFlagsValidator(ctx, cmd)
-}

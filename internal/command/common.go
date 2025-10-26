@@ -166,12 +166,10 @@ func (qcb *QueryCommandBuilder) Build() *cli.Command {
 			tldrFlag,
 			schemaFlag,
 		}, NewGlobalFlags(qcb.Name)...)...),
-		Action: func(ctx context.Context, c *cli.Command) error {
-			if err := GlobalFlagsValidator(ctx, c); err != nil {
-				return err
-			}
-			return qcb.Action(ctx, c)
+		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
+			return ctx, GlobalFlagsValidator(ctx, c)
 		},
+		Action: qcb.Action,
 	}
 }
 

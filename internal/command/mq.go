@@ -86,9 +86,3 @@ func MqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		Meta:   meta,
 	}).Build()
 }
-
-// MqCommandValidator performs command-level validation for "mq" and currently
-// delegates to GlobalFlagsValidator for shared flag checks.
-func MqCommandValidator(ctx context.Context, cmd *cli.Command) error {
-	return GlobalFlagsValidator(ctx, cmd)
-}

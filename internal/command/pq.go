@@ -84,9 +84,3 @@ func PqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		Meta:   meta,
 	}).Build()
 }
-
-// PqCommandValidator performs validation for "pq" and delegates shared checks
-// to GlobalFlagsValidator.
-func PqCommandValidator(ctx context.Context, cmd *cli.Command) error {
-	return GlobalFlagsValidator(ctx, cmd)
-}

@@ -185,19 +185,16 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			tldrFlag,
 			workspaceFlag,
 		}, NewGlobalFlags("sq")...),
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			if err := SqCommandValidator(ctx, cmd); err != nil {
-				return err
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			// If --chop is set, --short must not be set.
+			if cmd.Bool("chop") {
+				_ = cmd.Set("short", "false")
 			}
-			return SqCommandAction(ctx, cmd)
-		},
-	}
-}
 
-// SqCommandValidator performs validation for "sq" and delegates to
-// GlobalFlagsValidator.
-func SqCommandValidator(ctx context.Context, cmd *cli.Command) error {
-	return GlobalFlagsValidator(ctx, cmd)
+			return ctx, GlobalFlagsValidator(ctx, cmd)
+		},
+		Action: SqCommandAction,
+	}
 }
 
 // chopPrefix finds common leading dot-delimited segments in the

@@ -64,9 +64,3 @@ func RqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		Meta:   meta,
 	}).Build()
 }
-
-// RqCommandValidator performs validation for "rq" and delegates to
-// GlobalFlagsValidator.
-func RqCommandValidator(ctx context.Context, cmd *cli.Command) error {
-	return GlobalFlagsValidator(ctx, cmd)
-}
