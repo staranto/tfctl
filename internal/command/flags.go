@@ -18,17 +18,18 @@ func init() {
 }
 
 var (
-	cfg      config.Type
-	tldrFlag *cli.BoolFlag = &cli.BoolFlag{
-		Name:        "tldr",
-		Usage:       "show tldr page",
-		Hidden:      !pathHas("tldr"),
-		HideDefault: true,
-	}
+	cfg config.Type
 
 	schemaFlag *cli.BoolFlag = &cli.BoolFlag{
 		Name:        "schema",
 		Usage:       "dump the schema",
+		HideDefault: true,
+	}
+
+	tldrFlag *cli.BoolFlag = &cli.BoolFlag{
+		Name:        "tldr",
+		Usage:       "show tldr page",
+		Hidden:      !pathHas("tldr"),
 		HideDefault: true,
 	}
 
@@ -50,15 +51,15 @@ func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 			Aliases: []string{"a"},
 			Usage:   "comma-separated list of attributes to include in results",
 		},
-		&cli.BoolFlag{
-			Name:        "color",
-			Aliases:     []string{"c"},
-			Usage:       "enable colored text output",
-			HideDefault: true,
+		&cli.BoolWithInverseFlag{
+			Name:    "color",
+			Aliases: []string{"c"},
+			Usage:   "enable colored text output",
 			Sources: cli.NewValueSourceChain(
 				yaml.YAML(params[0]+"."+"color", altsrc.StringSourcer(cfg.Source)),
 				yaml.YAML("color", altsrc.StringSourcer(cfg.Source)),
 			),
+			Value: false,
 		},
 		&cli.StringFlag{
 			Name:    "filter",
@@ -86,15 +87,15 @@ func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 				yaml.YAML(params[0]+"."+"sort", altsrc.StringSourcer(cfg.Source)),
 			),
 		},
-		&cli.BoolFlag{
-			Name:        "titles",
-			Aliases:     []string{"t"},
-			Usage:       "show titles with text output",
-			HideDefault: true,
+		&cli.BoolWithInverseFlag{
+			Name:    "titles",
+			Aliases: []string{"t"},
+			Usage:   "show titles with text output",
 			Sources: cli.NewValueSourceChain(
 				yaml.YAML(params[0]+"."+"titles", altsrc.StringSourcer(cfg.Source)),
 				yaml.YAML("titles", altsrc.StringSourcer(cfg.Source)),
 			),
+			Value: false,
 		},
 	}
 
