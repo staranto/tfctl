@@ -79,7 +79,7 @@ func WithEnvOverride(env string) BackendCloudOption {
 	}
 }
 
-func (be *BackendCloud) load(ctx context.Context, cmd *cli.Command) error {
+func (be *BackendCloud) load(_ context.Context, _ *cli.Command) error {
 	tfFile := be.RootDir + "/.terraform/terraform.tfstate"
 	data, err := os.ReadFile(tfFile)
 	if err != nil {
