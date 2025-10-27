@@ -64,16 +64,16 @@ _tfctl()
       local opts="$common --schema --host -h --org --limit -l --workspace -w"
             ;;
         si)
-            local opts="--passphrase -p --sv"
+            local opts="$common --passphrase -p --sv"
             ;;
         sq)
-      local opts="$common --host -h --org --workspace -w --concrete -k --diff --noshort --passphrase --sv --limit"
+      local opts="$common --chop --concrete -k --diff --diff_filter --host -h --org --passphrase --short --sv --limit --workspace -w"
             ;;
         svq)
       local opts="$common --schema --host -h --org --limit -l --workspace -w"
             ;;
         wq)
-      local opts="$common --schema --host -h --org"
+      local opts="$common --schema --host -h --org --limit -l"
             ;;
         completion)
             local opts="bash zsh"
@@ -179,14 +179,15 @@ _tfctl() {
     sq)
       _arguments -C \
         $common \
-        '--concrete[only concrete resources]' \
-        '--diff[diff between state versions]' \
-        '--noshort[full resource paths]' \
-        '--passphrase[state passphrase]' \
-        '--sv[state version]' \
-        '--limit[limit results]' \
-        '(-h --host)'{-h,--host}'[host]' \
-        '--org[organization]' \
+        '--chop[chop common resource prefix from names]' \
+        '--concrete[only include concrete resources]' \
+        '--diff[find difference between state versions]' \
+        '--diff_filter[filter for diff results]' \
+        '--host[host to use for queries]' \
+        '--limit[limit state versions returned]' \
+        '(-p --passphrase)'{-p,--passphrase}'[encrypted state passphrase]' \
+        '--short[include full resource name paths]' \
+        '--sv[state version to query]' \
         '(-w --workspace)'{-w,--workspace}'[workspace]' \
         '::RootDir:_directories'
       ;;
@@ -194,7 +195,7 @@ _tfctl() {
       _arguments -C \
         $common \
         '--schema[dump schema]' \
-        '--limit[-l][limit results]' \
+        '--limit[-l][limit results]':limit \
         '(-h --host)'{-h,--host}'[host]' \
         '--org[organization]' \
         '(-w --workspace)'{-w,--workspace}'[workspace]' \
@@ -204,9 +205,10 @@ _tfctl() {
       _arguments -C \
         $common \
         '--schema[dump schema]' \
+        '--limit[-l][limit results]':limit \
         '(-h --host)'{-h,--host}'[host]' \
         '--org[organization]' \
-        '*:directory:_directories'
+        '::RootDir:_directories'
       ;;
     completion)
       _arguments '1: :((bash zsh))'
@@ -225,7 +227,7 @@ fi
 compdef _tfctl tfctl tfctlgo
 `
 
-func CompletionCommandAction(ctx context.Context, cmd *cli.Command) error {
+func completionCommandAction(ctx context.Context, cmd *cli.Command) error {
 	shell := ""
 	if args := cmd.Args().Slice(); len(args) > 0 {
 		shell = args[0]
@@ -251,7 +253,7 @@ func CompletionCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func CompletionCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func completionCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "completion",
 		Usage:     "generate shell completion script",
@@ -259,6 +261,6 @@ func CompletionCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		Metadata: map[string]any{
 			"meta": meta,
 		},
-		Action: CompletionCommandAction,
+		Action: completionCommandAction,
 	}
 }
