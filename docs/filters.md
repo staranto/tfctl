@@ -8,7 +8,7 @@ The `--filter` flag narrows query results using a small, expressive syntax. This
 - You can override the delimiter by setting the environment variable `TFCTL_FILTER_DELIM`.
 - Each filter has the form: `key<operand>target` where `<operand>` is one of the supported operators described below.
 - Prefixing an operand with `!` negates the operator (for example `name!@prod` means "name does NOT contain 'prod'").
-- Filters referencing attribute keys that start with `_` are treated as native API filters and are ignored by the local filter engine.
+- Filters referencing attribute keys that start with `_` are treated as server-side API filters and are ignored by the local filter engine.
 
 ## Supported operands
 

@@ -1,10 +1,11 @@
-'\" t
 .nh
 .TH tfctl mq — module registry query
+.PP
 Synopsis
 
 .EX
 tfctl mq [RootDir] [options]
+
 .EE
 
 .PP
@@ -15,6 +16,8 @@ Query the Module Registry (HCP/TFE) for available modules and metadata.
 
 .PP
 Flags and related docs
+
+.RS
 .IP \(bu 2
 See the common flag reference: Flags
 \[la]../flags.md\[ra]
@@ -24,6 +27,8 @@ Attributes: Attributes
 .IP \(bu 2
 Filtering: Filters
 \[la]../filters.md\[ra]
+
+.RE
 
 .PP
 Flags
@@ -35,11 +40,13 @@ l l l l l .
 \fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
 \fB--attrs\fR	\fB-a\fR	T{
 Comma-separated list of attributes to include
-T}	(none)	Global flag
+T}
+	(none)	Global flag
 \fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
 \fB--filter\fR	\fB-f\fR	T{
 Comma-separated list of filters to apply
-T}	(none)	See Filters
+T}
+	(none)	See Filters
 \[la]../filters.md\[ra]
 \fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
 \fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
@@ -59,15 +66,24 @@ Quick examples
 
 # Show common module attributes
  tfctl mq --schema
+
 .EE
 
 .PP
 Notes
+
+.RS
 .IP \(bu 2
 \fBmq\fR may surface VCS and provider metadata for modules; use \fB--attrs\fR to extract specific values.
 
+.RE
+
 .PP
 See also
+
+.RS
 .IP \(bu 2
 Quickstart
 \[la]../quickstart.md\[ra]
+
+.RE

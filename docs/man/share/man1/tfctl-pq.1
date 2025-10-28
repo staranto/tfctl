@@ -1,10 +1,11 @@
-'\" t
 .nh
 .TH tfctl pq — project query
+.PP
 Synopsis
 
 .EX
 tfctl pq [RootDir] [options]
+
 .EE
 
 .PP
@@ -15,6 +16,8 @@ Query Projects within an organization. Use to enumerate and extract project-leve
 
 .PP
 Flags and related docs
+
+.RS
 .IP \(bu 2
 See the common flag reference: Flags
 \[la]../flags.md\[ra]
@@ -24,6 +27,8 @@ Attributes: Attributes
 .IP \(bu 2
 Filtering: Filters
 \[la]../filters.md\[ra]
+
+.RE
 
 .PP
 Flags
@@ -35,11 +40,13 @@ l l l l l .
 \fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
 \fB--attrs\fR	\fB-a\fR	T{
 Comma-separated list of attributes to include
-T}	(none)	Global flag
+T}
+	(none)	Global flag
 \fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
 \fB--filter\fR	\fB-f\fR	T{
 Comma-separated list of filters to apply
-T}	(none)	See Filters
+T}
+	(none)	See Filters
 \[la]../filters.md\[ra]
 \fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
 \fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
@@ -59,15 +66,24 @@ Quick examples
 
 # Show common project attributes
  tfctl pq --schema
+
 .EE
 
 .PP
 Notes
+
+.RS
 .IP \(bu 2
 \fBpq\fR is useful for discovering projects that match naming patterns and for extracting VCS repo settings.
 
+.RE
+
 .PP
 See also
+
+.RS
 .IP \(bu 2
 Quickstart
 \[la]../quickstart.md\[ra]
+
+.RE

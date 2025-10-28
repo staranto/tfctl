@@ -21,21 +21,21 @@ Flags
 | Flag | Alias | Description | Default | Notes |
 |------|-------|-------------|---------|-------|
 | `--attrs` | `-a` | Comma-separated list of attributes to include | (none) | Global flag |
-| `--color` | `-c` | Enable colored text output | false | Global flag
-| `--concrete` | `-k` | Only include concrete (managed) resources | false | sq-specific
-| `--diff` |  | Show diff between state versions | false | sq-specific
-| `--diff_filter` |  | Hidden, internal diff filter | `check_results` | Hidden / internal
-| `--filter` | `-f` | Comma-separated list of filters to apply | (none) | See [Filters](../filters.md)
-| `--host` | `-h` | Host to use for queries | `app.terraform.io` | Command-scoped via `NewHostFlag`
-| `--limit` |  | Limit state versions returned | 99999 | sq-specific, hidden default
-| `--noshort` |  | Include full resource name paths | false | sq-specific
-| `--output` | `-o` | Output format (`text`, `json`, `yaml`, `raw`) | `text` | Global flag
-| `--org` | `-o` | Organization to query | (none) | Command-scoped via `NewOrgFlag`
-| `--passphrase` |  | Passphrase for encrypted state | (none) | sq-specific; falls back to TF_VAR_passphrase or interactive prompt
-| `--sort` | `-s` | Attributes to sort by | (none) | Global flag
-| `--sv` |  | State version to query | `0` | sq-specific
-| `--titles` | `-t` | Show titles with text output | false | Global flag
-| `--workspace` | `-w` | Workspace to use (overrides backend) | (none) | Command flag
+| `--chop` | | Chop common resource prefix from names | false | sq-specific |
+| `--color` | | Enable colored text output | false | Use `--no-color` to disable |
+| `--concrete` | `-k` | Only include concrete (managed) resources | false | sq-specific |
+| `--diff` | | Show diff between state versions | false | sq-specific |
+| `--filter` | `-f` | Comma-separated list of filters to apply | (none) | See [Filters](../filters.md) |
+| `--host` | `-h` | Host to use for queries | `app.terraform.io` | Command-scoped |
+| `--org` | | Organization to query | (none) | Command-scoped |
+| `--output` | `-o` | Output format (`text`, `json`, `yaml`, `raw`) | `text` | Global flag |
+| `--passphrase` | | Passphrase for encrypted state | (none) | sq-specific; falls back to TF_VAR_passphrase or interactive prompt |
+| `--short` | | Include full resource name paths | false | Use `--no-short` to show full paths |
+| `--sort` | `-s` | Attributes to sort by | (none) | Global flag |
+| `--sv` | | State version to query | current | sq-specific |
+| `--titles` | | Show titles with text output | false | Use `--no-titles` to disable |
+| `--tldr` | | Show tldr page | false | Command-specific helper |
+| `--workspace` | `-w` | Workspace to use for query | (none) | Command-scoped |
 
 Quick examples
 
