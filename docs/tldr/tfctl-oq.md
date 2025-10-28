@@ -11,6 +11,14 @@
 
 `tfctl oq --schema`
 
-- Examples provided by the command:
+- Show tldr page:
 
-`tfctl oq --examples`
+`tfctl oq --tldr`
+
+- Filter organizations by name:
+
+`tfctl oq --filter "name=my-org"`
+
+- Output as JSON:
+
+`tfctl oq --output json`

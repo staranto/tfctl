@@ -14,10 +14,10 @@ import (
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
-// PqCommandAction is the action handler for the "pq" subcommand. It lists
+// pqCommandAction is the action handler for the "pq" subcommand. It lists
 // projects for the selected organization, supports --tldr/--schema
 // short-circuit behavior, and emits output per common flags.
-func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
+func pqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	be, org, client, err := InitRemoteOrgQuery(ctx, cmd)
 	if err != nil {
 		return err
@@ -31,48 +31,45 @@ func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
 			[]*tfe.Project,
 			error,
 		) {
-			return PaginateAndCollect(
+			options := tfe.ProjectListOptions{
+				ListOptions: tfe.ListOptions{
+					PageNumber: 1,
+					PageSize:   100,
+				},
+			}
+			return PaginateWithOptions(
 				ctx,
-				0,
-				100,
-				func(pageNumber, pageSize int) (
+				cmd,
+				&options,
+				func(ctx context.Context, opts *tfe.ProjectListOptions) (
 					[]*tfe.Project,
-					int,
+					*tfe.Pagination,
 					error,
 				) {
-					opts := tfe.ProjectListOptions{
-						ListOptions: tfe.ListOptions{
-							PageNumber: pageNumber,
-							PageSize:   pageSize,
-						},
-					}
-					page, listErr := client.Projects.List(
-						ctx,
-						org,
-						&opts,
-					)
-					if listErr != nil {
+					page, err := client.Projects.List(ctx, org, opts)
+					if err != nil {
 						ctxErr := OrgQueryErrorContext(
 							be,
 							org,
 							"list projects",
 						)
-						return nil, 0, remote.FriendlyTFE(
-							listErr,
+						return nil, nil, remote.FriendlyTFE(
+							err,
 							ctxErr,
 						)
 					}
-					return page.Items, page.Pagination.NextPage, nil
+					return page.Items, page.Pagination, nil
 				},
+				nil,
 			)
 		},
 	}
 	return runner.Run(ctx, cmd)
 }
 
-// PqCommandBuilder constructs the cli.Command for "pq", wiring metadata,
+// pqCommandBuilder constructs the cli.Command for "pq", wiring metadata,
 // flags, and action/validator handlers.
-func PqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func pqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:  "pq",
 		Usage: "project query",
@@ -80,7 +77,7 @@ func PqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			NewHostFlag("pq", meta.Config.Source),
 			NewOrgFlag("pq", meta.Config.Source),
 		},
-		Action: PqCommandAction,
+		Action: pqCommandAction,
 		Meta:   meta,
 	}).Build()
 }

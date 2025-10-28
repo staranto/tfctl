@@ -11,6 +11,14 @@
 
 `tfctl wq --schema`
 
-- Examples provided by the command:
+- Show tldr page:
 
-`tfctl wq --examples`
+`tfctl wq --tldr`
+
+- Filter workspaces by name:
+
+`tfctl wq --filter "name=production"`
+
+- Limit results and include custom attributes:
+
+`tfctl wq --limit 10 --attrs "name,.vcs_repo"`

@@ -14,11 +14,11 @@ import (
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
-// MqCommandAction is the action handler for the "mq" subcommand. It lists
+// mqCommandAction is the action handler for the "mq" subcommand. It lists
 // registry modules for the selected organization, supporting short-circuit
 // behavior for --tldr and --schema, and emits results according to common
 // output/attr flags.
-func MqCommandAction(ctx context.Context, cmd *cli.Command) error {
+func mqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	be, org, client, err := InitRemoteOrgQuery(ctx, cmd)
 	if err != nil {
 		return err
@@ -32,48 +32,45 @@ func MqCommandAction(ctx context.Context, cmd *cli.Command) error {
 			[]*tfe.RegistryModule,
 			error,
 		) {
-			return PaginateAndCollect(
+			options := tfe.RegistryModuleListOptions{
+				ListOptions: tfe.ListOptions{
+					PageNumber: 1,
+					PageSize:   100,
+				},
+			}
+			return PaginateWithOptions(
 				ctx,
-				0,
-				100,
-				func(pageNumber, pageSize int) (
+				cmd,
+				&options,
+				func(ctx context.Context, opts *tfe.RegistryModuleListOptions) (
 					[]*tfe.RegistryModule,
-					int,
+					*tfe.Pagination,
 					error,
 				) {
-					opts := tfe.RegistryModuleListOptions{
-						ListOptions: tfe.ListOptions{
-							PageNumber: pageNumber,
-							PageSize:   pageSize,
-						},
-					}
-					page, listErr := client.RegistryModules.List(
-						ctx,
-						org,
-						&opts,
-					)
-					if listErr != nil {
+					page, err := client.RegistryModules.List(ctx, org, opts)
+					if err != nil {
 						ctxErr := OrgQueryErrorContext(
 							be,
 							org,
 							"list registry modules",
 						)
-						return nil, 0, remote.FriendlyTFE(
-							listErr,
+						return nil, nil, remote.FriendlyTFE(
+							err,
 							ctxErr,
 						)
 					}
-					return page.Items, page.Pagination.NextPage, nil
+					return page.Items, page.Pagination, nil
 				},
+				nil,
 			)
 		},
 	}
 	return runner.Run(ctx, cmd)
 }
 
-// MqCommandBuilder constructs the cli.Command definition for the "mq" command,
+// mqCommandBuilder constructs the cli.Command definition for the "mq" command,
 // wiring flags, metadata, and the action/validator handlers.
-func MqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func mqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "mq",
 		Usage:     "module registry query",
@@ -82,7 +79,7 @@ func MqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			NewHostFlag("mq", meta.Config.Source),
 			NewOrgFlag("mq", meta.Config.Source),
 		},
-		Action: MqCommandAction,
+		Action: mqCommandAction,
 		Meta:   meta,
 	}).Build()
 }

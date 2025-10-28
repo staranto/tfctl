@@ -87,40 +87,73 @@ func GetMeta(cmd *cli.Command) meta.Meta {
 	return meta.Meta{}
 }
 
-// PaginateAndCollect is a generic helper that drives paginated list calls and
-// collects results until either the end of the list or the provided limit is
-// reached. Pass limit <= 0 to disable limiting.
-//
-// fetch must return the items for the given page, the next page number (0 if
-// there are no more pages), and an error.
-func PaginateAndCollect[T any](ctx context.Context, limit int, pageSize int, fetch func(pageNumber, pageSize int) ([]*T, int, error)) ([]*T, error) {
-	if pageSize <= 0 {
-		pageSize = 100
-	}
-	if limit > 0 && limit < pageSize {
-		pageSize = limit
-	}
+// Augmenter[O] is a callback function that customizes options before
+// each API call. It receives the context, command, and a pointer to the
+// options object, allowing mutation of options based on command flags or
+// other context. Return an error to abort pagination.
+type Augmenter[O any] func(
+	context.Context,
+	*cli.Command,
+	*O,
+) error
 
-	var results []*T
-	pageNumber := 1
+// PaginateWithOptions[T, O] is a generic paginator that drives paginated API
+// calls with mutable options. It handles pagination logic and returns all
+// collected results. The augmenter callback (if provided) is called before
+// each API invocation, allowing options customization (e.g., setting filters
+// or tags). The fetcher callback encapsulates the actual API call and must
+// return results, pagination info, and any error.
+func PaginateWithOptions[T, O any](
+	ctx context.Context,
+	cmd *cli.Command,
+	options *O,
+	fetcher func(context.Context, *O) ([]T, *tfe.Pagination, error),
+	augmenter Augmenter[O],
+) ([]T, error) {
+	var results []T
+
+	// Paginate through pages
 	for {
-		items, nextPage, err := fetch(pageNumber, pageSize)
+		// Invoke augmenter before each page (to allow options mutation)
+		if augmenter != nil {
+			if err := augmenter(ctx, cmd, options); err != nil {
+				return nil, err
+			}
+		}
+
+		// Fetch current page
+		items, pagination, err := fetcher(ctx, options)
 		if err != nil {
 			return nil, err
 		}
 
 		results = append(results, items...)
-		log.Debugf("page: %d, total: %d", pageNumber, len(results))
 
-		if limit > 0 && len(results) >= limit {
-			return results[:limit], nil
-		}
-		if nextPage == 0 {
+		// Check if there are more pages
+		if pagination.NextPage == 0 {
 			break
 		}
-		pageNumber = nextPage
+
+		// Increment page number for next iteration
+		setPageNumber(options, pagination.NextPage)
 	}
+
 	return results, nil
+}
+
+// setPageNumber uses reflection to set the PageNumber field in the options
+// struct. It assumes the struct has a ListOptions.PageNumber field (standard
+// in tfe API options).
+func setPageNumber(options any, pageNumber int) {
+	v := reflect.ValueOf(options).Elem()
+	lo := v.FieldByName("ListOptions")
+	if !lo.IsValid() {
+		return
+	}
+	pn := lo.FieldByName("PageNumber")
+	if pn.IsValid() && pn.CanSet() {
+		pn.SetInt(int64(pageNumber))
+	}
 }
 
 // OrgQueryErrorContext is a helper to construct remote.ErrorContext for
@@ -219,8 +252,8 @@ func (qar *QueryActionRunner[T]) Run(
 }
 
 // InitRemoteOrgQuery initializes a remote backend connection for queries that
-// operate on organizations. It returns the backend, organization name, and
-// TFE client, or an error if initialization fails.
+// operate exclusively on organizations. It returns the backend, organization
+// name, and TFE client, or an error if initialization fails.
 func InitRemoteOrgQuery(
 	ctx context.Context,
 	cmd *cli.Command,

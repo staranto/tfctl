@@ -14,10 +14,10 @@ import (
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
-// OqCommandAction is the action handler for the "oq" subcommand. It lists
+// oqCommandAction is the action handler for the "oq" subcommand. It lists
 // organizations from the configured host, supports --tldr/--schema
 // short-circuit behavior, and emits output per common flags.
-func OqCommandAction(ctx context.Context, cmd *cli.Command) error {
+func oqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	be, err := remote.NewBackendRemote(ctx, cmd, remote.BuckNaked())
 	if err != nil {
 		return err
@@ -36,39 +36,37 @@ func OqCommandAction(ctx context.Context, cmd *cli.Command) error {
 			[]*tfe.Organization,
 			error,
 		) {
-			return PaginateAndCollect(
+			options := tfe.OrganizationListOptions{
+				ListOptions: tfe.ListOptions{
+					PageNumber: 1,
+					PageSize:   100,
+				},
+			}
+			return PaginateWithOptions(
 				ctx,
-				0,
-				100,
-				func(pageNumber, pageSize int) (
+				cmd,
+				&options,
+				func(ctx context.Context, opts *tfe.OrganizationListOptions) (
 					[]*tfe.Organization,
-					int,
+					*tfe.Pagination,
 					error,
 				) {
-					opts := tfe.OrganizationListOptions{
-						ListOptions: tfe.ListOptions{
-							PageNumber: pageNumber,
-							PageSize:   pageSize,
-						},
+					page, err := client.Organizations.List(ctx, opts)
+					if err != nil {
+						return nil, nil, err
 					}
-					page, listErr := client.Organizations.List(
-						ctx,
-						&opts,
-					)
-					if listErr != nil {
-						return nil, 0, listErr
-					}
-					return page.Items, page.Pagination.NextPage, nil
+					return page.Items, page.Pagination, nil
 				},
+				nil,
 			)
 		},
 	}
 	return runner.Run(ctx, cmd)
 }
 
-// OqCommandBuilder constructs the cli.Command for "oq", configuring metadata,
+// oqCommandBuilder constructs the cli.Command for "oq", configuring metadata,
 // flags, and the associated action/validator.
-func OqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func oqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "oq",
 		Usage:     "organization query",
@@ -76,7 +74,7 @@ func OqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 		Flags: []cli.Flag{
 			NewHostFlag("oq", meta.Config.Source),
 		},
-		Action: OqCommandAction,
+		Action: oqCommandAction,
 		Meta:   meta,
 	}).Build()
 }

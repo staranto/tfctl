@@ -15,10 +15,10 @@ import (
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
-// RqCommandAction is the action handler for the "rq" subcommand. It lists
+// rqCommandAction is the action handler for the "rq" subcommand. It lists
 // runs via the active backend, supports --tldr/--schema short-circuits, and
 // emits output per common flags.
-func RqCommandAction(ctx context.Context, cmd *cli.Command) error {
+func rqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	be, err := InitLocalBackendQuery(ctx, cmd)
 	if err != nil {
 		return err
@@ -38,9 +38,9 @@ func RqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return runner.Run(ctx, cmd)
 }
 
-// RqCommandBuilder constructs the cli.Command for "rq", wiring metadata,
+// rqCommandBuilder constructs the cli.Command for "rq", wiring metadata,
 // flags, and action/validator.
-func RqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func rqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "rq",
 		Usage:     "run query",
@@ -60,7 +60,7 @@ func RqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			NewOrgFlag("rq"),
 			workspaceFlag,
 		},
-		Action: RqCommandAction,
+		Action: rqCommandAction,
 		Meta:   meta,
 	}).Build()
 }

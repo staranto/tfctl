@@ -10,3 +10,11 @@
 - Exit the console:
 
 `Type `exit` or press Ctrl+C`
+
+- Start console with specific state version:
+
+`tfctl si --sv 5`
+
+- Query with filters:
+
+`tfctl si --filter "type=aws_instance"`

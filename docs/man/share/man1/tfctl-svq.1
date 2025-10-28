@@ -1,11 +1,10 @@
+'\" t
 .nh
 .TH tfctl svq — state version query
-.PP
 Synopsis
 
 .EX
 tfctl svq [RootDir] [options]
-
 .EE
 
 .PP
@@ -16,8 +15,6 @@ List and inspect state versions for a workspace or state backend. Useful for aud
 
 .PP
 Flags and related docs
-
-.RS
 .IP \(bu 2
 See the common flag reference: Flags
 \[la]../flags.md\[ra]
@@ -27,8 +24,6 @@ Attributes: Attributes
 .IP \(bu 2
 Filtering: Filters
 \[la]../filters.md\[ra]
-
-.RE
 
 .PP
 Flags
@@ -40,25 +35,21 @@ l l l l l .
 \fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
 \fB--attrs\fR	\fB-a\fR	T{
 Comma-separated list of attributes to include
-T}
-	(none)	Global flag
-\fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
+T}	(none)	Global flag
+\fB--color\fR		Enable colored text output	false	Use \fB--no-color\fR to disable
 \fB--filter\fR	\fB-f\fR	T{
 Comma-separated list of filters to apply
-T}
-	(none)	See Filters
+T}	(none)	See Filters
 \[la]../filters.md\[ra]
-\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped
 \fB--limit\fR	\fB-l\fR	Limit state versions returned	99999	Command-scoped
-\fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
+\fB--org\fR		Organization to query	(none)	Command-scoped
 \fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
-\fB--schema\fR		Dump the schema	false	Command helper
+\fB--schema\fR		Dump the schema	false	Command-specific helper
 \fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
-\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
-\fB--workspace\fR	\fB-w\fR	T{
-Workspace to use (overrides backend)
-T}
-	(none)	Command flag
+\fB--titles\fR		Show titles with text output	false	Use \fB--no-titles\fR to disable
+\fB--tldr\fR		Show tldr page	false	Command-specific helper
+\fB--workspace\fR	\fB-w\fR	Workspace to use for query	(none)	Command-scoped
 .TE
 
 .PP
@@ -70,24 +61,15 @@ Quick examples
 
 # Limit number of versions returned
  tfctl svq --limit 10
-
 .EE
 
 .PP
 Notes
-
-.RS
 .IP \(bu 2
 \fBsvq\fR integrates with backends that support state versioning (remote/HCP/TFE).
 
-.RE
-
 .PP
 See also
-
-.RS
 .IP \(bu 2
 Quickstart
 \[la]../quickstart.md\[ra]
-
-.RE

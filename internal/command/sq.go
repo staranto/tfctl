@@ -24,10 +24,10 @@ import (
 	"github.com/staranto/tfctlgo/internal/state"
 )
 
-// SqCommandAction is the action handler for the "sq" subcommand. It reads
+// sqCommandAction is the action handler for the "sq" subcommand. It reads
 // Terraform state (including optional decryption), supports --tldr short-
 // circuit, and emits results per common flags.
-func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
+func sqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	m := GetMeta(cmd)
 	log.Debugf("Executing action for %v", m.Args[1:])
 
@@ -108,9 +108,9 @@ func SqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-// SqCommandBuilder constructs the cli.Command for "sq", wiring metadata,
+// sqCommandBuilder constructs the cli.Command for "sq", wiring metadata,
 // flags, and action/validator handlers.
-func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func sqCommandBuilder(meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "sq",
 		Usage:     "state query",
@@ -193,7 +193,7 @@ func SqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 
 			return ctx, GlobalFlagsValidator(ctx, cmd)
 		},
-		Action: SqCommandAction,
+		Action: sqCommandAction,
 	}
 }
 

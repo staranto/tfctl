@@ -25,7 +25,7 @@ import (
 	"github.com/staranto/tfctlgo/internal/state"
 )
 
-func SiCommandAction(ctx context.Context, cmd *cli.Command) error {
+func siCommandAction(ctx context.Context, cmd *cli.Command) error {
 	// SiCommandAction is the action handler for the "si" subcommand. It
 	// loads Terraform state for the target root directory and launches an
 	// interactive inspector UI to explore resources and outputs.
@@ -316,7 +316,7 @@ func saveSiHistory(filename string, history []string) {
 	writer.Flush()
 }
 
-func SiCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func siCommandBuilder(meta meta.Meta) *cli.Command {
 	// SiCommandBuilder constructs the cli.Command for "si" and wires up
 	// metadata, flags, and the action handler.
 	return &cli.Command{
@@ -340,6 +340,6 @@ func SiCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 				HideDefault: true,
 			},
 		}, NewGlobalFlags("si")...),
-		Action: SiCommandAction,
+		Action: siCommandAction,
 	}
 }

@@ -253,7 +253,7 @@ func completionCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func completionCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func completionCommandBuilder(meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "completion",
 		Usage:     "generate shell completion script",

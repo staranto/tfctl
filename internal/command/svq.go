@@ -15,10 +15,10 @@ import (
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
-// SvqCommandAction is the action handler for the "svq" subcommand. It lists
+// svqCommandAction is the action handler for the "svq" subcommand. It lists
 // state versions via the active backend, supports --tldr/--schema short-
 // circuits, and emits results per common flags.
-func SvqCommandAction(ctx context.Context, cmd *cli.Command) error {
+func svqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	be, err := InitLocalBackendQuery(ctx, cmd)
 	if err != nil {
 		return err
@@ -38,9 +38,9 @@ func SvqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	return runner.Run(ctx, cmd)
 }
 
-// SvqCommandBuilder constructs the cli.Command for "svq", wiring metadata,
+// svqCommandBuilder constructs the cli.Command for "svq", wiring metadata,
 // flags, and action/validator handlers.
-func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func svqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "svq",
 		Usage:     "state version query",
@@ -60,7 +60,7 @@ func SvqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			NewOrgFlag("svq"),
 			workspaceFlag,
 		},
-		Action: SvqCommandAction,
+		Action: svqCommandAction,
 		Meta:   meta,
 	}).Build()
 }

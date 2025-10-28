@@ -1,11 +1,10 @@
+'\" t
 .nh
 .TH tfctl oq — organization query
-.PP
 Synopsis
 
 .EX
 tfctl oq [RootDir] [options]
-
 .EE
 
 .PP
@@ -16,8 +15,6 @@ Query Organizations from your configured Terraform/HCP/TFE host.
 
 .PP
 Flags and related docs
-
-.RS
 .IP \(bu 2
 See the common flag reference: Flags
 \[la]../flags.md\[ra]
@@ -27,8 +24,6 @@ Attributes: Attributes
 .IP \(bu 2
 Filtering: Filters
 \[la]../filters.md\[ra]
-
-.RE
 
 .PP
 Flags
@@ -40,22 +35,18 @@ l l l l l .
 \fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
 \fB--attrs\fR	\fB-a\fR	T{
 Comma-separated list of attributes to include
-T}
-	(none)	Global flag
-\fB--color\fR	\fB-c\fR	Enable colored text output	false	T{
-Global flag, configurable via config
-T}
+T}	(none)	Global flag
+\fB--color\fR		Enable colored text output	false	Use \fB--no-color\fR to disable
 \fB--filter\fR	\fB-f\fR	T{
 Comma-separated list of filters to apply
-T}
-	(none)	See Filters
+T}	(none)	See Filters
 \[la]../filters.md\[ra]
-\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped
 \fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
 \fB--schema\fR		Dump the schema	false	Command-specific helper
 \fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
-\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
-\fB--tldr\fR		Show tldr page (if available)	false	Hidden unless \fBtldr\fR installed
+\fB--titles\fR		Show titles with text output	false	Use \fB--no-titles\fR to disable
+\fB--tldr\fR		Show tldr page	false	Command-specific helper
 .TE
 
 .PP
@@ -63,35 +54,30 @@ Quick examples
 
 .EX
 # List organizations
- tfctl oq
+tfctl oq
 
 # Show common attributes
- tfctl oq --schema
+tfctl oq --schema
 
-# Examples provided by the command
- tfctl oq --examples
+# Show tldr page
+tfctl oq --tldr
 
+# Filter organizations by name
+tfctl oq --filter "name=my-org"
+
+# Output as JSON
+tfctl oq --output json
 .EE
 
 .PP
 Notes
-
-.RS
 .IP \(bu 2
 Use \fB--schema\fR to discover attributes available to \fB--attrs\fR for this command.
 .IP \(bu 2
-Use \fB--examples\fR to view curated usage examples.
-.IP \(bu 2
 For automation, prefer \fB--output json\fR\&.
-
-.RE
 
 .PP
 See also
-
-.RS
 .IP \(bu 2
 Quickstart
 \[la]../quickstart.md\[ra]
-
-.RE

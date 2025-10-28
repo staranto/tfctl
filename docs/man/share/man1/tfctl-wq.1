@@ -1,11 +1,10 @@
+'\" t
 .nh
 .TH tfctl wq — workspace query
-.PP
 Synopsis
 
 .EX
 tfctl wq [RootDir] [options]
-
 .EE
 
 .PP
@@ -16,8 +15,6 @@ Query Workspaces for an organization or project. Useful for inventorying workspa
 
 .PP
 Flags and related docs
-
-.RS
 .IP \(bu 2
 See the common flag reference: Flags
 \[la]../flags.md\[ra]
@@ -27,8 +24,6 @@ Attributes: Attributes
 .IP \(bu 2
 Filtering: Filters
 \[la]../filters.md\[ra]
-
-.RE
 
 .PP
 Flags
@@ -40,20 +35,20 @@ l l l l l .
 \fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
 \fB--attrs\fR	\fB-a\fR	T{
 Comma-separated list of attributes to include
-T}
-	(none)	Global flag
-\fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
+T}	(none)	Global flag
+\fB--color\fR		Enable colored text output	false	Use \fB--no-color\fR to disable
 \fB--filter\fR	\fB-f\fR	T{
 Comma-separated list of filters to apply
-T}
-	(none)	See Filters
+T}	(none)	See Filters
 \[la]../filters.md\[ra]
-\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
-\fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped
+\fB--limit\fR	\fB-l\fR	Limit workspaces returned	99999	Command-specific
+\fB--org\fR		Organization to query	(none)	Command-scoped
 \fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
 \fB--schema\fR		Dump the schema	false	Command-specific helper
 \fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
-\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
+\fB--titles\fR		Show titles with text output	false	Use \fB--no-titles\fR to disable
+\fB--tldr\fR		Show tldr page	false	Command-specific helper
 .TE
 
 .PP
@@ -61,33 +56,30 @@ Quick examples
 
 .EX
 # List workspaces in the current org
- tfctl wq
+tfctl wq
 
 # Show common workspace attributes
- tfctl wq --schema
+tfctl wq --schema
 
-# Examples provided by the command
- tfctl wq --examples
+# Show tldr page
+tfctl wq --tldr
 
+# Filter workspaces by name
+tfctl wq --filter "name=production"
+
+# Limit results and include custom attributes
+tfctl wq --limit 10 --attrs "name,.vcs_repo"
 .EE
 
 .PP
 Notes
-
-.RS
 .IP \(bu 2
 Use \fB--org\fR to scope to a specific organization when required.
 .IP \(bu 2
 Use \fB--schema\fR to discover attributes available to \fB--attrs\fR for this command.
 
-.RE
-
 .PP
 See also
-
-.RS
 .IP \(bu 2
 Quickstart
 \[la]../quickstart.md\[ra]
-
-.RE
