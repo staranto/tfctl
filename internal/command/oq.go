@@ -7,12 +7,16 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
 	"github.com/staranto/tfctlgo/internal/backend/remote"
+	"github.com/staranto/tfctlgo/internal/filters"
 	"github.com/staranto/tfctlgo/internal/meta"
 )
+
+var oqDefaultAttrs = []string{"external-id:id", ".id:name"}
 
 // oqCommandAction is the action handler for the "oq" subcommand. It lists
 // organizations from the configured host, supports --tldr/--schema
@@ -28,40 +32,56 @@ func oqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	runner := &QueryActionRunner[*tfe.Organization]{
-		CommandName:  "oq",
-		SchemaType:   reflect.TypeOf(tfe.Organization{}),
-		DefaultAttrs: []string{"external-id:id", ".id:name"},
-		FetchFn: func(ctx context.Context, cmd *cli.Command) (
-			[]*tfe.Organization,
-			error,
-		) {
-			options := tfe.OrganizationListOptions{
-				ListOptions: tfe.ListOptions{
-					PageNumber: 1,
-					PageSize:   100,
-				},
-			}
-			return PaginateWithOptions(
-				ctx,
-				cmd,
-				&options,
-				func(ctx context.Context, opts *tfe.OrganizationListOptions) (
-					[]*tfe.Organization,
-					*tfe.Pagination,
-					error,
-				) {
-					page, err := client.Organizations.List(ctx, opts)
-					if err != nil {
-						return nil, nil, err
-					}
-					return page.Items, page.Pagination, nil
-				},
-				nil,
-			)
-		},
+	fn := func(ctx context.Context, cmd *cli.Command) ([]*tfe.Organization, error) {
+		options := tfe.OrganizationListOptions{
+			ListOptions: DefaultListOptions,
+		}
+		return PaginateWithOptions(
+			ctx,
+			cmd,
+			&options,
+			func(ctx context.Context, opts *tfe.OrganizationListOptions) (
+				[]*tfe.Organization,
+				*tfe.Pagination,
+				error,
+			) {
+				page, err := client.Organizations.List(ctx, opts)
+				if err != nil {
+					return nil, nil, err
+				}
+				return page.Items, page.Pagination, nil
+			},
+			oqServerSideFilterAugmenter,
+		)
 	}
-	return runner.Run(ctx, cmd)
+
+	return NewQueryActionRunner(
+		"oq",
+		reflect.TypeOf((*tfe.Organization)(nil)).Elem(),
+		oqDefaultAttrs,
+		fn,
+	).Run(ctx, cmd)
+}
+
+// oqServerSideFilterAugmenter augments the OrganizationListOptions with
+// server-side filters extracted from the --filter flag.
+func oqServerSideFilterAugmenter(
+	_ context.Context,
+	cmd *cli.Command,
+	opts *tfe.OrganizationListOptions,
+) error {
+	spec := cmd.String("filter")
+	filterList := filters.BuildFilters(spec)
+
+	for _, f := range filterList {
+		// We only care about server-side filters.
+		if f.ServerSide && f.Key == "query" {
+			opts.Query = f.Value
+		}
+	}
+
+	log.Debugf("opts after augmentation: %+v", opts)
+	return nil
 }
 
 // oqCommandBuilder constructs the cli.Command for "oq", configuring metadata,

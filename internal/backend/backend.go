@@ -39,7 +39,9 @@ type Backend interface {
 	State() ([]byte, error)
 	// States() returns the state documents specified by the specs.
 	States(...string) ([][]byte, error)
-	StateVersions() ([]*tfe.StateVersion, error)
+	// StateVersions accepts an optional augmenter function to apply
+	// server-side filters. Only remote backends use this; local and S3 ignore it.
+	StateVersions(augmenter ...func(context.Context, *cli.Command, *tfe.StateVersionListOptions) error) ([]*tfe.StateVersion, error)
 	String() string
 	Type() (string, error)
 }

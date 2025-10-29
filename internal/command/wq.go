@@ -14,67 +14,61 @@ import (
 	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/backend/remote"
 	"github.com/staranto/tfctlgo/internal/filters"
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
+// wqDefaultAttrs specifies the default attributes displayed for workspaces
+// in the "wq" command output.
+var wqDefaultAttrs = []string{".id", "name"}
+
 // wqCommandAction is the action handler for the "wq" subcommand. It lists
-// workspaces for the selected organization, supports --tldr/--schema short-
-// circuits, and emits results per common flags.
+// workspaces for the selected organization.
 func wqCommandAction(ctx context.Context, cmd *cli.Command) error {
+	// We need to build the builder inside the action so we can access the
+	// client. The builder will handle backend/org init, but we need a way to
+	// pass the client-bound fetcher. Let's use a custom approach.
 	be, org, client, err := InitRemoteOrgQuery(ctx, cmd)
 	if err != nil {
 		return err
 	}
 
-	runner := &QueryActionRunner[*tfe.Workspace]{
-		CommandName:  "wq",
-		SchemaType:   reflect.TypeOf(tfe.Workspace{}),
-		DefaultAttrs: []string{".id", "name"},
-		FetchFn: func(ctx context.Context, cmd *cli.Command) (
-			[]*tfe.Workspace,
-			error,
-		) {
-			options := tfe.WorkspaceListOptions{
-				ListOptions: tfe.ListOptions{
-					PageNumber: 1,
-					PageSize:   100,
-				},
-			}
-
-			results, err := PaginateWithOptions(
-				ctx,
-				cmd,
-				&options,
-				func(ctx context.Context, opts *tfe.WorkspaceListOptions) (
-					[]*tfe.Workspace,
-					*tfe.Pagination,
-					error,
-				) {
-					page, err := client.Workspaces.List(ctx, org, opts)
-					if err != nil {
-						ctxErr := OrgQueryErrorContext(
-							be,
-							org,
-							"list workspaces",
-						)
-						return nil, nil, remote.FriendlyTFE(
-							err,
-							ctxErr,
-						)
-					}
-					return page.Items, page.Pagination, nil
-				},
-				// Augmenter: customize options before each API call
-				wqServerSideFilterAugmenter,
-			)
-			return results, err
-		},
+	// Create a fetcher that captures the client in a closure
+	fetcher := func(
+		ctx context.Context,
+		org string,
+		opts *tfe.WorkspaceListOptions,
+	) ([]*tfe.Workspace, *tfe.Pagination, error) {
+		page, err := client.Workspaces.List(ctx, org, opts)
+		if err != nil {
+			return nil, nil, err
+		}
+		return page.Items, page.Pagination, nil
 	}
-	return runner.Run(ctx, cmd)
+
+	// Manually call RemoteQueryFetcherFactory and QueryActionRunner since we
+	// already have be, org, client initialized
+	fn := RemoteQueryFetcherFactory(
+		be,
+		org,
+		fetcher,
+		wqServerSideFilterAugmenter,
+		"list workspaces",
+	)
+
+	return NewQueryActionRunner(
+		"wq",
+		reflect.TypeOf((*tfe.Workspace)(nil)).Elem(),
+		wqDefaultAttrs,
+		fn,
+	).Run(ctx, cmd)
 }
 
+// wqServerSideFilterAugmenter augments the WorkspaceListOptions with
+// server-side filters extracted from the --filter flag. Flags with
+// ServerSide=true populate matching fields in opts based on the filter key
+// prefix (project, tag, or xtag). For tag filters, dot-separated keys are
+// parsed to extract the tag name and add create TagBinding entries.
 func wqServerSideFilterAugmenter(
 	_ context.Context,
 	cmd *cli.Command,
@@ -84,6 +78,7 @@ func wqServerSideFilterAugmenter(
 	filterList := filters.BuildFilters(spec)
 
 	for _, f := range filterList {
+		// We only care about server-side filters.
 		if f.ServerSide {
 			parts := strings.Split(f.Key, ".")
 			if len(parts) > 1 {
@@ -102,13 +97,17 @@ func wqServerSideFilterAugmenter(
 		}
 	}
 
+	// THINK Other server-sides to include?
+	// opts.WildcardName = "*dev*"
+	// opts.Include = append(opts.Include, tfe.WSOrganization)
+
 	log.Debugf("opts after augmentation: %+v", opts)
 
 	return nil
 }
 
 // wqCommandBuilder constructs the cli.Command for "wq", wiring metadata,
-// flags, and action/validator handlers.
+// flags, and action handlers.
 func wqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "wq",

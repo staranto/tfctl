@@ -98,7 +98,7 @@ func sqCommandAction(ctx context.Context, cmd *cli.Command) error {
 
 	postProcess := func(dataset []map[string]interface{}) error {
 		if cmd.Bool("chop") {
-			chopPrefix(dataset, "resource")
+			chopPrefix(dataset)
 		}
 		return nil
 	}
@@ -198,34 +198,32 @@ func sqCommandBuilder(meta meta.Meta) *cli.Command {
 }
 
 // chopPrefix finds common leading dot-delimited segments in the
-// given attribute of dataset values. If at least 50% of entries share
+// resource attribute of dataset values. If at least 50% of entries share
 // at least 2 common leading segments, those segments (and the trailing dot)
 // are removed and replaced with ".. ".
-func chopPrefix(dataset []map[string]interface{}, attribute string) {
+func chopPrefix(dataset []map[string]interface{}) {
+	// Bail out early if there is no data.
 	if len(dataset) == 0 {
 		return
 	}
 
-	// Collect all attribute values with their indices.
-	type attributeEntry struct {
+	// Collect all resource values with their indices.
+	type resourceEntry struct {
 		idx   int
 		value string
 	}
-	var attributeValues []attributeEntry
+
+	var resourceValues []resourceEntry
 	for i, entry := range dataset {
-		if val, ok := entry[attribute]; ok {
+		if val, ok := entry["resource"]; ok {
 			if str, ok := val.(string); ok {
-				attributeValues = append(attributeValues, attributeEntry{idx: i, value: str})
+				resourceValues = append(resourceValues, resourceEntry{idx: i, value: str})
 			}
 		}
 	}
 
-	if len(attributeValues) == 0 {
-		return
-	}
-
 	// Calculate the 50% threshold.
-	threshold := (len(attributeValues) + 1) / 2
+	threshold := (len(resourceValues) + 1) / 2
 
 	// Split each value by dots and find common leading segments.
 	type segmentedValue struct {
@@ -233,11 +231,12 @@ func chopPrefix(dataset []map[string]interface{}, attribute string) {
 		value    string
 		segments []string
 	}
+
 	var segmented []segmentedValue
 	maxSegments := 0
-	for _, av := range attributeValues {
-		segs := strings.Split(av.value, ".")
-		segmented = append(segmented, segmentedValue{idx: av.idx, value: av.value, segments: segs})
+	for _, rv := range resourceValues {
+		segs := strings.Split(rv.value, ".")
+		segmented = append(segmented, segmentedValue{idx: rv.idx, value: rv.value, segments: segs})
 		if len(segs) > maxSegments {
 			maxSegments = len(segs)
 		}
@@ -255,30 +254,40 @@ func chopPrefix(dataset []map[string]interface{}, attribute string) {
 		}
 
 		// Find the most common segment at this position.
-		var bestSegment string
-		var bestCount int
-		for seg, count := range segmentCounts {
-			if count > bestCount {
-				bestSegment = seg
-				bestCount = count
-			}
+		bestSegment, bestCount := findBestSegment(segmentCounts)
+
+		// Bail out if the threshold is not met.
+		if bestCount < threshold {
+			break
 		}
 
-		// If this segment appears in at least 50% of values, add it to common.
-		if bestCount >= threshold {
-			commonSegments = append(commonSegments, bestSegment)
-		} else {
-			break // Stop if we can't maintain the 50% threshold.
-		}
+		// Otherwise, add it and keep going.
+		commonSegments = append(commonSegments, bestSegment)
 	}
 
-	// If we have at least 2 common segments, strip them from matching entries.
-	if len(commonSegments) >= 2 {
-		prefixToRemove := strings.Join(commonSegments, ".") + "."
-		for _, sv := range segmented {
-			if strings.HasPrefix(sv.value, prefixToRemove) {
-				dataset[sv.idx][attribute] = ".." + sv.value[len(prefixToRemove):]
-			}
+	// If we don't have at least 2 commonSegments, bail out. There's nothing
+	// worth chopping.
+	if len(commonSegments) < 2 {
+		return
+	}
+
+	// Now, chop the common prefix from all matching resource values.
+	prefixToRemove := strings.Join(commonSegments, ".") + "."
+	for _, sv := range segmented {
+		if strings.HasPrefix(sv.value, prefixToRemove) {
+			dataset[sv.idx]["resource"] = ".." + sv.value[len(prefixToRemove):]
 		}
 	}
+}
+
+func findBestSegment(segmentCounts map[string]int) (string, int) {
+	var bestSegment string
+	var bestCount int
+	for seg, count := range segmentCounts {
+		if count > bestCount {
+			bestSegment = seg
+			bestCount = count
+		}
+	}
+	return bestSegment, bestCount
 }

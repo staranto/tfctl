@@ -157,7 +157,7 @@ func (be *BackendS3) StateBody(svID string) ([]byte, error) {
 // StateVersions implements backend.Backend. It scans be.RootDir for state and
 // backup files, parses them, and creates minimal tfe.StateVersion with ID as
 // filename, CreatedAt from file timestamp, and Serial from the document.
-func (be *BackendS3) StateVersions() ([]*tfe.StateVersion, error) {
+func (be *BackendS3) StateVersions(augmenter ...func(context.Context, *cli.Command, *tfe.StateVersionListOptions) error) ([]*tfe.StateVersion, error) {
 	var env string
 	if be.EnvOverride != "" {
 		env = be.EnvOverride

@@ -23,6 +23,13 @@ import (
 	"github.com/staranto/tfctlgo/internal/output"
 )
 
+// DefaultListOptions provides the standard pagination starting point for all
+// remote API list operations.
+var DefaultListOptions = tfe.ListOptions{
+	PageNumber: 1,
+	PageSize:   100,
+}
+
 // ShortCircuitTLDR checks the --tldr flag and, if present and available,
 // runs `tldr tfctl <subcmd>` and returns true so the caller can exit early.
 func ShortCircuitTLDR(ctx context.Context, cmd *cli.Command, subcmd string) bool {
@@ -217,6 +224,23 @@ type QueryActionRunner[T any] struct {
 	FetchFn      func(context.Context, *cli.Command) ([]T, error)
 }
 
+// NewQueryActionRunner creates a QueryActionRunner with the provided
+// configuration. It's a convenience factory that reduces boilerplate in
+// individual command files.
+func NewQueryActionRunner[T any](
+	commandName string,
+	schemaType reflect.Type,
+	defaultAttrs []string,
+	fetchFn func(context.Context, *cli.Command) ([]T, error),
+) *QueryActionRunner[T] {
+	return &QueryActionRunner[T]{
+		CommandName:  commandName,
+		SchemaType:   schemaType,
+		DefaultAttrs: defaultAttrs,
+		FetchFn:      fetchFn,
+	}
+}
+
 // Run executes the query action with the provided context and command.
 func (qar *QueryActionRunner[T]) Run(
 	ctx context.Context,
@@ -294,4 +318,92 @@ func InitLocalBackendQuery(ctx context.Context, cmd *cli.Command) (
 	}
 	log.Debugf("be: %v", be)
 	return be, nil
+}
+
+// RemoteOrgListFetcher[T, O] is the signature for a function that performs
+// the actual API list call for a resource type. It takes the context, org,
+// options (mutable), and returns items, pagination, or error.
+// T is the result type (e.g., *tfe.Workspace), O is the options type
+// (e.g., tfe.WorkspaceListOptions).
+type RemoteOrgListFetcher[T, O any] func(
+	context.Context,
+	string,
+	*O,
+) ([]T, *tfe.Pagination, error)
+
+// RemoteQueryFetcherFactory creates a generic fetch function for remote
+// org-based queries. It handles the common pagination and augmentation logic,
+// delegating only the API call itself to the provided fetcher, and handling
+// errors with the provided operation name for context.
+func RemoteQueryFetcherFactory[T, O any](
+	be *remote.BackendRemote,
+	org string,
+	fetcher RemoteOrgListFetcher[T, O],
+	augmenter Augmenter[O],
+	operation string,
+) func(context.Context, *cli.Command) ([]T, error) {
+	return func(ctx context.Context, cmd *cli.Command) ([]T, error) {
+		options := new(O)
+		// Set DefaultListOptions on the options struct's ListOptions field
+		setListOptionsDefaults(options)
+
+		results, err := PaginateWithOptions(
+			ctx,
+			cmd,
+			options,
+			func(ctx context.Context, opts *O) ([]T, *tfe.Pagination, error) {
+				items, pagination, err := fetcher(ctx, org, opts)
+				if err != nil {
+					ctxErr := OrgQueryErrorContext(be, org, operation)
+					return nil, nil, remote.FriendlyTFE(err, ctxErr)
+				}
+				return items, pagination, nil
+			},
+			augmenter,
+		)
+		return results, err
+	}
+}
+
+// setListOptionsDefaults uses reflection to set DefaultListOptions on a
+// struct's ListOptions field.
+func setListOptionsDefaults(options any) {
+	v := reflect.ValueOf(options).Elem()
+	lo := v.FieldByName("ListOptions")
+	if lo.IsValid() && lo.CanSet() {
+		lo.Set(reflect.ValueOf(DefaultListOptions))
+	}
+}
+
+// RemoteOrgQueryActionBuilder[T, O] is a builder that encapsulates everything
+// needed to create a remote org query action. T is the result type, O is the
+// options type. The fetcher function will be called with context, org, and
+// options, and should delegate to the actual TFE client API call (which can
+// be captured in a closure).
+type RemoteOrgQueryActionBuilder[T, O any] struct {
+	CommandName  string
+	SchemaType   reflect.Type
+	DefaultAttrs []string
+	Fetcher      RemoteOrgListFetcher[T, O]
+	Augmenter    Augmenter[O]
+	Operation    string
+}
+
+// Build returns the action handler function for this query builder.
+func (b RemoteOrgQueryActionBuilder[T, O]) Build() func(context.Context, *cli.Command) error {
+	return func(ctx context.Context, cmd *cli.Command) error {
+		be, org, _, err := InitRemoteOrgQuery(ctx, cmd)
+		if err != nil {
+			return err
+		}
+
+		fn := RemoteQueryFetcherFactory(be, org, b.Fetcher, b.Augmenter, b.Operation)
+
+		return NewQueryActionRunner(
+			b.CommandName,
+			b.SchemaType,
+			b.DefaultAttrs,
+			fn,
+		).Run(ctx, cmd)
+	}
 }

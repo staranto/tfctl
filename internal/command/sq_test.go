@@ -12,7 +12,7 @@ import (
 
 func TestChopPrefix_EmptyDataset(t *testing.T) {
 	data := []map[string]interface{}{}
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	assert.Equal(t, 0, len(data))
 }
 
@@ -22,7 +22,7 @@ func TestChopPrefix_NoAttribute(t *testing.T) {
 		{"name": "example.two"},
 	}
 	// Should be a no-op
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	assert.Equal(t, "example", data[0]["name"])
 	assert.Equal(t, "example.two", data[1]["name"])
 }
@@ -34,7 +34,7 @@ func TestChopPrefix_NoCommonSegments(t *testing.T) {
 		{"resource": "c.x.y"},
 	}
 	// No common leading segments across >=50% so no change
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	assert.Equal(t, "a.x.y", data[0]["resource"])
 	assert.Equal(t, "b.x.y", data[1]["resource"])
 	assert.Equal(t, "c.x.y", data[2]["resource"])
@@ -47,7 +47,7 @@ func TestChopPrefix_OneCommonSegmentOnly(t *testing.T) {
 		{"resource": "other.c"},
 	}
 	// Only one common segment; must be at least 2 to chop
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	assert.Equal(t, "common.a", data[0]["resource"])
 	assert.Equal(t, "common.b", data[1]["resource"])
 	assert.Equal(t, "other.c", data[2]["resource"])
@@ -61,7 +61,7 @@ func TestChopPrefix_TwoCommonSegments_Threshold(t *testing.T) {
 		{"resource": "env.staging.app.server4"},
 	}
 	// 3 of 4 (>=50%) share "env.prod" as first two segments so they should be chopped
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	// The first three have a longer common prefix (env.prod.app) so the
 	// implementation will remove all common leading segments (not just two).
 	// Expect the full common prefix removed and replaced with "..".
@@ -80,7 +80,7 @@ func TestChopPrefix_PartialMatchesDifferentLengths(t *testing.T) {
 		{"resource": "x.y.z"},
 	}
 	// 3 of 4 have leading segments ["a","b"] so chop should apply to those with prefix
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	// The implementation computes a longest common leading segment list
 	// that meets the threshold. In this case the common prefix is "a.b.c",
 	// so only values that start with "a.b.c." will be shortened.
@@ -98,7 +98,7 @@ func TestChopPrefix_ExactPrefixUnchanged(t *testing.T) {
 	}
 	// Common prefix is "a.b" (two segments). Only entries that have a
 	// remainder after "a.b." should be shortened.
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	assert.Equal(t, "a.b", data[0]["resource"]) // exact prefix, unchanged
 	assert.Equal(t, "..c", data[1]["resource"]) // a.b.c -> ..c
 	assert.Equal(t, "..d", data[2]["resource"]) // a.b.d -> ..d
@@ -110,7 +110,7 @@ func TestChopPrefix_SingleEntry_NoChange(t *testing.T) {
 	}
 	// Single entry should not be transformed into an empty remainder; it
 	// will remain unchanged (no trailing dot to match the prefixToRemove).
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	assert.Equal(t, "only.one", data[0]["resource"])
 }
 
@@ -122,7 +122,7 @@ func TestChopPrefix_NonStringValues_Ignored(t *testing.T) {
 	}
 	// Non-string values should be ignored and not cause a panic. The
 	// string values are evaluated normally.
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	assert.Equal(t, 123, data[0]["resource"]) // unchanged
 	// With these inputs the longest common prefix may not remove a trailing
 	// dot for either string, so they remain unchanged in practice.
@@ -137,7 +137,7 @@ func TestChopPrefix_SomeMissingAttribute(t *testing.T) {
 		{"resource": "a.b.d"},
 	}
 	// Entries missing the attribute should be ignored and others processed.
-	chopPrefix(data, "resource")
+	chopPrefix(data)
 	// The middle entry shouldn't be touched; behavior for the strings is
 	// consistent with the implementation (no trailing-dot removal in this set).
 	assert.Equal(t, "a.b.c", data[0]["resource"]) // unchanged
