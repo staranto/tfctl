@@ -100,6 +100,7 @@ func sqCommandAction(ctx context.Context, cmd *cli.Command) error {
 		if cmd.Bool("chop") {
 			chopPrefix(dataset)
 		}
+
 		return nil
 	}
 

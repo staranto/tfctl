@@ -15,6 +15,7 @@ import (
 
 	"github.com/staranto/tfctlgo/internal/attrs"
 	"github.com/staranto/tfctlgo/internal/driller"
+	"github.com/staranto/tfctlgo/internal/hungarian"
 )
 
 // filterRegex is the pattern used to parse filter expressions into key,
@@ -159,6 +160,46 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList,
 		// Skip server-side filters as they were applied by the API and we're not
 		// interested in them here.
 		if filter.ServerSide {
+			continue
+		}
+
+		// Handle the special case of the hungarian filter. This filter checks if
+		// the resource name follows Hungarian notation (i.e., contains tokens
+		// from the resource type).
+		if filter.Key == "hungarian" {
+			// Get the resource type and name from the candidate.
+			typeVal := driller.Driller(candidate.Raw, "type").Value()
+			nameVal := driller.Driller(candidate.Raw, "name").Value()
+
+			// Both type and name must be present.
+			if typeVal == nil || nameVal == nil {
+				return false
+			}
+
+			// Convert to strings.
+			typeStr, typeOK := typeVal.(string)
+			nameStr, nameOK := nameVal.(string)
+			if !typeOK || !nameOK {
+				return false
+			}
+
+			// Check if the resource is Hungarian notation.
+			isHungarian := hungarian.IsHungarian(typeStr, nameStr)
+
+			// Determine the result based on the filter value and negation.
+			// If filter.Value is empty or "true", keep Hungarian resources.
+			// If filter.Value is "false", keep non-Hungarian resources.
+			matchesHungarian := filter.Value == "" || filter.Value == "true"
+			result := isHungarian == matchesHungarian
+
+			// Apply negation if specified.
+			if filter.Negate {
+				result = !result
+			}
+
+			if !result {
+				return false
+			}
 			continue
 		}
 
