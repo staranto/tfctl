@@ -36,34 +36,34 @@ l l l l l .
 \fB--attrs\fR	\fB-a\fR	T{
 Comma-separated list of attributes to include
 T}	(none)	Global flag
-\fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
+\fB--chop\fR		T{
+Chop common resource prefix from names
+T}	false	sq-specific
+\fB--color\fR		Enable colored text output	false	Use \fB--no-color\fR to disable
 \fB--concrete\fR	\fB-k\fR	T{
 Only include concrete (managed) resources
 T}	false	sq-specific
 \fB--diff\fR		T{
 Show diff between state versions
 T}	false	sq-specific
-\fB--diff_filter\fR		Hidden, internal diff filter	\fBcheck_results\fR	Hidden / internal
 \fB--filter\fR	\fB-f\fR	T{
 Comma-separated list of filters to apply
 T}	(none)	See Filters
 \[la]../filters.md\[ra]
-\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
-\fB--limit\fR		Limit state versions returned	99999	sq-specific, hidden default
-\fB--noshort\fR		T{
-Include full resource name paths
-T}	false	sq-specific
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped
+\fB--org\fR		Organization to query	(none)	Command-scoped
 \fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
-\fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
 \fB--passphrase\fR		Passphrase for encrypted state	(none)	T{
 sq-specific; falls back to TF_VAR_passphrase or interactive prompt
 T}
+\fB--short\fR		T{
+Include full resource name paths
+T}	false	Use \fB--no-short\fR to show full paths
 \fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
-\fB--sv\fR		State version to query	\fB0\fR	sq-specific
-\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
-\fB--workspace\fR	\fB-w\fR	T{
-Workspace to use (overrides backend)
-T}	(none)	Command flag
+\fB--sv\fR		State version to query	current	sq-specific
+\fB--titles\fR		Show titles with text output	false	Use \fB--no-titles\fR to disable
+\fB--tldr\fR		Show tldr page	false	Command-specific helper
+\fB--workspace\fR	\fB-w\fR	Workspace to use for query	(none)	Command-scoped
 .TE
 
 .PP

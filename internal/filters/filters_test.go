@@ -31,7 +31,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "name=my-resource",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "name", Operand: "=", Target: "my-resource", Negate: false},
+				{Key: "name", Operand: "=", Value: "my-resource", Negate: false},
 			},
 		},
 		{
@@ -39,7 +39,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "type^aws_",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "type", Operand: "^", Target: "aws_", Negate: false},
+				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
 			},
 		},
 		{
@@ -47,7 +47,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "tags~^env-",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "tags", Operand: "~", Target: "^env-", Negate: false},
+				{Key: "tags", Operand: "~", Value: "^env-", Negate: false},
 			},
 		},
 		{
@@ -55,7 +55,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "name!=test",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "name", Operand: "=", Target: "test", Negate: true},
+				{Key: "name", Operand: "=", Value: "test", Negate: true},
 			},
 		},
 		{
@@ -63,7 +63,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "type!^aws_",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "type", Operand: "^", Target: "aws_", Negate: true},
+				{Key: "type", Operand: "^", Value: "aws_", Negate: true},
 			},
 		},
 		{
@@ -71,8 +71,8 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "name=test,type^aws_",
 			wantCount: 2,
 			want: []Filter{
-				{Key: "name", Operand: "=", Target: "test", Negate: false},
-				{Key: "type", Operand: "^", Target: "aws_", Negate: false},
+				{Key: "name", Operand: "=", Value: "test", Negate: false},
+				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
 			},
 		},
 		{
@@ -80,7 +80,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "count>5",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "count", Operand: ">", Target: "5", Negate: false},
+				{Key: "count", Operand: ">", Value: "5", Negate: false},
 			},
 		},
 		{
@@ -88,7 +88,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "count<10",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "count", Operand: "<", Target: "10", Negate: false},
+				{Key: "count", Operand: "<", Value: "10", Negate: false},
 			},
 		},
 		{
@@ -96,7 +96,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "name@test",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "name", Operand: "@", Target: "test", Negate: false},
+				{Key: "name", Operand: "@", Value: "test", Negate: false},
 			},
 		},
 		{
@@ -104,16 +104,17 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "name/^test.*",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "name", Operand: "/", Target: "^test.*", Negate: false},
+				{Key: "name", Operand: "/", Value: "^test.*", Negate: false},
 			},
 		},
 		{
-			name:      "invalid filter skipped",
-			spec:      "name=test,invalid-filter,type^aws_",
-			wantCount: 2,
+			name:      "key without operator or target",
+			spec:      "name=test,status,type^aws_",
+			wantCount: 3,
 			want: []Filter{
-				{Key: "name", Operand: "=", Target: "test", Negate: false},
-				{Key: "type", Operand: "^", Target: "aws_", Negate: false},
+				{Key: "name", Operand: "=", Value: "test", Negate: false},
+				{Key: "status", Operand: "", Value: "", Negate: false},
+				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
 			},
 		},
 		{
@@ -122,8 +123,8 @@ func TestBuildFilters(t *testing.T) {
 			delimiter: "|",
 			wantCount: 2,
 			want: []Filter{
-				{Key: "name", Operand: "=", Target: "test", Negate: false},
-				{Key: "type", Operand: "^", Target: "aws_", Negate: false},
+				{Key: "name", Operand: "=", Value: "test", Negate: false},
+				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
 			},
 		},
 		{
@@ -131,7 +132,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "backend.s3.region=us-west-2",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "backend.s3.region", Operand: "=", Target: "us-west-2", Negate: false},
+				{Key: "backend.s3.region", Operand: "=", Value: "us-west-2", Negate: false},
 			},
 		},
 		{
@@ -139,7 +140,7 @@ func TestBuildFilters(t *testing.T) {
 			spec:      "name=",
 			wantCount: 1,
 			want: []Filter{
-				{Key: "name", Operand: "=", Target: "", Negate: false},
+				{Key: "name", Operand: "=", Value: "", Negate: false},
 			},
 		},
 	}
@@ -156,7 +157,7 @@ func TestBuildFilters(t *testing.T) {
 				for i, filter := range tt.want {
 					assert.Equal(t, filter.Key, got[i].Key)
 					assert.Equal(t, filter.Operand, got[i].Operand)
-					assert.Equal(t, filter.Target, got[i].Target)
+					assert.Equal(t, filter.Value, got[i].Value)
 					assert.Equal(t, filter.Negate, got[i].Negate)
 				}
 			}
@@ -174,115 +175,115 @@ func TestCheckStringOperand(t *testing.T) {
 		{
 			name:   "exact match true",
 			value:  "test",
-			filter: Filter{Operand: "=", Target: "test", Negate: false},
+			filter: Filter{Operand: "=", Value: "test", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "exact match false",
 			value:  "test",
-			filter: Filter{Operand: "=", Target: "other", Negate: false},
+			filter: Filter{Operand: "=", Value: "other", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "negated exact match true",
 			value:  "test",
-			filter: Filter{Operand: "=", Target: "other", Negate: true},
+			filter: Filter{Operand: "=", Value: "other", Negate: true},
 			want:   true,
 		},
 		{
 			name:   "negated exact match false",
 			value:  "test",
-			filter: Filter{Operand: "=", Target: "test", Negate: true},
+			filter: Filter{Operand: "=", Value: "test", Negate: true},
 			want:   false,
 		},
 		{
 			name:   "prefix match true",
 			value:  "aws_instance",
-			filter: Filter{Operand: "^", Target: "aws_", Negate: false},
+			filter: Filter{Operand: "^", Value: "aws_", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "prefix match false",
 			value:  "gcp_instance",
-			filter: Filter{Operand: "^", Target: "aws_", Negate: false},
+			filter: Filter{Operand: "^", Value: "aws_", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "case insensitive match true",
 			value:  "TEST",
-			filter: Filter{Operand: "~", Target: "test", Negate: false},
+			filter: Filter{Operand: "~", Value: "test", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "case insensitive match false",
 			value:  "testing",
-			filter: Filter{Operand: "~", Target: "test", Negate: false},
+			filter: Filter{Operand: "~", Value: "test", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "contains true",
 			value:  "my-test-resource",
-			filter: Filter{Operand: "@", Target: "test", Negate: false},
+			filter: Filter{Operand: "@", Value: "test", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "contains false",
 			value:  "my-resource",
-			filter: Filter{Operand: "@", Target: "test", Negate: false},
+			filter: Filter{Operand: "@", Value: "test", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "negated contains true",
 			value:  "my-resource",
-			filter: Filter{Operand: "@", Target: "test", Negate: true},
+			filter: Filter{Operand: "@", Value: "test", Negate: true},
 			want:   true,
 		},
 		{
 			name:   "regex match true",
 			value:  "aws_instance_v1",
-			filter: Filter{Operand: "/", Target: "^aws_.*_v\\d+$", Negate: false},
+			filter: Filter{Operand: "/", Value: "^aws_.*_v\\d+$", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "regex match false",
 			value:  "instance",
-			filter: Filter{Operand: "/", Target: "^aws_.*", Negate: false},
+			filter: Filter{Operand: "/", Value: "^aws_.*", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "negated regex match",
 			value:  "instance",
-			filter: Filter{Operand: "/", Target: "^aws_.*", Negate: true},
+			filter: Filter{Operand: "/", Value: "^aws_.*", Negate: true},
 			want:   true,
 		},
 		{
 			name:   "greater than string true",
 			value:  "z",
-			filter: Filter{Operand: ">", Target: "a", Negate: false},
+			filter: Filter{Operand: ">", Value: "a", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "greater than string false",
 			value:  "a",
-			filter: Filter{Operand: ">", Target: "z", Negate: false},
+			filter: Filter{Operand: ">", Value: "z", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "less than string true",
 			value:  "a",
-			filter: Filter{Operand: "<", Target: "z", Negate: false},
+			filter: Filter{Operand: "<", Value: "z", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "invalid regex",
 			value:  "test",
-			filter: Filter{Operand: "/", Target: "[invalid", Negate: false},
+			filter: Filter{Operand: "/", Value: "[invalid", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "unsupported operand",
 			value:  "test",
-			filter: Filter{Operand: "?", Target: "test", Negate: false},
+			filter: Filter{Operand: "?", Value: "test", Negate: false},
 			want:   false,
 		},
 	}
@@ -305,67 +306,67 @@ func TestCheckNumericOperand(t *testing.T) {
 		{
 			name:   "exact match true",
 			value:  42,
-			filter: Filter{Operand: "=", Target: "42", Negate: false},
+			filter: Filter{Operand: "=", Value: "42", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "exact match false",
 			value:  42,
-			filter: Filter{Operand: "=", Target: "40", Negate: false},
+			filter: Filter{Operand: "=", Value: "40", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "negated equal true",
 			value:  42,
-			filter: Filter{Operand: "=", Target: "40", Negate: true},
+			filter: Filter{Operand: "=", Value: "40", Negate: true},
 			want:   true,
 		},
 		{
 			name:   "negated equal false",
 			value:  42,
-			filter: Filter{Operand: "=", Target: "42", Negate: true},
+			filter: Filter{Operand: "=", Value: "42", Negate: true},
 			want:   false,
 		},
 		{
 			name:   "greater than true",
 			value:  50,
-			filter: Filter{Operand: ">", Target: "42", Negate: false},
+			filter: Filter{Operand: ">", Value: "42", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "greater than false",
 			value:  42,
-			filter: Filter{Operand: ">", Target: "50", Negate: false},
+			filter: Filter{Operand: ">", Value: "50", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "less than true",
 			value:  42,
-			filter: Filter{Operand: "<", Target: "50", Negate: false},
+			filter: Filter{Operand: "<", Value: "50", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "less than false",
 			value:  50,
-			filter: Filter{Operand: "<", Target: "42", Negate: false},
+			filter: Filter{Operand: "<", Value: "42", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "float value with integer target",
 			value:  42.5,
-			filter: Filter{Operand: ">", Target: "42", Negate: false},
+			filter: Filter{Operand: ">", Value: "42", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "invalid target",
 			value:  42,
-			filter: Filter{Operand: "=", Target: "invalid", Negate: false},
+			filter: Filter{Operand: "=", Value: "invalid", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "unsupported operand",
 			value:  42,
-			filter: Filter{Operand: "^", Target: "42", Negate: false},
+			filter: Filter{Operand: "^", Value: "42", Negate: false},
 			want:   false,
 		},
 	}
@@ -388,55 +389,55 @@ func TestCheckContainsOperand(t *testing.T) {
 		{
 			name:   "slice contains true",
 			value:  []any{"a", "b", "c"},
-			filter: Filter{Operand: "@", Target: "b", Negate: false},
+			filter: Filter{Operand: "@", Value: "b", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "slice contains false",
 			value:  []any{"a", "b", "c"},
-			filter: Filter{Operand: "@", Target: "d", Negate: false},
+			filter: Filter{Operand: "@", Value: "d", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "slice not contains true",
 			value:  []any{"a", "b", "c"},
-			filter: Filter{Operand: "@", Target: "d", Negate: true},
+			filter: Filter{Operand: "@", Value: "d", Negate: true},
 			want:   true,
 		},
 		{
 			name:   "slice not contains false",
 			value:  []any{"a", "b", "c"},
-			filter: Filter{Operand: "@", Target: "b", Negate: true},
+			filter: Filter{Operand: "@", Value: "b", Negate: true},
 			want:   false,
 		},
 		{
 			name:   "map key exists true",
 			value:  map[string]any{"key1": "value1", "key2": "value2"},
-			filter: Filter{Operand: "@", Target: "key1", Negate: false},
+			filter: Filter{Operand: "@", Value: "key1", Negate: false},
 			want:   true,
 		},
 		{
 			name:   "map key exists false",
 			value:  map[string]any{"key1": "value1", "key2": "value2"},
-			filter: Filter{Operand: "@", Target: "key3", Negate: false},
+			filter: Filter{Operand: "@", Value: "key3", Negate: false},
 			want:   false,
 		},
 		{
 			name:   "map key not exists true",
 			value:  map[string]any{"key1": "value1", "key2": "value2"},
-			filter: Filter{Operand: "@", Target: "key3", Negate: true},
+			filter: Filter{Operand: "@", Value: "key3", Negate: true},
 			want:   true,
 		},
 		{
 			name:   "map key not exists false",
 			value:  map[string]any{"key1": "value1", "key2": "value2"},
-			filter: Filter{Operand: "@", Target: "key1", Negate: true},
+			filter: Filter{Operand: "@", Value: "key1", Negate: true},
 			want:   false,
 		},
 		{
 			name:   "unsupported type",
 			value:  123,
-			filter: Filter{Operand: "@", Target: "test", Negate: false},
+			filter: Filter{Operand: "@", Value: "test", Negate: false},
 			want:   false,
 		},
 	}
@@ -590,86 +591,86 @@ func TestApplyFilters(t *testing.T) {
 		{
 			name: "single filter match",
 			filters: []Filter{
-				{Key: "name", Operand: "=", Target: "my-resource", Negate: false},
+				{Key: "name", Operand: "=", Value: "my-resource", Negate: false},
 			},
 			want: true,
 		},
 		{
 			name: "single filter no match",
 			filters: []Filter{
-				{Key: "name", Operand: "=", Target: "other", Negate: false},
+				{Key: "name", Operand: "=", Value: "other", Negate: false},
 			},
 			want: false,
 		},
 		{
 			name: "multiple filters all match",
 			filters: []Filter{
-				{Key: "name", Operand: "=", Target: "my-resource", Negate: false},
-				{Key: "type", Operand: "^", Target: "aws_", Negate: false},
+				{Key: "name", Operand: "=", Value: "my-resource", Negate: false},
+				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
 			},
 			want: true,
 		},
 		{
 			name: "multiple filters one fails",
 			filters: []Filter{
-				{Key: "name", Operand: "=", Target: "my-resource", Negate: false},
-				{Key: "type", Operand: "^", Target: "gcp_", Negate: false},
+				{Key: "name", Operand: "=", Value: "my-resource", Negate: false},
+				{Key: "type", Operand: "^", Value: "gcp_", Negate: false},
 			},
 			want: false,
 		},
 		{
-			name: "native filter ignored",
+			name: "server-side filter ignored",
 			filters: []Filter{
-				{Key: "_native_filter", Operand: "=", Target: "value", Negate: false},
+				{Key: "_serverside_filter", Operand: "=", Value: "value", Negate: false},
 			},
 			want: true,
 		},
 		{
 			name: "missing attribute key continues",
 			filters: []Filter{
-				{Key: "nonexistent", Operand: "=", Target: "value", Negate: false},
+				{Key: "nonexistent", Operand: "=", Value: "value", Negate: false},
 			},
 			want: true,
 		},
 		{
 			name: "numeric comparison",
 			filters: []Filter{
-				{Key: "count", Operand: ">", Target: "3", Negate: false},
+				{Key: "count", Operand: ">", Value: "3", Negate: false},
 			},
 			want: true,
 		},
 		{
 			name: "missing key returns nil",
 			filters: []Filter{
-				{Key: "nonexistent_key", Operand: "=", Target: "value", Negate: false},
+				{Key: "nonexistent_key", Operand: "=", Value: "value", Negate: false},
 			},
 			want: true,
 		},
 		{
 			name: "null value filter fails",
 			filters: []Filter{
-				{Key: "description", Operand: "=", Target: "value", Negate: false},
+				{Key: "description", Operand: "=", Value: "value", Negate: false},
 			},
 			want: false,
 		},
 		{
 			name: "unsupported type with equals operator passes",
 			filters: []Filter{
-				{Key: "nested", Operand: "=", Target: "value", Negate: false},
+				{Key: "nested", Operand: "=", Value: "value", Negate: false},
 			},
 			want: true,
 		},
 		{
 			name: "unsupported type with contains operator uses checkContainsOperand",
 			filters: []Filter{
-				{Key: "nested", Operand: "@", Target: "inner", Negate: false},
+				{Key: "nested", Operand: "@", Value: "inner", Negate: false},
 			},
 			want: true,
 		},
 		{
 			name: "array type with equals operator passes",
 			filters: []Filter{
-				{Key: "tags", Operand: "=", Target: "prod", Negate: false},
+				{Key: "tags", Operand: "=", Value: "prod", Negate: false},
 			},
 			want: true,
 		},

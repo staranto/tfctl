@@ -1,6 +1,6 @@
 '\" t
 .nh
-.TH tfctl si — interactive state console
+.TH tfctl si — state inspector
 Synopsis
 
 .EX
@@ -21,16 +21,50 @@ See the common flag reference: Flags
 .IP \(bu 2
 Attributes: Attributes
 \[la]../attrs.md\[ra]
+.IP \(bu 2
+Filtering: Filters
+\[la]../filters.md\[ra]
+
+.PP
+Flags
+
+.TS
+allbox;
+l l l l l 
+l l l l l .
+\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
+\fB--attrs\fR	\fB-a\fR	T{
+Comma-separated list of attributes to include
+T}	(none)	Global flag
+\fB--color\fR		Enable colored text output	false	Use \fB--no-color\fR to disable
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}	(none)	See Filters
+\[la]../filters.md\[ra]
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
+\fB--passphrase\fR	\fB-p\fR	T{
+Passphrase for encrypted state files
+T}	(none)	si-specific
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
+\fB--sv\fR		State version to query	current	si-specific
+\fB--titles\fR		Show titles with text output	false	Use \fB--no-titles\fR to disable
+.TE
 
 .PP
 Quick examples
 
 .EX
 # Start interactive console in CWD
- tfctl si
+tfctl si
 
 # Exit the console
- Type `exit` or press Ctrl+C
+Type `exit` or press Ctrl+C
+
+# Start console with specific state version
+tfctl si --sv 5
+
+# Query with filters
+tfctl si --filter "type=aws_instance"
 .EE
 
 .PP
@@ -39,46 +73,11 @@ Notes
 \fBsi\fR uses a terminal UI and stores history in \fB~/.tfctl_si_history\fR\&.
 .IP \(bu 2
 For scripted/extractable output, prefer \fBsq --output json\fR\&.
+.IP \(bu 2
+Use \fB--passphrase\fR or \fBTF_VAR_passphrase\fR for encrypted state files.
 
 .PP
 See also
 .IP \(bu 2
 Quickstart
 \[la]../quickstart.md\[ra]
-
-.PP
-Flags
-
-.TS
-allbox;
-l l l l 
-l l l l .
-\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBNotes\fP
-\fB--attrs\fR	\fB-a\fR	T{
-Comma-separated list of attributes to include
-T}	Global flag
-\fB--color\fR	\fB-c\fR	Enable colored text output	Global flag
-\fB--filter\fR	\fB-f\fR	T{
-Comma-separated list of filters to apply
-T}	See Filters
-\[la]../filters.md\[ra]
-\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	Global flag
-\fB--sort\fR	\fB-s\fR	Attributes to sort by	Global flag
-\fB--titles\fR	\fB-t\fR	Show titles with text output	Global flag
-Flag	Alias	Description	Default
-------	-------	-------------	---------
-\fB--attrs\fR	\fB-a\fR	T{
-Comma-separated list of attributes to include
-T}	(none)
-\fB--color\fR	\fB-c\fR	Enable colored text output	false
-\fB--filter\fR	\fB-f\fR	T{
-Comma-separated list of filters to apply
-T}	(none)
-\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR
-\fB--passphrase\fR	\fB-p\fR	T{
-Passphrase for encrypted state files
-T}	(none)
-\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)
-\fB--sv\fR		State version to query	\fB0\fR
-\fB--titles\fR	\fB-t\fR	Show titles with text output	false
-.TE

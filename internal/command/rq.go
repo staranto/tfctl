@@ -15,32 +15,64 @@ import (
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
-// RqCommandAction is the action handler for the "rq" subcommand. It lists
-// runs via the active backend, supports --tldr/--schema short-circuits, and
-// emits output per common flags.
-func RqCommandAction(ctx context.Context, cmd *cli.Command) error {
+// rqDefaultAttrs specifies the default attributes displayed for runs in
+// the "rq" command output.
+var rqDefaultAttrs = []string{".id", "created-at", "status"}
+
+// rqCommandAction is the action handler for the "rq" subcommand. It lists
+// runs via the active backend, supports --tldr/--schema shortcuts, and
+// emits results per common flags.
+func rqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	be, err := InitLocalBackendQuery(ctx, cmd)
 	if err != nil {
 		return err
 	}
 
-	runner := &QueryActionRunner[*tfe.Run]{
-		CommandName:  "rq",
-		SchemaType:   reflect.TypeOf(tfe.Run{}),
-		DefaultAttrs: []string{".id", "created-at", "status"},
-		FetchFn: func(ctx context.Context, cmd *cli.Command) (
-			[]*tfe.Run,
-			error,
-		) {
-			return be.Runs()
-		},
+	// Create a fetcher that delegates to the backend
+	fetcher := func(
+		ctx context.Context,
+		org string,
+		opts *tfe.RunListOptions,
+	) ([]*tfe.Run, *tfe.Pagination, error) {
+		runs, err := be.Runs()
+		if err != nil {
+			return nil, nil, err
+		}
+		// Local backend doesn't support pagination, return all results
+		return runs, &tfe.Pagination{NextPage: 0}, nil
 	}
-	return runner.Run(ctx, cmd)
+
+	// Use RemoteQueryFetcherFactory to handle augmentation
+	// (though local backend doesn't support it)
+	fn := RemoteQueryFetcherFactory(
+		nil, // no backend for error context (local backend)
+		"",  // no org needed
+		fetcher,
+		rqServerSideFilterAugmenter,
+		"list runs",
+	)
+
+	return NewQueryActionRunner(
+		"rq",
+		reflect.TypeOf((*tfe.Run)(nil)).Elem(),
+		rqDefaultAttrs,
+		fn,
+	).Run(ctx, cmd)
 }
 
-// RqCommandBuilder constructs the cli.Command for "rq", wiring metadata,
-// flags, and action/validator.
-func RqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+// rqServerSideFilterAugmenter returns immediately without augmenting options.
+// Local backend queries do not support server-side filtering.
+func rqServerSideFilterAugmenter(
+	_ context.Context,
+	_ *cli.Command,
+	_ *tfe.RunListOptions,
+) error {
+	return nil
+}
+
+// rqCommandBuilder constructs the cli.Command for "rq", wiring metadata,
+// flags, and action handlers.
+func rqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "rq",
 		Usage:     "run query",
@@ -60,7 +92,7 @@ func RqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			NewOrgFlag("rq"),
 			workspaceFlag,
 		},
-		Action: RqCommandAction,
+		Action: rqCommandAction,
 		Meta:   meta,
 	}).Build()
 }

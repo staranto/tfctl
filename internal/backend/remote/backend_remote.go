@@ -364,8 +364,9 @@ func (be *BackendRemote) StateVersion(svSpecs ...string) (tfe.StateVersion, erro
 	return *stateVersion, nil
 }
 
-// StateVersions implements backend.Backend.
-func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
+// StateVersions implements backend.Backend. It accepts an optional augmenter
+// to apply server-side filters before each API call.
+func (be *BackendRemote) StateVersions(augmenter ...func(context.Context, *cli.Command, *tfe.StateVersionListOptions) error) ([]*tfe.StateVersion, error) {
 	if len(be.StateVersionList) > 0 {
 		log.Errorf("be.StateVersionList: preloaded with %d", len(be.StateVersionList))
 		return be.StateVersionList, nil
@@ -408,6 +409,13 @@ func (be *BackendRemote) StateVersions() ([]*tfe.StateVersion, error) {
 		Workspace:    workspace,
 		Organization: organization,
 		ListOptions:  tfe.ListOptions{PageNumber: 1, PageSize: pageSize},
+	}
+
+	// Apply augmenter if provided (for server-side filtering)
+	if len(augmenter) > 0 && augmenter[0] != nil {
+		if err := augmenter[0](be.Ctx, be.Cmd, &options); err != nil {
+			return nil, fmt.Errorf("failed to augment state version options: %w", err)
+		}
 	}
 
 	var results []*tfe.StateVersion

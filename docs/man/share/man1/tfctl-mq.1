@@ -36,18 +36,18 @@ l l l l l .
 \fB--attrs\fR	\fB-a\fR	T{
 Comma-separated list of attributes to include
 T}	(none)	Global flag
-\fB--color\fR	\fB-c\fR	Enable colored text output	false	Global flag
+\fB--color\fR		Enable colored text output	false	Use \fB--no-color\fR to disable
 \fB--filter\fR	\fB-f\fR	T{
 Comma-separated list of filters to apply
 T}	(none)	See Filters
 \[la]../filters.md\[ra]
-\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped via \fBNewHostFlag\fR
-\fB--org\fR	\fB-o\fR	Organization to query	(none)	Command-scoped via \fBNewOrgFlag\fR
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped
+\fB--org\fR		Organization to query	(none)	Command-scoped
 \fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
-\fB--schema\fR		Dump the schema	false	Command helper
+\fB--schema\fR		Dump the schema	false	Command-specific helper
 \fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
-\fB--titles\fR	\fB-t\fR	Show titles with text output	false	Global flag
-\fB--tldr\fR		Show tldr page (if installed)	false	Hidden unless \fBtldr\fR present
+\fB--titles\fR		Show titles with text output	false	Use \fB--no-titles\fR to disable
+\fB--tldr\fR		Show tldr page	false	Command-specific helper
 .TE
 
 .PP

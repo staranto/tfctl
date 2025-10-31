@@ -23,6 +23,13 @@ import (
 	"github.com/staranto/tfctlgo/internal/output"
 )
 
+// DefaultListOptions provides the standard pagination starting point for all
+// remote API list operations.
+var DefaultListOptions = tfe.ListOptions{
+	PageNumber: 1,
+	PageSize:   100,
+}
+
 // ShortCircuitTLDR checks the --tldr flag and, if present and available,
 // runs `tldr tfctl <subcmd>` and returns true so the caller can exit early.
 func ShortCircuitTLDR(ctx context.Context, cmd *cli.Command, subcmd string) bool {
@@ -87,40 +94,73 @@ func GetMeta(cmd *cli.Command) meta.Meta {
 	return meta.Meta{}
 }
 
-// PaginateAndCollect is a generic helper that drives paginated list calls and
-// collects results until either the end of the list or the provided limit is
-// reached. Pass limit <= 0 to disable limiting.
-//
-// fetch must return the items for the given page, the next page number (0 if
-// there are no more pages), and an error.
-func PaginateAndCollect[T any](ctx context.Context, limit int, pageSize int, fetch func(pageNumber, pageSize int) ([]*T, int, error)) ([]*T, error) {
-	if pageSize <= 0 {
-		pageSize = 100
-	}
-	if limit > 0 && limit < pageSize {
-		pageSize = limit
-	}
+// Augmenter[O] is a callback function that customizes options before
+// each API call. It receives the context, command, and a pointer to the
+// options object, allowing mutation of options based on command flags or
+// other context. Return an error to abort pagination.
+type Augmenter[O any] func(
+	context.Context,
+	*cli.Command,
+	*O,
+) error
 
-	var results []*T
-	pageNumber := 1
+// PaginateWithOptions[T, O] is a generic paginator that drives paginated API
+// calls with mutable options. It handles pagination logic and returns all
+// collected results. The augmenter callback (if provided) is called before
+// each API invocation, allowing options customization (e.g., setting filters
+// or tags). The fetcher callback encapsulates the actual API call and must
+// return results, pagination info, and any error.
+func PaginateWithOptions[T, O any](
+	ctx context.Context,
+	cmd *cli.Command,
+	options *O,
+	fetcher func(context.Context, *O) ([]T, *tfe.Pagination, error),
+	augmenter Augmenter[O],
+) ([]T, error) {
+	var results []T
+
+	// Paginate through pages
 	for {
-		items, nextPage, err := fetch(pageNumber, pageSize)
+		// Invoke augmenter before each page (to allow options mutation)
+		if augmenter != nil {
+			if err := augmenter(ctx, cmd, options); err != nil {
+				return nil, err
+			}
+		}
+
+		// Fetch current page
+		items, pagination, err := fetcher(ctx, options)
 		if err != nil {
 			return nil, err
 		}
 
 		results = append(results, items...)
-		log.Debugf("page: %d, total: %d", pageNumber, len(results))
 
-		if limit > 0 && len(results) >= limit {
-			return results[:limit], nil
-		}
-		if nextPage == 0 {
+		// Check if there are more pages
+		if pagination.NextPage == 0 {
 			break
 		}
-		pageNumber = nextPage
+
+		// Increment page number for next iteration
+		setPageNumber(options, pagination.NextPage)
 	}
+
 	return results, nil
+}
+
+// setPageNumber uses reflection to set the PageNumber field in the options
+// struct. It assumes the struct has a ListOptions.PageNumber field (standard
+// in tfe API options).
+func setPageNumber(options any, pageNumber int) {
+	v := reflect.ValueOf(options).Elem()
+	lo := v.FieldByName("ListOptions")
+	if !lo.IsValid() {
+		return
+	}
+	pn := lo.FieldByName("PageNumber")
+	if pn.IsValid() && pn.CanSet() {
+		pn.SetInt(int64(pageNumber))
+	}
 }
 
 // OrgQueryErrorContext is a helper to construct remote.ErrorContext for
@@ -184,6 +224,23 @@ type QueryActionRunner[T any] struct {
 	FetchFn      func(context.Context, *cli.Command) ([]T, error)
 }
 
+// NewQueryActionRunner creates a QueryActionRunner with the provided
+// configuration. It's a convenience factory that reduces boilerplate in
+// individual command files.
+func NewQueryActionRunner[T any](
+	commandName string,
+	schemaType reflect.Type,
+	defaultAttrs []string,
+	fetchFn func(context.Context, *cli.Command) ([]T, error),
+) *QueryActionRunner[T] {
+	return &QueryActionRunner[T]{
+		CommandName:  commandName,
+		SchemaType:   schemaType,
+		DefaultAttrs: defaultAttrs,
+		FetchFn:      fetchFn,
+	}
+}
+
 // Run executes the query action with the provided context and command.
 func (qar *QueryActionRunner[T]) Run(
 	ctx context.Context,
@@ -219,8 +276,8 @@ func (qar *QueryActionRunner[T]) Run(
 }
 
 // InitRemoteOrgQuery initializes a remote backend connection for queries that
-// operate on organizations. It returns the backend, organization name, and
-// TFE client, or an error if initialization fails.
+// operate exclusively on organizations. It returns the backend, organization
+// name, and TFE client, or an error if initialization fails.
 func InitRemoteOrgQuery(
 	ctx context.Context,
 	cmd *cli.Command,
@@ -261,4 +318,92 @@ func InitLocalBackendQuery(ctx context.Context, cmd *cli.Command) (
 	}
 	log.Debugf("be: %v", be)
 	return be, nil
+}
+
+// RemoteOrgListFetcher[T, O] is the signature for a function that performs
+// the actual API list call for a resource type. It takes the context, org,
+// options (mutable), and returns items, pagination, or error.
+// T is the result type (e.g., *tfe.Workspace), O is the options type
+// (e.g., tfe.WorkspaceListOptions).
+type RemoteOrgListFetcher[T, O any] func(
+	context.Context,
+	string,
+	*O,
+) ([]T, *tfe.Pagination, error)
+
+// RemoteQueryFetcherFactory creates a generic fetch function for remote
+// org-based queries. It handles the common pagination and augmentation logic,
+// delegating only the API call itself to the provided fetcher, and handling
+// errors with the provided operation name for context.
+func RemoteQueryFetcherFactory[T, O any](
+	be *remote.BackendRemote,
+	org string,
+	fetcher RemoteOrgListFetcher[T, O],
+	augmenter Augmenter[O],
+	operation string,
+) func(context.Context, *cli.Command) ([]T, error) {
+	return func(ctx context.Context, cmd *cli.Command) ([]T, error) {
+		options := new(O)
+		// Set DefaultListOptions on the options struct's ListOptions field
+		setListOptionsDefaults(options)
+
+		results, err := PaginateWithOptions(
+			ctx,
+			cmd,
+			options,
+			func(ctx context.Context, opts *O) ([]T, *tfe.Pagination, error) {
+				items, pagination, err := fetcher(ctx, org, opts)
+				if err != nil {
+					ctxErr := OrgQueryErrorContext(be, org, operation)
+					return nil, nil, remote.FriendlyTFE(err, ctxErr)
+				}
+				return items, pagination, nil
+			},
+			augmenter,
+		)
+		return results, err
+	}
+}
+
+// setListOptionsDefaults uses reflection to set DefaultListOptions on a
+// struct's ListOptions field.
+func setListOptionsDefaults(options any) {
+	v := reflect.ValueOf(options).Elem()
+	lo := v.FieldByName("ListOptions")
+	if lo.IsValid() && lo.CanSet() {
+		lo.Set(reflect.ValueOf(DefaultListOptions))
+	}
+}
+
+// RemoteOrgQueryActionBuilder[T, O] is a builder that encapsulates everything
+// needed to create a remote org query action. T is the result type, O is the
+// options type. The fetcher function will be called with context, org, and
+// options, and should delegate to the actual TFE client API call (which can
+// be captured in a closure).
+type RemoteOrgQueryActionBuilder[T, O any] struct {
+	CommandName  string
+	SchemaType   reflect.Type
+	DefaultAttrs []string
+	Fetcher      RemoteOrgListFetcher[T, O]
+	Augmenter    Augmenter[O]
+	Operation    string
+}
+
+// Build returns the action handler function for this query builder.
+func (b RemoteOrgQueryActionBuilder[T, O]) Build() func(context.Context, *cli.Command) error {
+	return func(ctx context.Context, cmd *cli.Command) error {
+		be, org, _, err := InitRemoteOrgQuery(ctx, cmd)
+		if err != nil {
+			return err
+		}
+
+		fn := RemoteQueryFetcherFactory(be, org, b.Fetcher, b.Augmenter, b.Operation)
+
+		return NewQueryActionRunner(
+			b.CommandName,
+			b.SchemaType,
+			b.DefaultAttrs,
+			fn,
+		).Run(ctx, cmd)
+	}
 }

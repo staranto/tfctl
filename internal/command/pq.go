@@ -6,73 +6,110 @@ package command
 import (
 	"context"
 	"reflect"
+	"strings"
 
+	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
 	"github.com/staranto/tfctlgo/internal/backend/remote"
+	"github.com/staranto/tfctlgo/internal/filters"
 	"github.com/staranto/tfctlgo/internal/meta"
 )
 
-// PqCommandAction is the action handler for the "pq" subcommand. It lists
+var pqDefaultAttrs = []string{".id", "name"}
+
+// pqCommandAction is the action handler for the "pq" subcommand. It lists
 // projects for the selected organization, supports --tldr/--schema
 // short-circuit behavior, and emits output per common flags.
-func PqCommandAction(ctx context.Context, cmd *cli.Command) error {
+func pqCommandAction(ctx context.Context, cmd *cli.Command) error {
 	be, org, client, err := InitRemoteOrgQuery(ctx, cmd)
 	if err != nil {
 		return err
 	}
 
-	runner := &QueryActionRunner[*tfe.Project]{
-		CommandName:  "pq",
-		SchemaType:   reflect.TypeOf(tfe.Project{}),
-		DefaultAttrs: []string{".id", "name"},
-		FetchFn: func(ctx context.Context, cmd *cli.Command) (
-			[]*tfe.Project,
-			error,
-		) {
-			return PaginateAndCollect(
-				ctx,
-				0,
-				100,
-				func(pageNumber, pageSize int) (
-					[]*tfe.Project,
-					int,
-					error,
-				) {
-					opts := tfe.ProjectListOptions{
-						ListOptions: tfe.ListOptions{
-							PageNumber: pageNumber,
-							PageSize:   pageSize,
-						},
-					}
-					page, listErr := client.Projects.List(
-						ctx,
+	fn := func(ctx context.Context, cmd *cli.Command) ([]*tfe.Project, error) {
+		options := tfe.ProjectListOptions{
+			ListOptions: DefaultListOptions,
+		}
+		return PaginateWithOptions(
+			ctx,
+			cmd,
+			&options,
+			func(ctx context.Context, opts *tfe.ProjectListOptions) (
+				[]*tfe.Project,
+				*tfe.Pagination,
+				error,
+			) {
+				page, err := client.Projects.List(ctx, org, opts)
+				if err != nil {
+					ctxErr := OrgQueryErrorContext(
+						be,
 						org,
-						&opts,
+						"list projects",
 					)
-					if listErr != nil {
-						ctxErr := OrgQueryErrorContext(
-							be,
-							org,
-							"list projects",
-						)
-						return nil, 0, remote.FriendlyTFE(
-							listErr,
-							ctxErr,
-						)
-					}
-					return page.Items, page.Pagination.NextPage, nil
-				},
-			)
-		},
+					return nil, nil, remote.FriendlyTFE(
+						err,
+						ctxErr,
+					)
+				}
+				return page.Items, page.Pagination, nil
+			},
+			pqServerSideFilterAugmenter,
+		)
 	}
-	return runner.Run(ctx, cmd)
+
+	return NewQueryActionRunner(
+		"pq",
+		reflect.TypeOf((*tfe.Project)(nil)).Elem(),
+		pqDefaultAttrs,
+		fn,
+	).Run(ctx, cmd)
 }
 
-// PqCommandBuilder constructs the cli.Command for "pq", wiring metadata,
+// pqServerSideFilterAugmenter augments the ProjectListOptions with
+// server-side filters extracted from the --filter flag.
+func pqServerSideFilterAugmenter(
+	_ context.Context,
+	cmd *cli.Command,
+	opts *tfe.ProjectListOptions,
+) error {
+
+	// THINK Should we do this?
+	// Include tag info.
+	opts.Include = append(opts.Include, tfe.ProjectEffectiveTagBindings)
+
+	spec := cmd.String("filter")
+	filterList := filters.BuildFilters(spec)
+
+	for _, f := range filterList {
+		// We only care about server-side filters.
+		if !f.ServerSide {
+			continue
+		}
+
+		parts := strings.Split(f.Key, ".")
+
+		if len(parts) > 1 && parts[0] == "tag" {
+			opts.TagBindings = append(opts.TagBindings, &tfe.TagBinding{
+				Key:   parts[1],
+				Value: f.Value,
+			})
+			continue
+		}
+
+		if f.Key == "name" {
+			opts.Query = f.Value
+		}
+	}
+
+	log.Debugf("opts after augmentation: %+v", opts)
+	return nil
+}
+
+// pqCommandBuilder constructs the cli.Command for "pq", wiring metadata,
 // flags, and action/validator handlers.
-func PqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
+func pqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:  "pq",
 		Usage: "project query",
@@ -80,7 +117,7 @@ func PqCommandBuilder(cmd *cli.Command, meta meta.Meta) *cli.Command {
 			NewHostFlag("pq", meta.Config.Source),
 			NewOrgFlag("pq", meta.Config.Source),
 		},
-		Action: PqCommandAction,
+		Action: pqCommandAction,
 		Meta:   meta,
 	}).Build()
 }

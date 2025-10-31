@@ -102,7 +102,7 @@ func (be *BackendLocal) State() ([]byte, error) {
 // Other Backend types will cache these results in the BackendStruct for
 // efficiencies sake. We're not doing that here, since local filesystem access
 // should be lickity split.
-func (be *BackendLocal) StateVersions() ([]*tfe.StateVersion, error) {
+func (be *BackendLocal) StateVersions(augmenter ...func(context.Context, *cli.Command, *tfe.StateVersionListOptions) error) ([]*tfe.StateVersion, error) {
 	var versions []*tfe.StateVersion
 
 	// If there's a .terraform/environment file, we need to use that to

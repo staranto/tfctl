@@ -11,4 +11,6 @@
 # Added by goreleaser init.
 dist/
 
+# Development binaries built at root (should use -o /tmp or .git/).
+/docgen
 

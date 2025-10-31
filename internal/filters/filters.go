@@ -17,19 +17,24 @@ import (
 	"github.com/staranto/tfctlgo/internal/driller"
 )
 
-// filterRegex is the pattern used to parse filter expressions into key, operator, and target components.
-// It matches: key + operator + target, where operator can be negated with !
-// Operators are one of = ^ ~ < > @ or /, optionally prefixed with '!'.
-// This allows forms like '=', '!=', '^', '!^', etc.
-var filterRegex = regexp.MustCompile(`^(.*?)(!?[=^~<>@/])(.*)$`)
+// filterRegex is the pattern used to parse filter expressions into key,
+// operator, and target components. It matches an optional leading underscore
+// (indicating server-side filter), followed by a key, and optionally an
+// operator (with optional negation) and target. Operators are one of
+// = ^ ~ < > @ or /, optionally prefixed with '!'. Examples:
+// "name" (key only), "name=value" (key + operator + target),
+// "name=" (key + operator, no target), "_tags=prod" (server-side key +
+// operator + target).
+var filterRegex = regexp.MustCompile(`^(_)?([^!?=^~<>@/]*)(!?[=^~<>@/])?(.*)$`)
 
-// Filter represents a single parsed --filter expression including the key,
-// operand, optional negation and target value.
+// Filter is a single parsed --filter expression including the key, operand,
+// optional negation, server-side flag and value to match against.
 type Filter struct {
-	Key     string
-	Negate  bool
-	Operand string
-	Target  string
+	Key        string
+	Negate     bool
+	Operand    string
+	ServerSide bool
+	Value      string
 }
 
 // BuildFilters parses a filter specification string into a slice of Filter.
@@ -45,7 +50,8 @@ func BuildFilters(spec string) []Filter {
 		return filters
 	}
 
-	// Default delimiter is ",", allow an override.
+	// Default delimiter is ",", allow an override for situations where the value
+	// contains commas.
 	delim := ","
 	if d, ok := os.LookupEnv("TFCTL_FILTER_DELIM"); ok {
 		delim = d
@@ -54,27 +60,48 @@ func BuildFilters(spec string) []Filter {
 	// Split the spec and iterate over each filter spec entry.
 	filterSpecs := strings.Split(spec, delim)
 	for _, filterSpec := range filterSpecs {
+		filterSpec = strings.TrimSpace(filterSpec)
+		if filterSpec == "" {
+			continue
+		}
+
 		parts := filterRegex.FindStringSubmatch(filterSpec)
 
-		// If a supported operand was not found, log an error and throw it away.
+		// Regex should always match, so check for nil just in case.
 		if parts == nil {
 			log.Error("invalid filter: " + filterSpec)
 			continue
 		}
 
-		// parts[2] is the operand. It may have a leading negation. If so, trim it
-		// and just use the remainder as the working operand.
-		negate := strings.HasPrefix(parts[2], "!")
+		// parts[1] is the optional leading underscore (for server-side filters)
+		// parts[2] is the key
+		// parts[3] is the optional operator (may include negation like "!")
+		// parts[4] is the optional target
+
+		serverSide := parts[1] == "_"
+		key := strings.TrimSpace(parts[2])
+		operand := parts[3]
+		target := parts[4]
+
+		// If key is empty, skip this filter.
+		if key == "" {
+			log.Error("invalid filter: empty key in " + filterSpec)
+			continue
+		}
+
+		// Handle operator negation.
+		negate := strings.HasPrefix(operand, "!")
 		if negate {
-			parts[2] = strings.TrimPrefix(parts[2], "!")
+			operand = strings.TrimPrefix(operand, "!")
 		}
 
 		// We've got a valid filter, append it to the result set.
 		filters = append(filters, Filter{
-			Key:     parts[1],
-			Negate:  negate,
-			Operand: parts[2],
-			Target:  parts[3],
+			Key:        key,
+			ServerSide: serverSide,
+			Negate:     negate,
+			Operand:    operand,
+			Value:      target,
 		})
 	}
 
@@ -82,7 +109,8 @@ func BuildFilters(spec string) []Filter {
 }
 
 // FilterDataset returns a result set filtered per the provided spec. It is the
-// public entry point used by SliceDiceSpit.
+// public entry point used by SliceDiceSpit.  To be clear, this is the result
+// filtering. Any server-side filtering was returned by the API.
 func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) []map[string]interface{} {
 	//nolint:prealloc // Don't prealloc because we don't know what len will be.
 	var filteredResults []map[string]interface{}
@@ -103,7 +131,7 @@ func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) [
 		for i := range attrs {
 			attr := attrs[i]
 			// Intentionally defer Transform to SliceDiceSpit output phase.
-			// This function is responsible for filtering only; transformations
+			// This function is responsible for filtering only. Transformations
 			// are applied downstream during output formatting.
 			value := driller.Driller(candidate.Raw, attr.Key)
 			result[attr.OutputKey] = value.Value()
@@ -114,9 +142,11 @@ func FilterDataset(candidates gjson.Result, attrs attrs.AttrList, spec string) [
 	return filteredResults
 }
 
-// applyFilters returns true if the candidate row matches all of the provided
-// filters. Native TF API filter keys (prefixed with _) are ignored here.
-func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter) bool {
+// applyFilters returns true if the candidate row matches all of the
+// provided filters. Server-side TF API filter keys (prefixed with _) are
+// ignored here.
+func applyFilters(candidate gjson.Result, attrs attrs.AttrList,
+	filters []Filter) bool {
 	// No filters, so go home early.
 	if len(filters) == 0 {
 		return true
@@ -126,9 +156,9 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList, filters []Filter
 	for _, filter := range filters {
 		var key string
 
-		// If Key starts with _, it's a native filter used by the TF API and should
-		// be ignored here.
-		if strings.HasPrefix(filter.Key, "_") {
+		// Skip server-side filters as they were applied by the API and we're not
+		// interested in them here.
+		if filter.ServerSide {
 			continue
 		}
 
@@ -183,13 +213,13 @@ func checkContainsOperand(value interface{}, filter Filter) bool {
 	switch val := value.(type) {
 	case []any:
 		for _, item := range val {
-			if item == filter.Target {
+			if item == filter.Value {
 				return !filter.Negate
 			}
 		}
 		return filter.Negate
 	case map[string]any:
-		_, found := val[filter.Target]
+		_, found := val[filter.Value]
 		if filter.Negate {
 			return !found
 		}
@@ -200,14 +230,14 @@ func checkContainsOperand(value interface{}, filter Filter) bool {
 	}
 }
 
-// checkNumericOperand compares a numeric value against the filter target using
+// checkNumericOperand compares a numeric value against the filter value using
 // numeric semantics. Supported operands: =, >, < and the negated form via
 // filter.Negate (e.g., != is represented as Negate + "=").
 func checkNumericOperand(value float64, filter Filter) bool {
-	// Parse the target as a float64
-	tgt, err := strconv.ParseFloat(strings.TrimSpace(filter.Target), 64)
+	// Parse the value as a float64
+	tgt, err := strconv.ParseFloat(strings.TrimSpace(filter.Value), 64)
 	if err != nil {
-		log.Error("invalid numeric target: " + filter.Target)
+		log.Error("invalid numeric value: " + filter.Value)
 		return false
 	}
 
@@ -229,21 +259,21 @@ func checkNumericOperand(value float64, filter Filter) bool {
 func checkStringOperand(value string, filter Filter) bool {
 	switch filter.Operand {
 	case "=":
-		return value == filter.Target == !filter.Negate
+		return value == filter.Value == !filter.Negate
 	case "~":
-		return strings.EqualFold(value, filter.Target) == !filter.Negate
+		return strings.EqualFold(value, filter.Value) == !filter.Negate
 	case "^":
-		return strings.HasPrefix(value, filter.Target) == !filter.Negate
+		return strings.HasPrefix(value, filter.Value) == !filter.Negate
 	case ">":
-		return value > filter.Target == !filter.Negate
+		return value > filter.Value == !filter.Negate
 	case "<":
-		return value < filter.Target == !filter.Negate
+		return value < filter.Value == !filter.Negate
 	case "@":
-		return strings.Contains(value, filter.Target) == !filter.Negate
+		return strings.Contains(value, filter.Value) == !filter.Negate
 	case "/":
-		matched, err := regexp.MatchString(filter.Target, value)
+		matched, err := regexp.MatchString(filter.Value, value)
 		if err != nil {
-			log.Error("invalid regex: " + filter.Target)
+			log.Error("invalid regex: " + filter.Value)
 			return false
 		}
 		return matched == !filter.Negate
