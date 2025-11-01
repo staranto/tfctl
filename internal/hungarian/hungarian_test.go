@@ -247,6 +247,55 @@ func TestIsHungarian(t *testing.T) {
 			resName:  "storage_bucket",
 			expected: true,
 		},
+		// CamelCase tests.
+		{
+			name:     "s3 with camelCase s3BucketName",
+			typ:      "aws_s3_bucket",
+			resName:  "s3BucketName",
+			expected: true,
+		},
+		{
+			name:     "bucket with camelCase s3BucketName",
+			typ:      "aws_s3_bucket",
+			resName:  "s3BucketName",
+			expected: true,
+		},
+		{
+			name:     "instance with camelCase MyInstance",
+			typ:      "aws_instance",
+			resName:  "MyInstance",
+			expected: true,
+		},
+		{
+			name:     "instance with camelCase myInstanceServer",
+			typ:      "aws_instance",
+			resName:  "myInstanceServer",
+			expected: true,
+		},
+		{
+			name:     "vpc with camelCase MainVpc",
+			typ:      "aws_vpc",
+			resName:  "MainVpc",
+			expected: true,
+		},
+		{
+			name:     "lambda with camelCase MyLambdaFunction",
+			typ:      "aws_lambda_function",
+			resName:  "MyLambdaFunction",
+			expected: true,
+		},
+		{
+			name:     "no match with camelCase MyDataStore",
+			typ:      "aws_security_group",
+			resName:  "MyDataStore",
+			expected: false,
+		},
+		{
+			name:     "camelCase with mixed separators s3-MyBucket_name",
+			typ:      "aws_s3_bucket",
+			resName:  "s3-MyBucket_name",
+			expected: true,
+		},
 	}
 
 	for _, tt := range tests {

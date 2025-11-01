@@ -11,7 +11,7 @@ import (
 // IsHungarian returns true if any component of the Terraform type (split by
 // '_') appears in the name of that resource. Matching is case-insensitive and
 // checks both substring containment and token equality when the name is split
-// by non-alphanumeric chars.
+// by non-alphanumeric chars and camelCase boundaries.
 func IsHungarian(typ string, name string) bool {
 	if typ == "" || name == "" {
 		return false
@@ -23,9 +23,15 @@ func IsHungarian(typ string, name string) bool {
 	// Split the type into a slice of tokens.
 	typeTokens := strings.Split(typeLower, "_")
 
-	// Split the name by non-alphanumeric separators into a slice of tokens.
+	// Split the name by:
+	// 1. Non-alphanumeric separators (dashes, dots, underscores, etc.)
+	// 2. CamelCase boundaries (transition from lowercase to uppercase)
+	// First replace camelCase boundaries with a delimiter, then split by non-alphanumeric.
+	camelCaseRe := regexp.MustCompile(`([a-z])([A-Z])`)
+	nameWithDelim := camelCaseRe.ReplaceAllString(name, "${1}_${2}")
+
 	splitRe := regexp.MustCompile(`[^a-z0-9]+`)
-	nameParts := splitRe.Split(nameLower, -1)
+	nameParts := splitRe.Split(strings.ToLower(nameWithDelim), -1)
 
 	// Iterate over each type token and see if it matches any name token.  If so,
 	// it's Hungarian.
