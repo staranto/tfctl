@@ -22,6 +22,14 @@ The `--filter` flag narrows query results using a small, expressive syntax. This
 
 Negation is expressed by placing `!` before the operand.
 
+## Special filters
+
+- `hungarian` : Detects resources following Hungarian notation naming conventions (applies to `sq` command only)
+  - Example: `tfctl sq --filter hungarian=true` — shows only resources with names following Hungarian notation
+  - Supported values: `true`, `false`, or bare `hungarian` (equivalent to `hungarian=true`)
+  - The filter analyzes resource type and name to detect common prefix patterns (e.g., `s3Bucket`, `ec2Instance`, `iamRole`)
+  - Case-insensitive and supports underscores and dashes in names
+
 ## Delimiter and quoting
 
 If a target contains the delimiter character, quote the whole filter or choose a different delimiter with `TFCTL_FILTER_DELIM`.
@@ -79,6 +87,12 @@ tfctl mq --filter 'tags!@deprecated'
 
 # Combine different operators
 tfctl wq --filter 'name^prod,status=applied,!description='
+
+# Find resources with Hungarian notation naming (sq only)
+tfctl sq --filter 'hungarian=true'
+
+# Find resources NOT using Hungarian notation (sq only)
+tfctl sq --filter 'hungarian=false'
 ```
 
 

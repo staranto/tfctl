@@ -65,6 +65,9 @@ tfctl wq --filter 'name@prod'
 # Compare state versions to see what changed
 tfctl sq --diff
 
+# Summarize changes from a Terraform plan
+tfctl ps plan.out --filter 'action=created'
+
 # List modules by popularity across registries
 tfctl mq --sort -downloads
 
@@ -79,6 +82,7 @@ tfctl wq --attrs created-at,updated-at --output json
 | **`mq`** | Module query | `tfctl mq --filter 'name@aws'` |
 | **`oq`** | Organization query | `tfctl oq --attrs email` |
 | **`pq`** | Project query | `tfctl pq --sort created-at` |
+| **`ps`** | Plan summary | `tfctl ps --filter 'action=created'` |
 | **`rq`** | Run query | `tfctl rq --attrs status` |
 | **`si`** | Interactive state inspection | `tfctl si` |
 | **`sq`** | State query | `tfctl sq --attrs arn --sort arn` |

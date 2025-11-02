@@ -7,6 +7,10 @@
 
 `tfctl sq`
 
+- Find resources with Hungarian notation naming convention:
+
+`tfctl sq --filter hungarian=true`
+
 - See state-specific flags (e.g., --concrete, --diff):
 
 `tfctl sq --help`

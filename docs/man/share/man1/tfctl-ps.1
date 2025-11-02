@@ -1,0 +1,85 @@
+'\" t
+.nh
+.TH tfctl ps — plan summary
+.SH Synopsis
+.EX
+tfctl ps [plan-file]
+.EE
+
+.SH Short description
+Parse and summarize Terraform plan output, displaying resource actions in a formatted table. Accepts plan files or reads from stdin. Supports filtering and sorting to narrow down changes.
+
+.SH Flags and related docs
+.IP \(bu 2
+See the common flag reference: Flags
+\[la]../flags.md\[ra]
+.IP \(bu 2
+Filtering: Filters
+\[la]../filters.md\[ra]
+
+.SH Flags
+.TS
+allbox;
+l l l l l 
+l l l l l .
+\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
+\fB--color\fR		Enable colored text output	false	Use \fB--no-color\fR to disable
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}	(none)	See Filters
+\[la]../filters.md\[ra]
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR)	\fBtext\fR	Global flag
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
+\fB--titles\fR		Show titles with text output	false	Use \fB--no-titles\fR to disable
+.TE
+
+.SH Quick examples
+.EX
+# Parse a plan file and display summary
+tfctl ps plan.out
+
+# Read from stdin
+terraform plan -out=tfplan && terraform show -json tfplan | tfctl ps
+
+# Filter for only destroyed resources
+tfctl ps plan.txt --filter 'action=destroyed'
+
+# Filter for created or changed resources
+tfctl ps --filter 'action@created,action@changed'
+
+# JSON output for programmatic access
+tfctl ps plan.txt --output json
+
+# Sort by action type
+tfctl ps --sort action
+.EE
+
+.SH Notes
+.IP \(bu 2
+\fBps\fR reads from stdin by default. Pass a filename to read from a file instead.
+.IP \(bu 2
+The tool parses resource action lines in the format: \fB# <resource-path> will/must be <action>\fR
+.IP \(bu 2
+ANSI color codes (from colored terminal output) are automatically stripped before parsing.
+.IP \(bu 2
+Supported actions: \fBcreated\fR, \fBdestroyed\fR, \fBupdated\fR, \fBreplaced\fR, \fBupdated in-place\fR, and others from Terraform's plan output.
+.IP \(bu 2
+The \fB--filter\fR flag works with the \fBaction\fR and \fBresource\fR attributes. See Filters
+\[la]../filters.md\[ra] for filter syntax.
+.IP \(bu 2
+Use \fB--filter 'action=created'\fR to focus on new resources being added.
+
+.SH Attributes
+The \fBps\fR command exposes the following attributes for filtering and sorting:
+.IP \(bu 2
+\fB\fBresource\fR\fP — The resource path (e.g., \fBaws_instance.example\fR, \fBmodule.network.aws_vpc.main\fR)
+.IP \(bu 2
+\fB\fBaction\fR\fP — The action to be taken (e.g., \fBcreated\fR, \fBdestroyed\fR, \fBupdated\fR, \fBreplaced\fR)
+
+.SH See also
+.IP \(bu 2
+Quickstart
+\[la]../quickstart.md\[ra]
+.IP \(bu 2
+Filters
+\[la]../filters.md\[ra]
