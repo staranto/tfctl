@@ -43,7 +43,12 @@ func psCommandAction(ctx context.Context, cmd *cli.Command) error {
 	meta := cmd.Metadata["meta"].(meta.Meta)
 	log.Debugf("Executing action for %v", meta.Args[1:])
 
-	cmd.Metadata["header"] = "\nPlan action summary:"
+	header := "\nPlan action summary"
+	if cmd.String("filter") != "" {
+		header += " (filtered)"
+	}
+	header += ":"
+	cmd.Metadata["header"] = header
 
 	config.Config.Namespace = "ps"
 
@@ -149,10 +154,10 @@ func psCommandBuilder(meta meta.Meta) *cli.Command {
 	flags := NewGlobalFlags("ps")
 
 	// Remove the --attrs flag since ps doesn't use it.
-	var filteredFlags []cli.Flag
+	var noAttrsFlags []cli.Flag
 	for _, flag := range flags {
 		if flag.Names()[0] != "attrs" {
-			filteredFlags = append(filteredFlags, flag)
+			noAttrsFlags = append(noAttrsFlags, flag)
 		}
 	}
 
@@ -161,7 +166,7 @@ func psCommandBuilder(meta meta.Meta) *cli.Command {
 		Usage:     "plan summary",
 		UsageText: "tfctl ps [plan-file]",
 		Metadata:  map[string]any{"meta": meta},
-		Flags:     filteredFlags,
+		Flags:     noAttrsFlags,
 		Action:    psCommandAction,
 	}
 }
