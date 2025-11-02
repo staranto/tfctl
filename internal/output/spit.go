@@ -333,6 +333,10 @@ func TableWriter(
 		rows = append(rows, row)
 	}
 
+	if cmd.Metadata["header"] != nil {
+		fmt.Println(headerStyle.Render(cmd.Metadata["header"].(string)))
+	}
+
 	pad, _ := config.GetInt("padding", 0)
 	t := table.New().
 		BorderBottom(false).
@@ -372,6 +376,10 @@ func TableWriter(
 		t = t.Headers(headers...).BorderHeader(false)
 	}
 	fmt.Println(t)
+
+	if cmd.Metadata["footer"] != nil {
+		fmt.Println(headerStyle.Render(cmd.Metadata["footer"].(string)))
+	}
 }
 
 // flattenState takes the state schema of each entry and flattens it into a

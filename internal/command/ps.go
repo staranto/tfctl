@@ -23,8 +23,8 @@ import (
 	"github.com/staranto/tfctlgo/internal/output"
 )
 
-// ansiColorRegex matches ANSI escape sequences used for coloring terminal output.
-// Matches patterns like ESC[1m, ESC[0m, ESC[31m, etc.
+// ansiColorRegex matches ANSI escape sequences used for coloring terminal
+// output. Matches patterns like ESC[1m, ESC[0m, ESC[31m, etc.
 var ansiColorRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 // PlanResource represents a parsed resource action from the plan output.
@@ -34,7 +34,7 @@ type PlanResource struct {
 }
 
 // psDefaultAttrs specifies the default attributes displayed for plan resources.
-var psDefaultAttrs = []string{".action", ".resource"}
+var psDefaultAttrs = []string{".resource", ".action"}
 
 // psCommandAction is the action handler for the "ps" subcommand. It reads
 // Terraform plan output from a file or stdin, extracts resource action lines,
@@ -42,6 +42,8 @@ var psDefaultAttrs = []string{".action", ".resource"}
 func psCommandAction(ctx context.Context, cmd *cli.Command) error {
 	meta := cmd.Metadata["meta"].(meta.Meta)
 	log.Debugf("Executing action for %v", meta.Args[1:])
+
+	cmd.Metadata["header"] = "\nPlan action summary:"
 
 	config.Config.Namespace = "ps"
 
@@ -144,25 +146,22 @@ func parsePlanOutput(input io.Reader) ([]PlanResource, error) {
 
 // psCommandBuilder constructs the "ps" subcommand.
 func psCommandBuilder(meta meta.Meta) *cli.Command {
+	flags := NewGlobalFlags("ps")
+
+	// Remove the --attrs flag since ps doesn't use it.
+	var filteredFlags []cli.Flag
+	for _, flag := range flags {
+		if flag.Names()[0] != "attrs" {
+			filteredFlags = append(filteredFlags, flag)
+		}
+	}
+
 	return &cli.Command{
 		Name:      "ps",
 		Usage:     "plan summary",
 		UsageText: "tfctl ps [plan-file]",
 		Metadata:  map[string]any{"meta": meta},
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "output",
-				Aliases:     []string{"o"},
-				Usage:       "output format",
-				Value:       "text",
-				HideDefault: true,
-			},
-			&cli.StringFlag{
-				Name:    "attrs",
-				Aliases: []string{"a"},
-				Usage:   "comma-separated list of attributes to include in results",
-			},
-		},
-		Action: psCommandAction,
+		Flags:     filteredFlags,
+		Action:    psCommandAction,
 	}
 }
