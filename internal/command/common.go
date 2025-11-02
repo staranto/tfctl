@@ -45,11 +45,11 @@ func ShortCircuitTLDR(ctx context.Context, cmd *cli.Command, subcmd string) bool
 	return false
 }
 
-// DumpSchemaIfRequested prints the JSON schema for the provided type when
-// --schema is set, and returns true if it handled the request.
+// DumpSchemaIfRequested writes the JSON schema for the provided type to stdout
+// when --schema is set, and returns true if it handled the request.
 func DumpSchemaIfRequested(cmd *cli.Command, t reflect.Type) bool {
 	if cmd.Bool("schema") {
-		output.DumpSchema("", t)
+		output.DumpSchema("", t, nil)
 		return true
 	}
 	return false

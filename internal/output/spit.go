@@ -45,8 +45,13 @@ func (t Tag) Print() (out string) {
 	return strings.Join(parts, ",")
 }
 
-// DumpSchema prints a sorted list of attribute tags for the provided type.
-func DumpSchema(prefix string, typ reflect.Type) {
+// DumpSchema writes a sorted list of attribute tags for the provided type
+// to the provided writer. If w is nil, os.Stdout is used.
+func DumpSchema(prefix string, typ reflect.Type, w io.Writer) {
+	if w == nil {
+		w = os.Stdout
+	}
+
 	tags := DumpSchemaWalker(prefix, typ, 0)
 	if len(tags) == 0 {
 		log.Debugf("No tags found for type: %s", typ.Name())
@@ -61,11 +66,11 @@ func DumpSchema(prefix string, typ reflect.Type) {
 	})
 
 	for _, tag := range tags {
-		fmt.Println(tag.Name)
+		fmt.Fprintln(w, tag.Name)
 	}
 
-	fmt.Println("")
-	fmt.Println(
+	fmt.Fprintln(w)
+	fmt.Fprintln(w,
 		`Resource level attributes that are directly available to the --attrs flag.
 For a complete schema, including relationships, use --output=raw and see the
 attrs help in the documentation or man tfctl-attrs.`)
@@ -290,17 +295,22 @@ func SliceDiceSpit(raw bytes.Buffer,
 			}
 		}
 
-		TableWriter(filteredDataset, attrs, cmd, w) // TODO
+		TableWriter(filteredDataset, attrs, cmd, w)
 	}
 }
 
 // TableWriter renders the result set in a tabular form honoring color,
-// titles and padding options.
+// titles and padding options. Output is written to w. If w is nil, os.Stdout
+// is used.
 func TableWriter(
 	resultSet []map[string]interface{},
 	attrs attrs.AttrList,
 	cmd *cli.Command,
 	w io.Writer) {
+
+	if w == nil {
+		w = os.Stdout
+	}
 
 	if len(resultSet) == 0 {
 		return
@@ -334,7 +344,7 @@ func TableWriter(
 	}
 
 	if cmd.Metadata["header"] != nil {
-		fmt.Println(headerStyle.Render(cmd.Metadata["header"].(string)))
+		fmt.Fprintln(w, headerStyle.Render(cmd.Metadata["header"].(string)))
 	}
 
 	pad, _ := config.GetInt("padding", 0)
@@ -375,10 +385,10 @@ func TableWriter(
 		// https://github.com/charmbracelet/lipgloss/issues/261
 		t = t.Headers(headers...).BorderHeader(false)
 	}
-	fmt.Println(t)
+	fmt.Fprintln(w, t)
 
 	if cmd.Metadata["footer"] != nil {
-		fmt.Println(headerStyle.Render(cmd.Metadata["footer"].(string)))
+		fmt.Fprintln(w, headerStyle.Render(cmd.Metadata["footer"].(string)))
 	}
 }
 
