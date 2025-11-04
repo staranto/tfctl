@@ -316,11 +316,12 @@ func saveSiHistory(filename string, history []string) {
 	writer.Flush()
 }
 
+// SiCommandBuilder constructs the cli.Command for "si" and wires up metadata,
+// flags, and the action handler.
 func siCommandBuilder(meta meta.Meta) *cli.Command {
-	// SiCommandBuilder constructs the cli.Command for "si" and wires up
-	// metadata, flags, and the action handler.
 	return &cli.Command{
 		Name:      "si",
+		Hidden:    true,
 		Usage:     "state inspector",
 		UsageText: `tfctl si [RootDir] [options]`,
 		Metadata: map[string]any{
