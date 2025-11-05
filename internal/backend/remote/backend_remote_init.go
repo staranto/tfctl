@@ -12,8 +12,9 @@ import (
 	"path/filepath"
 
 	"github.com/apex/log"
-	"github.com/staranto/tfctlgo/internal/config"
 	"github.com/urfave/cli/v3"
+
+	"github.com/staranto/tfctlgo/internal/config"
 )
 
 type BackendRemoteOption = func(ctx context.Context, cmd *cli.Command, be *BackendRemote) error
