@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/apex/log"
+	"github.com/staranto/tfctlgo/internal/config"
 	"github.com/urfave/cli/v3"
 )
 
@@ -21,8 +22,20 @@ type BackendRemoteOption = func(ctx context.Context, cmd *cli.Command, be *Backe
 // they have enough info to connect to a server.
 func BuckNaked() BackendRemoteOption {
 	return func(ctx context.Context, cmd *cli.Command, be *BackendRemote) error {
-		be.Backend.Config.Hostname = cmd.String("host")
-		be.Backend.Config.Token, _ = be.Token()
+
+		// THINK Revisit how host is determined across all backend types.
+		// If host is not set explicitly (we're BuckNaked) *AND* there is a host:
+		// entry in the config, use it.  Otherwise, just fall through and continue
+		// with the default.
+		if !cmd.IsSet("host") {
+			if cfgHost, _ := config.GetString("host"); cfgHost != "" {
+				_ = cmd.Set("host", cfgHost)
+				be.Backend.Config.Hostname = cfgHost
+			}
+		} else {
+			be.Backend.Config.Hostname = cmd.String("host")
+			be.Backend.Config.Token, _ = be.Token()
+		}
 
 		log.Debugf("BuckNaked(): hostname: %s", be.Backend.Config.Hostname)
 
