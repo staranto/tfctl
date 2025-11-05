@@ -5,156 +5,103 @@
 package filters
 
 import (
+	"embed"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
+	"gopkg.in/yaml.v3"
 
 	"github.com/staranto/tfctlgo/internal/attrs"
 )
 
-func TestBuildFilters(t *testing.T) {
-	tests := []struct {
-		name      string
-		spec      string
-		delimiter string
-		want      []Filter
-		wantCount int
-	}{
-		{
-			name:      "empty spec",
-			spec:      "",
-			wantCount: 0,
-		},
-		{
-			name:      "single exact match filter",
-			spec:      "name=my-resource",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "name", Operand: "=", Value: "my-resource", Negate: false},
-			},
-		},
-		{
-			name:      "prefix match filter",
-			spec:      "type^aws_",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
-			},
-		},
-		{
-			name:      "regex match filter",
-			spec:      "tags~^env-",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "tags", Operand: "~", Value: "^env-", Negate: false},
-			},
-		},
-		{
-			name:      "negated exact match",
-			spec:      "name!=test",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "name", Operand: "=", Value: "test", Negate: true},
-			},
-		},
-		{
-			name:      "negated prefix match",
-			spec:      "type!^aws_",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "type", Operand: "^", Value: "aws_", Negate: true},
-			},
-		},
-		{
-			name:      "multiple filters",
-			spec:      "name=test,type^aws_",
-			wantCount: 2,
-			want: []Filter{
-				{Key: "name", Operand: "=", Value: "test", Negate: false},
-				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
-			},
-		},
-		{
-			name:      "greater than numeric",
-			spec:      "count>5",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "count", Operand: ">", Value: "5", Negate: false},
-			},
-		},
-		{
-			name:      "less than numeric",
-			spec:      "count<10",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "count", Operand: "<", Value: "10", Negate: false},
-			},
-		},
-		{
-			name:      "contains operand",
-			spec:      "name@test",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "name", Operand: "@", Value: "test", Negate: false},
-			},
-		},
-		{
-			name:      "regex operand",
-			spec:      "name/^test.*",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "name", Operand: "/", Value: "^test.*", Negate: false},
-			},
-		},
-		{
-			name:      "key without operator or target",
-			spec:      "name=test,status,type^aws_",
-			wantCount: 3,
-			want: []Filter{
-				{Key: "name", Operand: "=", Value: "test", Negate: false},
-				{Key: "status", Operand: "", Value: "", Negate: false},
-				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
-			},
-		},
-		{
-			name:      "custom delimiter",
-			spec:      "name=test|type^aws_",
-			delimiter: "|",
-			wantCount: 2,
-			want: []Filter{
-				{Key: "name", Operand: "=", Value: "test", Negate: false},
-				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
-			},
-		},
-		{
-			name:      "key with dots",
-			spec:      "backend.s3.region=us-west-2",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "backend.s3.region", Operand: "=", Value: "us-west-2", Negate: false},
-			},
-		},
-		{
-			name:      "empty target",
-			spec:      "name=",
-			wantCount: 1,
-			want: []Filter{
-				{Key: "name", Operand: "=", Value: "", Negate: false},
-			},
-		},
+//go:embed testdata/*.yaml
+var testDataFS embed.FS
+
+// testBuildFiltersCase represents a single test case for TestBuildFilters.
+type testBuildFiltersCase struct {
+	Name      string   `yaml:"name"`
+	Spec      string   `yaml:"spec"`
+	Delimiter string   `yaml:"delimiter"`
+	Want      []Filter `yaml:"want"`
+	WantCount int      `yaml:"wantCount"`
+}
+
+// testCheckStringOperandCase represents a single test case for
+// TestCheckStringOperand.
+type testCheckStringOperandCase struct {
+	Name   string `yaml:"name"`
+	Value  string `yaml:"value"`
+	Filter Filter `yaml:"filter"`
+	Want   bool   `yaml:"want"`
+}
+
+// testCheckNumericOperandCase represents a single test case for
+// TestCheckNumericOperand.
+type testCheckNumericOperandCase struct {
+	Name   string  `yaml:"name"`
+	Value  float64 `yaml:"value"`
+	Filter Filter  `yaml:"filter"`
+	Want   bool    `yaml:"want"`
+}
+
+// testCheckContainsOperandCase represents a single test case for
+// TestCheckContainsOperand.
+type testCheckContainsOperandCase struct {
+	Name   string      `yaml:"name"`
+	Value  interface{} `yaml:"value"`
+	Filter Filter      `yaml:"filter"`
+	Want   bool        `yaml:"want"`
+}
+
+// testToFloat64Case represents a single test case for TestToFloat64.
+type testToFloat64Case struct {
+	Name      string      `yaml:"name"`
+	Value     interface{} `yaml:"value"`
+	Want      float64     `yaml:"want"`
+	WantOk    bool        `yaml:"wantOk"`
+	ValueType string      `yaml:"valueType"`
+}
+
+// testApplyFiltersCase represents a single test case for TestApplyFilters.
+type testApplyFiltersCase struct {
+	Name    string   `yaml:"name"`
+	Filters []Filter `yaml:"filters"`
+	Want    bool     `yaml:"want"`
+}
+
+// testFilterDatasetCase represents a single test case for TestFilterDataset.
+type testFilterDatasetCase struct {
+	Name      string   `yaml:"name"`
+	Spec      string   `yaml:"spec"`
+	WantCount int      `yaml:"wantCount"`
+	WantNames []string `yaml:"wantNames"`
+}
+
+// loadTestData loads test data from embedded YAML files.
+func loadTestData(filename string, v interface{}) error {
+	data, err := testDataFS.ReadFile("testdata/" + filename)
+	if err != nil {
+		return err
 	}
+	return yaml.Unmarshal(data, v)
+}
+
+func TestBuildFilters(t *testing.T) {
+	var tests []testBuildFiltersCase
+	require.NoError(t, loadTestData("filters_test_build_filters.yaml", &tests))
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.delimiter != "" {
-				t.Setenv("TFCTL_FILTER_DELIM", tt.delimiter)
+		t.Run(tt.Name, func(t *testing.T) {
+			if tt.Delimiter != "" {
+				t.Setenv("TFCTL_FILTER_DELIM", tt.Delimiter)
 			}
 
-			got := BuildFilters(tt.spec)
-			assert.Len(t, got, tt.wantCount)
-			if tt.want != nil {
-				for i, filter := range tt.want {
+			got := BuildFilters(tt.Spec)
+			assert.Len(t, got, tt.WantCount)
+			if tt.Want != nil {
+				for i, filter := range tt.Want {
 					assert.Equal(t, filter.Key, got[i].Key)
 					assert.Equal(t, filter.Operand, got[i].Operand)
 					assert.Equal(t, filter.Value, got[i].Value)
@@ -166,395 +113,60 @@ func TestBuildFilters(t *testing.T) {
 }
 
 func TestCheckStringOperand(t *testing.T) {
-	tests := []struct {
-		name   string
-		value  string
-		filter Filter
-		want   bool
-	}{
-		{
-			name:   "exact match true",
-			value:  "test",
-			filter: Filter{Operand: "=", Value: "test", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "exact match false",
-			value:  "test",
-			filter: Filter{Operand: "=", Value: "other", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "negated exact match true",
-			value:  "test",
-			filter: Filter{Operand: "=", Value: "other", Negate: true},
-			want:   true,
-		},
-		{
-			name:   "negated exact match false",
-			value:  "test",
-			filter: Filter{Operand: "=", Value: "test", Negate: true},
-			want:   false,
-		},
-		{
-			name:   "prefix match true",
-			value:  "aws_instance",
-			filter: Filter{Operand: "^", Value: "aws_", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "prefix match false",
-			value:  "gcp_instance",
-			filter: Filter{Operand: "^", Value: "aws_", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "case insensitive match true",
-			value:  "TEST",
-			filter: Filter{Operand: "~", Value: "test", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "case insensitive match false",
-			value:  "testing",
-			filter: Filter{Operand: "~", Value: "test", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "contains true",
-			value:  "my-test-resource",
-			filter: Filter{Operand: "@", Value: "test", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "contains false",
-			value:  "my-resource",
-			filter: Filter{Operand: "@", Value: "test", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "negated contains true",
-			value:  "my-resource",
-			filter: Filter{Operand: "@", Value: "test", Negate: true},
-			want:   true,
-		},
-		{
-			name:   "regex match true",
-			value:  "aws_instance_v1",
-			filter: Filter{Operand: "/", Value: "^aws_.*_v\\d+$", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "regex match false",
-			value:  "instance",
-			filter: Filter{Operand: "/", Value: "^aws_.*", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "negated regex match",
-			value:  "instance",
-			filter: Filter{Operand: "/", Value: "^aws_.*", Negate: true},
-			want:   true,
-		},
-		{
-			name:   "greater than string true",
-			value:  "z",
-			filter: Filter{Operand: ">", Value: "a", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "greater than string false",
-			value:  "a",
-			filter: Filter{Operand: ">", Value: "z", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "less than string true",
-			value:  "a",
-			filter: Filter{Operand: "<", Value: "z", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "invalid regex",
-			value:  "test",
-			filter: Filter{Operand: "/", Value: "[invalid", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "unsupported operand",
-			value:  "test",
-			filter: Filter{Operand: "?", Value: "test", Negate: false},
-			want:   false,
-		},
-	}
+	var tests []testCheckStringOperandCase
+	require.NoError(t, loadTestData("filters_test_check_string_operand.yaml", &tests))
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := checkStringOperand(tt.value, tt.filter)
-			assert.Equal(t, tt.want, got)
+		t.Run(tt.Name, func(t *testing.T) {
+			got := checkStringOperand(tt.Value, tt.Filter)
+			assert.Equal(t, tt.Want, got)
 		})
 	}
 }
 
 func TestCheckNumericOperand(t *testing.T) {
-	tests := []struct {
-		name   string
-		value  float64
-		filter Filter
-		want   bool
-	}{
-		{
-			name:   "exact match true",
-			value:  42,
-			filter: Filter{Operand: "=", Value: "42", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "exact match false",
-			value:  42,
-			filter: Filter{Operand: "=", Value: "40", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "negated equal true",
-			value:  42,
-			filter: Filter{Operand: "=", Value: "40", Negate: true},
-			want:   true,
-		},
-		{
-			name:   "negated equal false",
-			value:  42,
-			filter: Filter{Operand: "=", Value: "42", Negate: true},
-			want:   false,
-		},
-		{
-			name:   "greater than true",
-			value:  50,
-			filter: Filter{Operand: ">", Value: "42", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "greater than false",
-			value:  42,
-			filter: Filter{Operand: ">", Value: "50", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "less than true",
-			value:  42,
-			filter: Filter{Operand: "<", Value: "50", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "less than false",
-			value:  50,
-			filter: Filter{Operand: "<", Value: "42", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "float value with integer target",
-			value:  42.5,
-			filter: Filter{Operand: ">", Value: "42", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "invalid target",
-			value:  42,
-			filter: Filter{Operand: "=", Value: "invalid", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "unsupported operand",
-			value:  42,
-			filter: Filter{Operand: "^", Value: "42", Negate: false},
-			want:   false,
-		},
-	}
+	var tests []testCheckNumericOperandCase
+	require.NoError(t, loadTestData("filters_test_check_numeric_operand.yaml", &tests))
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := checkNumericOperand(tt.value, tt.filter)
-			assert.Equal(t, tt.want, got)
+		t.Run(tt.Name, func(t *testing.T) {
+			got := checkNumericOperand(tt.Value, tt.Filter)
+			assert.Equal(t, tt.Want, got)
 		})
 	}
 }
 
 func TestCheckContainsOperand(t *testing.T) {
-	tests := []struct {
-		name   string
-		value  interface{}
-		filter Filter
-		want   bool
-	}{
-		{
-			name:   "slice contains true",
-			value:  []any{"a", "b", "c"},
-			filter: Filter{Operand: "@", Value: "b", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "slice contains false",
-			value:  []any{"a", "b", "c"},
-			filter: Filter{Operand: "@", Value: "d", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "slice not contains true",
-			value:  []any{"a", "b", "c"},
-			filter: Filter{Operand: "@", Value: "d", Negate: true},
-			want:   true,
-		},
-		{
-			name:   "slice not contains false",
-			value:  []any{"a", "b", "c"},
-			filter: Filter{Operand: "@", Value: "b", Negate: true},
-			want:   false,
-		},
-		{
-			name:   "map key exists true",
-			value:  map[string]any{"key1": "value1", "key2": "value2"},
-			filter: Filter{Operand: "@", Value: "key1", Negate: false},
-			want:   true,
-		},
-		{
-			name:   "map key exists false",
-			value:  map[string]any{"key1": "value1", "key2": "value2"},
-			filter: Filter{Operand: "@", Value: "key3", Negate: false},
-			want:   false,
-		},
-		{
-			name:   "map key not exists true",
-			value:  map[string]any{"key1": "value1", "key2": "value2"},
-			filter: Filter{Operand: "@", Value: "key3", Negate: true},
-			want:   true,
-		},
-		{
-			name:   "map key not exists false",
-			value:  map[string]any{"key1": "value1", "key2": "value2"},
-			filter: Filter{Operand: "@", Value: "key1", Negate: true},
-			want:   false,
-		},
-		{
-			name:   "unsupported type",
-			value:  123,
-			filter: Filter{Operand: "@", Value: "test", Negate: false},
-			want:   false,
-		},
-	}
+	var tests []testCheckContainsOperandCase
+	require.NoError(t, loadTestData("filters_test_check_contains_operand.yaml", &tests))
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := checkContainsOperand(tt.value, tt.filter)
-			assert.Equal(t, tt.want, got)
+		t.Run(tt.Name, func(t *testing.T) {
+			got := checkContainsOperand(tt.Value, tt.Filter)
+			assert.Equal(t, tt.Want, got)
 		})
 	}
 }
 
 func TestToFloat64(t *testing.T) {
-	tests := []struct {
-		name   string
-		value  interface{}
-		want   float64
-		wantOk bool
-	}{
-		{
-			name:   "float64",
-			value:  42.5,
-			want:   42.5,
-			wantOk: true,
-		},
-		{
-			name:   "float32",
-			value:  float32(42.5),
-			want:   42.5,
-			wantOk: true,
-		},
-		{
-			name:   "int",
-			value:  42,
-			want:   42,
-			wantOk: true,
-		},
-		{
-			name:   "int64",
-			value:  int64(42),
-			want:   42,
-			wantOk: true,
-		},
-		{
-			name:   "uint32",
-			value:  uint32(42),
-			want:   42,
-			wantOk: true,
-		},
-		{
-			name:   "int8",
-			value:  int8(10),
-			want:   10,
-			wantOk: true,
-		},
-		{
-			name:   "int16",
-			value:  int16(100),
-			want:   100,
-			wantOk: true,
-		},
-		{
-			name:   "int32",
-			value:  int32(1000),
-			want:   1000,
-			wantOk: true,
-		},
-		{
-			name:   "uint",
-			value:  uint(42),
-			want:   42,
-			wantOk: true,
-		},
-		{
-			name:   "uint8",
-			value:  uint8(50),
-			want:   50,
-			wantOk: true,
-		},
-		{
-			name:   "uint16",
-			value:  uint16(500),
-			want:   500,
-			wantOk: true,
-		},
-		{
-			name:   "uint64",
-			value:  uint64(5000),
-			want:   5000,
-			wantOk: true,
-		},
-		{
-			name:   "string",
-			value:  "42",
-			want:   0,
-			wantOk: false,
-		},
-		{
-			name:   "nil",
-			value:  nil,
-			want:   0,
-			wantOk: false,
-		},
-	}
+	var tests []testToFloat64Case
+	require.NoError(t, loadTestData("filters_test_to_float64.yaml", &tests))
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, ok := toFloat64(tt.value)
-			assert.Equal(t, tt.wantOk, ok)
+		t.Run(tt.Name, func(t *testing.T) {
+			got, ok := toFloat64(tt.Value)
+			assert.Equal(t, tt.WantOk, ok)
 			if ok {
-				assert.Equal(t, tt.want, got)
+				assert.Equal(t, tt.Want, got)
 			}
 		})
 	}
 }
 
 func TestApplyFilters(t *testing.T) {
+	var tests []testApplyFiltersCase
+	require.NoError(t, loadTestData("filters_test_apply_filters.yaml", &tests))
+
 	testData := `
 	{
 		"id": "res-123",
@@ -578,114 +190,19 @@ func TestApplyFilters(t *testing.T) {
 		{Key: "nested", OutputKey: "nested", Include: true},
 	}
 
-	tests := []struct {
-		name    string
-		filters []Filter
-		want    bool
-	}{
-		{
-			name:    "no filters",
-			filters: []Filter{},
-			want:    true,
-		},
-		{
-			name: "single filter match",
-			filters: []Filter{
-				{Key: "name", Operand: "=", Value: "my-resource", Negate: false},
-			},
-			want: true,
-		},
-		{
-			name: "single filter no match",
-			filters: []Filter{
-				{Key: "name", Operand: "=", Value: "other", Negate: false},
-			},
-			want: false,
-		},
-		{
-			name: "multiple filters all match",
-			filters: []Filter{
-				{Key: "name", Operand: "=", Value: "my-resource", Negate: false},
-				{Key: "type", Operand: "^", Value: "aws_", Negate: false},
-			},
-			want: true,
-		},
-		{
-			name: "multiple filters one fails",
-			filters: []Filter{
-				{Key: "name", Operand: "=", Value: "my-resource", Negate: false},
-				{Key: "type", Operand: "^", Value: "gcp_", Negate: false},
-			},
-			want: false,
-		},
-		{
-			name: "server-side filter ignored",
-			filters: []Filter{
-				{Key: "_serverside_filter", Operand: "=", Value: "value", Negate: false},
-			},
-			want: true,
-		},
-		{
-			name: "missing attribute key continues",
-			filters: []Filter{
-				{Key: "nonexistent", Operand: "=", Value: "value", Negate: false},
-			},
-			want: true,
-		},
-		{
-			name: "numeric comparison",
-			filters: []Filter{
-				{Key: "count", Operand: ">", Value: "3", Negate: false},
-			},
-			want: true,
-		},
-		{
-			name: "missing key returns nil",
-			filters: []Filter{
-				{Key: "nonexistent_key", Operand: "=", Value: "value", Negate: false},
-			},
-			want: true,
-		},
-		{
-			name: "null value filter fails",
-			filters: []Filter{
-				{Key: "description", Operand: "=", Value: "value", Negate: false},
-			},
-			want: false,
-		},
-		{
-			name: "unsupported type with equals operator passes",
-			filters: []Filter{
-				{Key: "nested", Operand: "=", Value: "value", Negate: false},
-			},
-			want: true,
-		},
-		{
-			name: "unsupported type with contains operator uses checkContainsOperand",
-			filters: []Filter{
-				{Key: "nested", Operand: "@", Value: "inner", Negate: false},
-			},
-			want: true,
-		},
-		{
-			name: "array type with equals operator passes",
-			filters: []Filter{
-				{Key: "tags", Operand: "=", Value: "prod", Negate: false},
-			},
-			want: true,
-		},
-	}
-
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			result := gjson.Parse(testData)
-			got := applyFilters(result, attrList, tt.filters)
-			assert.Equal(t, tt.want, got)
+			got := applyFilters(result, attrList, tt.Filters)
+			assert.Equal(t, tt.Want, got)
 		})
 	}
 }
 
 func TestFilterDataset(t *testing.T) {
+	var tests []testFilterDatasetCase
+	require.NoError(t, loadTestData("filters_test_filter_dataset.yaml", &tests))
+
 	testData := `
 	[
 		{
@@ -711,49 +228,12 @@ func TestFilterDataset(t *testing.T) {
 		{Key: "type", OutputKey: "type", Include: true},
 	}
 
-	tests := []struct {
-		name      string
-		spec      string
-		wantCount int
-		wantNames []string
-	}{
-		{
-			name:      "no filters",
-			spec:      "",
-			wantCount: 3,
-			wantNames: []string{"aws-resource-1", "gcp-resource", "aws-resource-2"},
-		},
-		{
-			name:      "prefix filter",
-			spec:      "type^aws_",
-			wantCount: 2,
-			wantNames: []string{"aws-resource-1", "aws-resource-2"},
-		},
-		{
-			name:      "exact match filter",
-			spec:      "name=gcp-resource",
-			wantCount: 1,
-			wantNames: []string{"gcp-resource"},
-		},
-		{
-			name:      "no matches",
-			spec:      "name=nonexistent",
-			wantCount: 0,
-		},
-		{
-			name:      "multiple filters",
-			spec:      "type^aws_,name@1",
-			wantCount: 1,
-			wantNames: []string{"aws-resource-1"},
-		},
-	}
-
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			candidates := gjson.Parse(testData)
-			got := FilterDataset(candidates, attrList, tt.spec)
-			assert.Len(t, got, tt.wantCount)
-			for i, expected := range tt.wantNames {
+			got := FilterDataset(candidates, attrList, tt.Spec)
+			assert.Len(t, got, tt.WantCount)
+			for i, expected := range tt.WantNames {
 				assert.Equal(t, expected, got[i]["name"])
 			}
 		})

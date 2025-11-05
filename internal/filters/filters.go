@@ -31,11 +31,11 @@ var filterRegex = regexp.MustCompile(`^(_)?([^!?=^~<>@/]*)(!?[=^~<>@/])?(.*)$`)
 // Filter is a single parsed --filter expression including the key, operand,
 // optional negation, server-side flag and value to match against.
 type Filter struct {
-	Key        string
-	Negate     bool
-	Operand    string
-	ServerSide bool
-	Value      string
+	Key        string `yaml:"key" json:"Key"`
+	Negate     bool   `yaml:"negate" json:"Negate"`
+	Operand    string `yaml:"operand" json:"Operand"`
+	ServerSide bool   `yaml:"serverSide" json:"ServerSide"`
+	Value      string `yaml:"value" json:"Value"`
 }
 
 // BuildFilters parses a filter specification string into a slice of Filter.

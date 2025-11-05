@@ -198,97 +198,98 @@ func sqCommandBuilder(meta meta.Meta) *cli.Command {
 	}
 }
 
-// chopPrefix finds common leading dot-delimited segments in the
-// resource attribute of dataset values. If at least 50% of entries share
-// at least 2 common leading segments, those segments (and the trailing dot)
-// are removed and replaced with ".. ".
+// chopPrefix scans all dot-delimited string values in the dataset and removes
+// leading segments that are identical across all entries. Starting from
+// the left, it removes each segment that matches in all entries, then
+// stops when it encounters a position where segments differ. Removed
+// segments are replaced with "..".
 func chopPrefix(dataset []map[string]interface{}) {
-	// Bail out early if there is no data.
 	if len(dataset) == 0 {
 		return
 	}
 
-	// Collect all resource values with their indices.
-	type resourceEntry struct {
-		idx   int
-		value string
-	}
-
-	var resourceValues []resourceEntry
-	for i, entry := range dataset {
-		if val, ok := entry["resource"]; ok {
-			if str, ok := val.(string); ok {
-				resourceValues = append(resourceValues, resourceEntry{idx: i, value: str})
-			}
-		}
-	}
-
-	// Calculate the 50% threshold.
-	threshold := (len(resourceValues) + 1) / 2
-
-	// Split each value by dots and find common leading segments.
+	// Collect all string values by key across all entries
+	// Map from key -> list of (entryIdx, segments)
 	type segmentedValue struct {
-		idx      int
-		value    string
+		entryIdx int
 		segments []string
 	}
 
-	var segmented []segmentedValue
-	maxSegments := 0
-	for _, rv := range resourceValues {
-		segs := strings.Split(rv.value, ".")
-		segmented = append(segmented, segmentedValue{idx: rv.idx, value: rv.value, segments: segs})
-		if len(segs) > maxSegments {
-			maxSegments = len(segs)
-		}
-	}
+	keyValues := make(map[string][]segmentedValue)
 
-	// Find the longest common prefix of segments that appears in at least 50%.
-	var commonSegments []string
-	for segIdx := 0; segIdx < maxSegments; segIdx++ {
-		// Count how many values have a segment at this position and what it is.
-		segmentCounts := make(map[string]int)
-		for _, sv := range segmented {
-			if segIdx < len(sv.segments) {
-				segmentCounts[sv.segments[segIdx]]++
+	for entryIdx, entry := range dataset {
+		for key, val := range entry {
+			if str, ok := val.(string); ok {
+				segments := strings.Split(str, ".")
+				keyValues[key] = append(keyValues[key], segmentedValue{entryIdx: entryIdx, segments: segments})
 			}
 		}
+	}
 
-		// Find the most common segment at this position.
-		bestSegment, bestCount := findBestSegment(segmentCounts)
-
-		// Bail out if the threshold is not met.
-		if bestCount < threshold {
-			break
+	// For each key, find and apply the common prefix
+	for key, values := range keyValues {
+		if len(values) == 0 {
+			continue
 		}
 
-		// Otherwise, add it and keep going.
-		commonSegments = append(commonSegments, bestSegment)
-	}
+		// Find common leading segments for this key
+		var commonCount int
+		for segIdx := 0; ; segIdx++ {
+			// Check if all entries have a segment at this position
+			if segIdx >= len(values[0].segments) {
+				break
+			}
 
-	// If we don't have at least 2 commonSegments, bail out. There's nothing
-	// worth chopping.
-	if len(commonSegments) < 2 {
-		return
-	}
+			// Get the segment value from the first entry
+			expectedSeg := values[0].segments[segIdx]
 
-	// Now, chop the common prefix from all matching resource values.
-	prefixToRemove := strings.Join(commonSegments, ".") + "."
-	for _, sv := range segmented {
-		if strings.HasPrefix(sv.value, prefixToRemove) {
-			dataset[sv.idx]["resource"] = ".." + sv.value[len(prefixToRemove):]
+			// Check if all entries have the same segment at this position
+			allMatch := true
+			for _, val := range values {
+				if segIdx >= len(val.segments) || val.segments[segIdx] != expectedSeg {
+					allMatch = false
+					break
+				}
+			}
+
+			if !allMatch {
+				break
+			}
+
+			commonCount++
+		}
+
+		// Need at least 2 common segments to be worth chopping.
+		if commonCount < 2 {
+			continue
+		}
+
+		// Never chop past the second-to-last segment. Ensure at least 2
+		// segments remain in all values after chopping.
+		minSegments := len(values[0].segments)
+		for _, val := range values {
+			if len(val.segments) < minSegments {
+				minSegments = len(val.segments)
+			}
+		}
+		maxChop := minSegments - 2
+		if maxChop < 2 {
+			continue
+		}
+		if commonCount > maxChop {
+			commonCount = maxChop
+		}
+
+		// Build the prefix to remove
+		prefixSegs := values[0].segments[:commonCount]
+		prefixToRemove := strings.Join(prefixSegs, ".") + "."
+
+		// Remove the common prefix from all entries that have this key
+		for _, val := range values {
+			originalValue := strings.Join(val.segments, ".")
+			if strings.HasPrefix(originalValue, prefixToRemove) {
+				dataset[val.entryIdx][key] = ".." + originalValue[len(prefixToRemove):]
+			}
 		}
 	}
-}
-
-func findBestSegment(segmentCounts map[string]int) (string, int) {
-	var bestSegment string
-	var bestCount int
-	for seg, count := range segmentCounts {
-		if count > bestCount {
-			bestSegment = seg
-			bestCount = count
-		}
-	}
-	return bestSegment, bestCount
 }

@@ -16,131 +16,132 @@ func TestChopPrefix_EmptyDataset(t *testing.T) {
 	assert.Equal(t, 0, len(data))
 }
 
-func TestChopPrefix_NoAttribute(t *testing.T) {
+func TestChopPrefix_NoStringValues(t *testing.T) {
 	data := []map[string]interface{}{
-		{"name": "example"},
-		{"name": "example.two"},
+		{"count": 1},
+		{"count": 2},
 	}
-	// Should be a no-op
+	// No string values to process
 	chopPrefix(data)
-	assert.Equal(t, "example", data[0]["name"])
-	assert.Equal(t, "example.two", data[1]["name"])
+	assert.Equal(t, 1, data[0]["count"])
+	assert.Equal(t, 2, data[1]["count"])
 }
 
-func TestChopPrefix_NoCommonSegments(t *testing.T) {
+func TestChopPrefix_SingleValueAllCommonSegments(t *testing.T) {
 	data := []map[string]interface{}{
-		{"resource": "a.x.y"},
-		{"resource": "b.x.y"},
-		{"resource": "c.x.y"},
+		{"resource": "aws.s3.bucket.prod"},
 	}
-	// No common leading segments across >=50% so no change
+	// Single entry: all its segments are trivially "common"
+	// But chopping 2 segments would leave 2, which is allowed
 	chopPrefix(data)
-	assert.Equal(t, "a.x.y", data[0]["resource"])
-	assert.Equal(t, "b.x.y", data[1]["resource"])
-	assert.Equal(t, "c.x.y", data[2]["resource"])
+	assert.Equal(t, "..bucket.prod", data[0]["resource"])
 }
 
-func TestChopPrefix_OneCommonSegmentOnly(t *testing.T) {
+func TestChopPrefix_TwoCommonLeadingSegments(t *testing.T) {
 	data := []map[string]interface{}{
-		{"resource": "common.a"},
-		{"resource": "common.b"},
-		{"resource": "other.c"},
+		{"resource": "aws.s3.bucket1.x"},
+		{"resource": "aws.s3.bucket2.x"},
+		{"resource": "aws.s3.bucket3.x"},
 	}
-	// Only one common segment; must be at least 2 to chop
+	// All entries have "aws.s3" as leading segments, so chop should remove it
 	chopPrefix(data)
-	assert.Equal(t, "common.a", data[0]["resource"])
-	assert.Equal(t, "common.b", data[1]["resource"])
-	assert.Equal(t, "other.c", data[2]["resource"])
+	assert.Equal(t, "..bucket1.x", data[0]["resource"])
+	assert.Equal(t, "..bucket2.x", data[1]["resource"])
+	assert.Equal(t, "..bucket3.x", data[2]["resource"])
 }
 
-func TestChopPrefix_TwoCommonSegments_Threshold(t *testing.T) {
+func TestChopPrefix_DifferentThirdSegment(t *testing.T) {
 	data := []map[string]interface{}{
-		{"resource": "env.prod.app.server1"},
-		{"resource": "env.prod.app.server2"},
-		{"resource": "env.prod.app.server3"},
-		{"resource": "env.staging.app.server4"},
+		{"resource": "aws.s3.prod.server1"},
+		{"resource": "aws.s3.dev.server2"},
+		{"resource": "aws.s3.staging.server3"},
 	}
-	// 3 of 4 (>=50%) share "env.prod" as first two segments so they should be chopped
+	// All have "aws.s3" in common, but differ on third segment
+	// So only "aws.s3" is removed
 	chopPrefix(data)
-	// The first three have a longer common prefix (env.prod.app) so the
-	// implementation will remove all common leading segments (not just two).
-	// Expect the full common prefix removed and replaced with "..".
-	assert.Equal(t, "..server1", data[0]["resource"])
-	assert.Equal(t, "..server2", data[1]["resource"])
-	assert.Equal(t, "..server3", data[2]["resource"])
-	// The fourth should be unchanged because it doesn't start with env.prod.
-	assert.Equal(t, "env.staging.app.server4", data[3]["resource"])
+	assert.Equal(t, "..prod.server1", data[0]["resource"])
+	assert.Equal(t, "..dev.server2", data[1]["resource"])
+	assert.Equal(t, "..staging.server3", data[2]["resource"])
 }
 
-func TestChopPrefix_PartialMatchesDifferentLengths(t *testing.T) {
+func TestChopPrefix_OneCommonSegmentOnly_NoChop(t *testing.T) {
+	data := []map[string]interface{}{
+		{"resource": "aws.s3.bucket"},
+		{"resource": "aws.ec2.instance"},
+		{"resource": "aws.rds.database"},
+	}
+	// Only "aws" is common, but we require at least 2, so no change
+	chopPrefix(data)
+	assert.Equal(t, "aws.s3.bucket", data[0]["resource"])
+	assert.Equal(t, "aws.ec2.instance", data[1]["resource"])
+	assert.Equal(t, "aws.rds.database", data[2]["resource"])
+}
+
+func TestChopPrefix_NoCommonSegments_NoChop(t *testing.T) {
 	data := []map[string]interface{}{
 		{"resource": "a.b.c"},
-		{"resource": "a.b"},
-		{"resource": "a.b.c.d"},
 		{"resource": "x.y.z"},
+		{"resource": "m.n.o"},
 	}
-	// 3 of 4 have leading segments ["a","b"] so chop should apply to those with prefix
+	// No common leading segments
 	chopPrefix(data)
-	// The implementation computes a longest common leading segment list
-	// that meets the threshold. In this case the common prefix is "a.b.c",
-	// so only values that start with "a.b.c." will be shortened.
-	assert.Equal(t, "a.b.c", data[0]["resource"]) // unchanged (no trailing dot)
-	assert.Equal(t, "a.b", data[1]["resource"])   // unchanged
-	assert.Equal(t, "..d", data[2]["resource"])   // a.b.c.d -> ..d
-	assert.Equal(t, "x.y.z", data[3]["resource"])
+	assert.Equal(t, "a.b.c", data[0]["resource"])
+	assert.Equal(t, "x.y.z", data[1]["resource"])
+	assert.Equal(t, "m.n.o", data[2]["resource"])
 }
 
-func TestChopPrefix_ExactPrefixUnchanged(t *testing.T) {
+func TestChopPrefix_MultipleStringFields(t *testing.T) {
 	data := []map[string]interface{}{
-		{"resource": "a.b"},
-		{"resource": "a.b.c"},
-		{"resource": "a.b.d"},
+		{"resource": "aws.s3.bucket1.x", "type": "aws.s3.prod"},
+		{"resource": "aws.s3.bucket2.x", "type": "aws.s3.dev"},
+		{"resource": "aws.s3.bucket3.x", "type": "aws.s3.staging"},
 	}
-	// Common prefix is "a.b" (two segments). Only entries that have a
-	// remainder after "a.b." should be shortened.
+	// "resource" field can be chopped (4 segments, removing 2 leaves 2)
+	// "type" field can't be chopped (3 segments, removing 2 would leave 1)
 	chopPrefix(data)
-	assert.Equal(t, "a.b", data[0]["resource"]) // exact prefix, unchanged
-	assert.Equal(t, "..c", data[1]["resource"]) // a.b.c -> ..c
-	assert.Equal(t, "..d", data[2]["resource"]) // a.b.d -> ..d
+	assert.Equal(t, "..bucket1.x", data[0]["resource"])
+	assert.Equal(t, "aws.s3.prod", data[0]["type"]) // unchanged
+	assert.Equal(t, "..bucket2.x", data[1]["resource"])
+	assert.Equal(t, "aws.s3.dev", data[1]["type"]) // unchanged
+	assert.Equal(t, "..bucket3.x", data[2]["resource"])
+	assert.Equal(t, "aws.s3.staging", data[2]["type"]) // unchanged
 }
 
-func TestChopPrefix_SingleEntry_NoChange(t *testing.T) {
+func TestChopPrefix_MixedStringAndNonString(t *testing.T) {
 	data := []map[string]interface{}{
-		{"resource": "only.one"},
+		{"resource": "aws.s3.bucket1.prod", "id": 123},
+		{"resource": "aws.s3.bucket2.dev", "id": 456},
 	}
-	// Single entry should not be transformed into an empty remainder; it
-	// will remain unchanged (no trailing dot to match the prefixToRemove).
+	// Non-string values are ignored during processing
 	chopPrefix(data)
-	assert.Equal(t, "only.one", data[0]["resource"])
+	assert.Equal(t, "..bucket1.prod", data[0]["resource"])
+	assert.Equal(t, 123, data[0]["id"]) // unchanged
+	assert.Equal(t, "..bucket2.dev", data[1]["resource"])
+	assert.Equal(t, 456, data[1]["id"]) // unchanged
 }
 
-func TestChopPrefix_NonStringValues_Ignored(t *testing.T) {
+func TestChopPrefix_ExactMatchNoRemainder(t *testing.T) {
 	data := []map[string]interface{}{
-		{"resource": 123},
-		{"resource": "a.b.c"},
-		{"resource": "a.b.d"},
+		{"resource": "aws.s3"},
+		{"resource": "aws.s3"},
 	}
-	// Non-string values should be ignored and not cause a panic. The
-	// string values are evaluated normally.
+	// Common segments are "aws.s3" (2 segments) with no remainder
+	// The prefix "aws.s3." won't match because neither value has a dot after "s3"
 	chopPrefix(data)
-	assert.Equal(t, 123, data[0]["resource"]) // unchanged
-	// With these inputs the longest common prefix may not remove a trailing
-	// dot for either string, so they remain unchanged in practice.
-	assert.Equal(t, "a.b.c", data[1]["resource"])
-	assert.Equal(t, "a.b.d", data[2]["resource"])
+	assert.Equal(t, "aws.s3", data[0]["resource"]) // unchanged
+	assert.Equal(t, "aws.s3", data[1]["resource"]) // unchanged
 }
 
-func TestChopPrefix_SomeMissingAttribute(t *testing.T) {
+func TestChopPrefix_DifferentLengths_PartialMatch(t *testing.T) {
 	data := []map[string]interface{}{
-		{"resource": "a.b.c"},
-		{"name": "no-resource"},
-		{"resource": "a.b.d"},
+		{"resource": "aws.s3.x.y"},
+		{"resource": "aws.s3.prod.server1"},
+		{"resource": "aws.s3.dev.server2"},
 	}
-	// Entries missing the attribute should be ignored and others processed.
+	// Common segments are "aws.s3", all entries have at least 4 segments
+	// so chopping "aws.s3" leaves at least 2 segments
 	chopPrefix(data)
-	// The middle entry shouldn't be touched; behavior for the strings is
-	// consistent with the implementation (no trailing-dot removal in this set).
-	assert.Equal(t, "a.b.c", data[0]["resource"]) // unchanged
-	assert.Equal(t, "no-resource", data[1]["name"])
-	assert.Equal(t, "a.b.d", data[2]["resource"]) // unchanged
+	assert.Equal(t, "..x.y", data[0]["resource"])
+	assert.Equal(t, "..prod.server1", data[1]["resource"])
+	assert.Equal(t, "..dev.server2", data[2]["resource"])
 }

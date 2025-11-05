@@ -68,7 +68,7 @@ func wqCommandAction(ctx context.Context, cmd *cli.Command) error {
 // server-side filters extracted from the --filter flag. Flags with
 // ServerSide=true populate matching fields in opts based on the filter key
 // prefix (project, tag, or xtag). For tag filters, dot-separated keys are
-// parsed to extract the tag name and add create TagBinding entries.
+// parsed to extract the tag name and create TagBinding entries.
 func wqServerSideFilterAugmenter(
 	_ context.Context,
 	cmd *cli.Command,
@@ -96,10 +96,6 @@ func wqServerSideFilterAugmenter(
 			}
 		}
 	}
-
-	// THINK Other server-sides to include?
-	// opts.WildcardName = "*dev*"
-	// opts.Include = append(opts.Include, tfe.WSOrganization)
 
 	log.Debugf("opts after augmentation: %+v", opts)
 
