@@ -13,8 +13,10 @@ linters:
     - godot # doc comment formatting
     - gofmt
     - goimports
+    - gosec
     - govet
     - ineffassign
+    - misspell
     - predeclared
     - revive
     - staticcheck
