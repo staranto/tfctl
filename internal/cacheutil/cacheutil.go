@@ -5,7 +5,7 @@ package cacheutil
 
 import (
 	"bytes"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -120,9 +120,10 @@ func Read(subdirs []string, clearKey string) (*Entry, bool) {
 		return nil, false
 	}
 	b = bytes.TrimSpace(b)
+	encoded := encodeKey(clearKey)
 	return &Entry{
 		Key:        clearKey,
-		EncodedKey: encodeKey(clearKey),
+		EncodedKey: encoded,
 		Path:       p,
 		Data:       b,
 	}, true
@@ -149,9 +150,9 @@ func Write(subdirs []string, clearKey string, data []byte) error {
 	return nil
 }
 
-// encodeKey hashes k with MD5 and returns the hex string.
-func encodeKey(k string) string {
-	h := md5.New()
-	_, _ = h.Write([]byte(k))
+// sha256 returns a 32-byte digest.
+func encodeKey(input string) string {
+	h := sha256.New()
+	h.Write([]byte(input))
 	return hex.EncodeToString(h.Sum(nil))
 }

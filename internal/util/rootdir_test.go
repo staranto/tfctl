@@ -91,7 +91,7 @@ func TestParseRootDir(t *testing.T) {
 			setupDir: func(t *testing.T) string {
 				tmpDir := t.TempDir()
 				tmpFile := filepath.Join(tmpDir, "file.txt")
-				err := os.WriteFile(tmpFile, []byte("test"), 0644)
+				err := os.WriteFile(tmpFile, []byte("test"), 0600)
 				if err != nil {
 					t.Fatalf(
 						"failed to create temp file: %v",

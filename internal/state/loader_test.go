@@ -269,7 +269,7 @@ func TestDecryptOpenTofuState_SpecialCharactersPassphrase(t *testing.T) {
 // unicode characters in passphrase.
 func TestDecryptOpenTofuState_UnicodePassphrase(t *testing.T) {
 	t.Parallel()
-	passphrase := "测试密码🔐🔑"
+	passphrase := "测试密码🔐🔑" //nolint:gosec
 	plaintext := []byte(`{"version":4}`)
 
 	stateData := createEncryptedStateFile(t, plaintext, passphrase)

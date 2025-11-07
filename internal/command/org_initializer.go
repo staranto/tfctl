@@ -9,9 +9,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
+	"github.com/urfave/cli/v3"
+
 	"github.com/staranto/tfctlgo/internal/backend"
 	"github.com/staranto/tfctlgo/internal/backend/remote"
-	"github.com/urfave/cli/v3"
 )
 
 // RemoteOrgListFetcher[T, O] is the signature for a function that performs

@@ -330,7 +330,8 @@ func TestWrite_SuccessfulWrite(t *testing.T) {
 
 	// Verify file exists with correct content
 	expectedDir := filepath.Join(tmpDir, "cache", "data")
-	expectedPath := filepath.Join(expectedDir, encodeKey(testKey))
+	encoded := encodeKey(testKey)
+	expectedPath := filepath.Join(expectedDir, encoded)
 	assert.FileExists(t, expectedPath)
 
 	content, err := os.ReadFile(expectedPath)
@@ -352,7 +353,9 @@ func TestWrite_FilePermissions(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	expectedPath := filepath.Join(tmpDir, encodeKey(testKey))
+	encoded := encodeKey(testKey)
+	expectedPath := filepath.Join(tmpDir, encoded)
+
 	info, err := os.Stat(expectedPath)
 	assert.NoError(t, err)
 
@@ -376,7 +379,8 @@ func TestWrite_OverwritesExisting(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify old data
-	expectedPath := filepath.Join(tmpDir, encodeKey(testKey))
+	encoded := encodeKey(testKey)
+	expectedPath := filepath.Join(tmpDir, encoded)
 	content, err := os.ReadFile(expectedPath)
 	require.NoError(t, err)
 	assert.Equal(t, oldData, content)
@@ -405,7 +409,8 @@ func TestWrite_EmptyData(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify empty file exists
-	expectedPath := filepath.Join(tmpDir, encodeKey(testKey))
+	encoded := encodeKey(testKey)
+	expectedPath := filepath.Join(tmpDir, encoded)
 	info, err := os.Stat(expectedPath)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), info.Size())
@@ -551,8 +556,8 @@ func TestEncodeKey_HexFormat(t *testing.T) {
 
 	encoded := encodeKey(testKey)
 
-	// MD5 hex is always 32 characters
-	assert.Equal(t, 32, len(encoded))
+	// SHA-256 hex is always 64 characters
+	assert.Equal(t, 64, len(encoded))
 	// All characters should be valid hex
 	for _, c := range encoded {
 		assert.True(t,
@@ -580,32 +585,9 @@ func TestEncodeKey_SpecialCharacters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			encoded := encodeKey(tt.key)
-			assert.Equal(t, 32, len(encoded))
+			assert.Equal(t, 64, len(encoded))
 		})
 	}
-}
-
-// TestRoundTrip_WriteAndRead verifies data written and read back is
-// identical.
-func TestRoundTrip_WriteAndRead(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("TFCTL_CACHE_DIR", tmpDir)
-	t.Setenv("TFCTL_CACHE", "1")
-
-	testData := []byte("round trip test data with content")
-	testKey := "round-trip-key"
-	subdirs := []string{"roundtrip"}
-
-	// Write
-	err := Write(subdirs, testKey, testData)
-	require.NoError(t, err)
-
-	// Read
-	entry, found := Read(subdirs, testKey)
-
-	assert.True(t, found)
-	assert.NotNil(t, entry)
-	assert.Equal(t, testData, entry.Data)
 }
 
 // TestIntegration_FullWorkflow verifies complete caching workflow.
