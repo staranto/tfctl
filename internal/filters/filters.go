@@ -168,39 +168,8 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList,
 		// from the resource type).
 		if filter.Key == "hungarian" {
 			// Get the resource type and name from the candidate.
-			typeVal := driller.Driller(candidate.Raw, "type").Value()
-			nameVal := driller.Driller(candidate.Raw, "name").Value()
-
-			// Both type and name must be present.
-			if typeVal == nil || nameVal == nil {
-				return false
-			}
-
-			// Convert to strings.
-			typeStr, typeOK := typeVal.(string)
-			nameStr, nameOK := nameVal.(string)
-			if !typeOK || !nameOK {
-				return false
-			}
-
-			// Check if the resource is Hungarian notation.
-			isHungarian := hungarian.IsHungarian(typeStr, nameStr)
-
-			// Determine the result based on the filter value and negation.
-			// If filter.Value is empty or "true", keep Hungarian resources.
-			// If filter.Value is "false", keep non-Hungarian resources.
-			matchesHungarian := filter.Value == "" || filter.Value == "true"
-			result := isHungarian == matchesHungarian
-
-			// Apply negation if specified.
-			if filter.Negate {
-				result = !result
-			}
-
-			if !result {
-				return false
-			}
-			continue
+			hungarian := isHungarian(candidate, filter)
+			return hungarian == hungarianPass
 		}
 
 		// Find the attribute that matches the filter key.
@@ -247,6 +216,14 @@ func applyFilters(candidate gjson.Result, attrs attrs.AttrList,
 
 	return true
 }
+
+// hungarianCheckType represents the type of filter operand.
+type hungarianCheckType int
+
+const (
+	hungarianPass hungarianCheckType = iota
+	hungarianFail
+)
 
 // checkContainsOperand evaluates a membership style filter (operand '@')
 // against slice or map values.
@@ -322,6 +299,45 @@ func checkStringOperand(value string, filter Filter) bool {
 		log.Error("unsupported filtering operand: " + filter.Operand)
 		return false
 	}
+}
+
+// isHungarian() checks to see if the current candidate passes or fails the
+// test.  There are two components of this after ensuring both fields are
+// present and can be converted to string.  First, a determination to whether
+// we're looking for Hungarian notation (filter.Value is "" or "true") or not
+// (filter.Value is "false").  Second, we need to apply negation if specified.
+func isHungarian(candidate gjson.Result, filter Filter) hungarianCheckType {
+	typeVal := driller.Driller(candidate.Raw, "type").Value()
+	nameVal := driller.Driller(candidate.Raw, "name").Value()
+
+	// Both type and name must be present.
+	if typeVal == nil || nameVal == nil {
+		return hungarianPass
+	}
+
+	// Convert to strings.
+	typeStr, typeOK := typeVal.(string)
+	nameStr, nameOK := nameVal.(string)
+	if !typeOK || !nameOK {
+		return hungarianPass
+	}
+
+	// Determine if the resource is Hungarian notation.
+	found := hungarian.IsHungarian(typeStr, nameStr)
+
+	// Determine the result based on the filter value and negation.
+	// If filter.Value is empty or "true", keep Hungarian resources.
+	// If filter.Value is "false", keep non-Hungarian resources.
+	mode := filter.Value == "" || filter.Value == "true"
+
+	switch {
+	case mode && !found:
+		return hungarianFail
+	case !mode && found:
+		return hungarianFail
+	}
+
+	return hungarianPass
 }
 
 // toFloat64 attempts to normalize various numeric types to float64.
