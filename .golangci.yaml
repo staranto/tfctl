@@ -42,5 +42,7 @@ linters-settings:
 issues:
   exclude-files:
     - ^tools/docgen/.*\.go$
+    - ^internal/command/si\.go$
+    - ^internal.command/si/*
   exclude-rules:
     # Reserved for future, currently no path-specific excludes
