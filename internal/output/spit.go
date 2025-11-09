@@ -76,6 +76,7 @@ For a complete schema, including relationships, use --output=raw and see the
 attrs help in the documentation or man tfctl-attrs.`)
 }
 
+// maxSchemaDepth limits the depth of schema walking to prevent infinite recursion.
 const maxSchemaDepth = 1
 
 // DumpSchemaWalker recursively walks a struct type discovering jsonapi tags.
@@ -135,16 +136,16 @@ func InterfaceToString(value interface{}, emptyValue ...string) string {
 		return emptyValue[0]
 	}
 
-	// THINK This doesn't do what you think it does. int and bool paths are never
-	// taken?
+	// We note that the int and bool cases are unlikely to be reached due to JSON
+	// parsing behavior.
 	switch value := value.(type) {
 	case string:
 		return value
 	case int:
 		return strconv.Itoa(value)
 	case float64:
-		// Our current use cases have no use for an actual float, so we're just
-		// going to return an integer.
+		// Our current use cases have no use for an actual float, so we just return
+		// an integer.
 		return fmt.Sprintf("%.0f", value)
 	case bool:
 		return strconv.FormatBool(value)
@@ -197,8 +198,8 @@ func NewTag(h string, s string) Tag {
 
 // SliceDiceSpit orchestrates filtering, transforming, sorting and rendering
 // of a dataset according to command flags and attribute specifications.
-// The optional postProcess callback allows commands to apply custom transformations
-// to the filtered dataset before rendering.
+// The optional postProcess callback allows commands to apply custom
+// transformations to the filtered dataset before rendering.
 func SliceDiceSpit(raw bytes.Buffer,
 	attrs attrs.AttrList,
 	cmd *cli.Command,
@@ -206,6 +207,7 @@ func SliceDiceSpit(raw bytes.Buffer,
 	w io.Writer,
 	postProcess func([]map[string]interface{}) error) {
 
+	// Default to stdout.
 	if w == nil {
 		w = os.Stdout
 	}
@@ -217,16 +219,18 @@ func SliceDiceSpit(raw bytes.Buffer,
 		return
 	}
 
-	// Note: This schema transformation is handled by the sq command via postProcess callback,
-	// which allows resource hierarchies to be flattened for consistent processing.
+	// Flatten the state schema, if this is sq.  This is done to bring the
+	// structure of the state file into alignment with the structures found in
+	// other command's payloads, thus enabling a common set of logic to process
+	// all.
 	if resources := gjson.Parse(raw.String()).Get("resources"); resources.Exists() {
 		raw = flattenState(resources, !cmd.Bool("short"))
 	}
 
 	var fullDataset gjson.Result
-	// Just keep the "data" object from the document and throw away everything
-	// else, notably "included", which we don't have a use case for. We're also
-	// Parsing this into JSON so that we can use the lowercase key names and not
+	// We keep the "data" object from the document and throw away everything
+	// else, notably "included", which we don't have a use case for. We also
+	// parse this into JSON so that we can use the lowercase key names and not
 	// the proper case names from the TFE API.
 	if parent != "" {
 		fullDataset = gjson.Parse(raw.String()).Get(parent)
@@ -237,7 +241,8 @@ func SliceDiceSpit(raw bytes.Buffer,
 	filter := cmd.String("filter")
 
 	// Note: The concrete filter is applied here to match sq command semantics.
-	// Command-specific logic like --chop is handled via postProcess callback in sq.go.
+	// Command-specific logic like --chop is handled via postProcess callback in
+	// sq.go.
 	if cmd.Bool("concrete") {
 		if filter != "" {
 			filter += ","
@@ -250,10 +255,10 @@ func SliceDiceSpit(raw bytes.Buffer,
 	// dataset.
 	filteredDataset := filters.FilterDataset(fullDataset, attrs, filter)
 
-	// THINK This is inefficient. We're forcing a time transformation to occur
-	// for all attributes, even though many will not be a timestamp. One
-	// alternative would be to look at first row of full dataset and only add the
-	// time transformation to attrs that look like timestamps.
+	// THINK Force a time transformation to occur for all attributes, even though
+	// many will not be a timestamp. One alternative would be to look at first row
+	// of full dataset and only add the time transformation to attrs that look
+	// like timestamps.
 	if cmd.Bool("local") {
 		for a := range attrs {
 			attrs[a].TransformSpec += "t"
@@ -274,7 +279,7 @@ func SliceDiceSpit(raw bytes.Buffer,
 
 	switch output {
 	case "json":
-		// Marshal the filtered dataset into a JSON document.
+		// We marshal the filtered dataset into a JSON document.
 		// TODO Figure out how to maintain key order in the JSON document.
 		jsonOutput, err := json.Marshal(filteredDataset)
 		if err != nil {
@@ -288,7 +293,7 @@ func SliceDiceSpit(raw bytes.Buffer,
 		}
 		os.Stdout.Write(yamlOutput)
 	default:
-		// Apply command-specific post-processing
+		// We apply command-specific post-processing.
 		if postProcess != nil {
 			if err := postProcess(filteredDataset); err != nil {
 				slog.Error("PostProcess", "err", err)
@@ -312,10 +317,12 @@ func TableWriter(
 		w = os.Stdout
 	}
 
+	// We return early if there are no results to display.
 	if len(resultSet) == 0 {
 		return
 	}
 
+	// We initialize the table styles.
 	var (
 		headerStyle  = lipgloss.NewStyle().Align(lipgloss.Left).Bold(true)
 		cellStyle    = lipgloss.NewStyle().Padding(0, 0).Align(lipgloss.Left)
@@ -323,6 +330,7 @@ func TableWriter(
 		oddRowStyle  = cellStyle
 	)
 
+	// We apply color styles if coloring is enabled.
 	if cmd.Bool("color") {
 		headerColor, evenColor, oddColor := getColors("colors")
 
@@ -331,6 +339,7 @@ func TableWriter(
 		oddRowStyle = oddRowStyle.Foreground(lipgloss.Color(oddColor))
 	}
 
+	// We build the table rows from the result set.
 	var rows [][]string
 	for _, result := range resultSet {
 		row := make([]string, 0, len(result))
@@ -343,10 +352,12 @@ func TableWriter(
 		rows = append(rows, row)
 	}
 
+	// We render the header if present.
 	if cmd.Metadata["header"] != nil {
 		fmt.Fprintln(w, headerStyle.Render(cmd.Metadata["header"].(string)))
 	}
 
+	// We configure the table with padding and styles.
 	pad, _ := config.GetInt("padding", 0)
 	t := table.New().
 		BorderBottom(false).
@@ -374,6 +385,7 @@ func TableWriter(
 		Headers().
 		Rows(rows...)
 
+	// We add column headers if titles are enabled.
 	if cmd.Bool("titles") {
 		var headers []string
 		for _, attr := range attrs {
@@ -387,6 +399,7 @@ func TableWriter(
 	}
 	fmt.Fprintln(w, t)
 
+	// We render the footer if present.
 	if cmd.Metadata["footer"] != nil {
 		fmt.Fprintln(w, headerStyle.Render(cmd.Metadata["footer"].(string)))
 	}
@@ -461,6 +474,7 @@ func getColors(key string) (header string, even string, odd string) {
 	return
 }
 
+// getCommonFields extracts common fields from a resource, excluding instances.
 func getCommonFields(resource gjson.Result) map[string]interface{} {
 	var common = make(map[string]interface{})
 	for key, value := range resource.Map() {
