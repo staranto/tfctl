@@ -97,6 +97,43 @@ func GetString(key string, defaultValue ...string) (string, error) {
 	return s, nil
 }
 
+// GetStringSlice returns the string slice value for the given dotted key path.
+// If the key is not found and a single default slice is provided, that default
+// is returned. Returns an error if the value exists but is not a string slice.
+func GetStringSlice(key string, defaultValue ...[]string) ([]string, error) {
+	if len(Config.Data) == 0 {
+		_, _ = Load()
+	}
+
+	val, err := Config.get(key)
+	if err != nil && Config.Namespace != "" {
+		val, err = Config.get(Config.Namespace + "." + key)
+	}
+	if err != nil {
+		if len(defaultValue) == 1 {
+			return defaultValue[0], nil
+		}
+		return nil, err
+	}
+
+	switch v := val.(type) {
+	case []string:
+		return v, nil
+	case []interface{}:
+		result := make([]string, len(v))
+		for i, item := range v {
+			s, ok := item.(string)
+			if !ok {
+				return nil, errors.New("slice element is not a string")
+			}
+			result[i] = s
+		}
+		return result, nil
+	default:
+		return nil, errors.New("value is not a slice")
+	}
+}
+
 // Load reads the YAML configuration file from the standard user config
 // directory and populates the global Config. If cfgFilePath is provided in the
 // future, it can be used to override the path selection (currently ignored).

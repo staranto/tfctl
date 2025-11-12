@@ -523,3 +523,54 @@ func TestLoad_InvalidYAML(t *testing.T) {
 	// For now, we skip this as it would require creating invalid YAML
 	t.Skip("requires invalid YAML testdata file")
 }
+
+func TestGetStringSlice_SimpleAndNested(t *testing.T) {
+	withConfig(t, "string-slice.yaml", func(t *testing.T) {
+		vals, err := GetStringSlice("list_top")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"a", "b"}, vals)
+
+		vals, err = GetStringSlice("nested.inner.list")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"one", "two three"}, vals)
+	})
+}
+
+func TestGetStringSlice_NamespaceFallback(t *testing.T) {
+	withConfig(t, "string-slice.yaml", func(t *testing.T) {
+		Config.Namespace = "sq"
+		vals, err := GetStringSlice("test")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"--output json", "--sort resource,id"}, vals)
+
+		// Also support direct fully-qualified key without namespace.
+		vals, err = GetStringSlice("sq.test")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"--output json", "--sort resource,id"}, vals)
+	})
+}
+
+func TestGetStringSlice_ErrorCases(t *testing.T) {
+	withConfig(t, "string-slice.yaml", func(t *testing.T) {
+		if v, err := Config.get("nonstring_list"); err == nil {
+			t.Logf("nonstring_list raw: %T %#v", v, v)
+		}
+		// Non-string element in list
+		_, err := GetStringSlice("nonstring_list")
+		assert.Error(t, err)
+
+		// Not a list
+		_, err = GetStringSlice("not_a_list")
+		assert.Error(t, err)
+
+		// Missing key with default slice returns provided default.
+		def := []string{"x", "y"}
+		vals, err := GetStringSlice("does.not.exist", def)
+		assert.NoError(t, err)
+		assert.Equal(t, def, vals)
+
+		// Missing key without default returns error.
+		_, err = GetStringSlice("does.not.exist")
+		assert.Error(t, err)
+	})
+}
