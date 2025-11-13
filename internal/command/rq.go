@@ -8,8 +8,6 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/go-tfe"
-	altsrc "github.com/urfave/cli-altsrc/v3"
-	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
 
 	"github.com/staranto/tfctlgo/internal/meta"
@@ -76,17 +74,13 @@ func rqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "rq",
 		Usage:     "run query",
-		UsageText: `tfctl rq [RootDir] [options]`,
+		UsageText: "tfctl rq [RootDir] [options]",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:    "limit",
 				Aliases: []string{"l"},
 				Usage:   "limit runs returned",
-				Sources: cli.NewValueSourceChain(
-					yaml.YAML("rq.limit", altsrc.StringSourcer(meta.Config.Source)),
-					yaml.YAML("limit", altsrc.StringSourcer(meta.Config.Source)),
-				),
-				Value: 99999,
+				Value:   99999,
 			},
 			NewHostFlag("rq"),
 			NewOrgFlag("rq"),

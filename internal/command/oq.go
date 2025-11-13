@@ -90,7 +90,7 @@ func oqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "oq",
 		Usage:     "organization query",
-		UsageText: `tfctl oq [RootDir] [options]`,
+		UsageText: "tfctl oq [RootDir] [options]",
 		Flags: []cli.Flag{
 			NewHostFlag("oq", meta.Config.Source),
 		},

@@ -9,8 +9,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
-	altsrc "github.com/urfave/cli-altsrc/v3"
-	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
 
 	"github.com/staranto/tfctlgo/internal/meta"
@@ -65,17 +63,13 @@ func svqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "svq",
 		Usage:     "state version query",
-		UsageText: `tfctl svq [RootDir] [options]`,
+		UsageText: "tfctl svq [RootDir] [options]",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:    "limit",
 				Aliases: []string{"l"},
 				Usage:   "limit state versions returned",
-				Sources: cli.NewValueSourceChain(
-					yaml.YAML("svq.limit", altsrc.StringSourcer(meta.Config.Source)),
-					yaml.YAML("limit", altsrc.StringSourcer(meta.Config.Source)),
-				),
-				Value: 99999,
+				Value:   99999,
 			},
 			NewHostFlag("svq"),
 			NewOrgFlag("svq"),

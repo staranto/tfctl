@@ -12,8 +12,6 @@ import (
 	"strings"
 
 	"github.com/apex/log"
-	altsrc "github.com/urfave/cli-altsrc/v3"
-	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
 
 	"github.com/staranto/tfctlgo/internal/backend"
@@ -115,7 +113,7 @@ func sqCommandBuilder(meta meta.Meta) *cli.Command {
 	return &cli.Command{
 		Name:      "sq",
 		Usage:     "state query",
-		UsageText: `tfctl sq [RootDir] [options]`,
+		UsageText: "tfctl sq [RootDir] [options]",
 		Metadata: map[string]any{
 			"meta": meta,
 		},
@@ -123,19 +121,13 @@ func sqCommandBuilder(meta meta.Meta) *cli.Command {
 			&cli.BoolFlag{
 				Name:  "chop",
 				Usage: "chop common resource prefix from names",
-				Sources: cli.NewValueSourceChain(
-					yaml.YAML("sq.chop", altsrc.StringSourcer(meta.Config.Source)),
-				),
 				Value: false,
 			},
 			&cli.BoolFlag{
 				Name:    "concrete",
 				Aliases: []string{"k"},
 				Usage:   "only include concrete resources",
-				Sources: cli.NewValueSourceChain(
-					yaml.YAML("sq.concrete", altsrc.StringSourcer(cfg.Source)),
-				),
-				Value: false,
+				Value:   false,
 			},
 			&cli.BoolFlag{
 				Name:  "diff",
@@ -145,27 +137,17 @@ func sqCommandBuilder(meta meta.Meta) *cli.Command {
 			&cli.StringFlag{
 				Name:   "diff_filter",
 				Hidden: true,
-				Sources: cli.NewValueSourceChain(
-					yaml.YAML("sq.diff_filter", altsrc.StringSourcer(meta.Config.Source)),
-				),
-				Value: "check_results",
+				Value:  "check_results",
 			},
 			&cli.IntFlag{
 				Name:   "limit",
 				Hidden: true,
 				Usage:  "limit state versions returned",
-				Sources: cli.NewValueSourceChain(
-					yaml.YAML("sq.limit", altsrc.StringSourcer(cfg.Source)),
-					yaml.YAML("limit", altsrc.StringSourcer(cfg.Source)),
-				),
-				Value: 99999,
+				Value:  99999,
 			},
-			&cli.BoolWithInverseFlag{
+			&cli.BoolFlag{
 				Name:  "short",
 				Usage: "include full resource name paths",
-				Sources: cli.NewValueSourceChain(
-					yaml.YAML("sq.short", altsrc.StringSourcer(meta.Config.Source)),
-				),
 				Value: false,
 			},
 			&cli.StringFlag{

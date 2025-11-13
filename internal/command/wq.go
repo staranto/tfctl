@@ -10,8 +10,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-tfe"
-	altsrc "github.com/urfave/cli-altsrc/v3"
-	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
 
 	"github.com/staranto/tfctlgo/internal/filters"
@@ -108,17 +106,13 @@ func wqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "wq",
 		Usage:     "workspace query",
-		UsageText: `tfctl wq [RootDir] [options]`,
+		UsageText: "tfctl wq [RootDir] [options]",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:    "limit",
 				Aliases: []string{"l"},
 				Usage:   "limit workspaces returned",
-				Sources: cli.NewValueSourceChain(
-					yaml.YAML("wq.limit", altsrc.StringSourcer(meta.Config.Source)),
-					yaml.YAML("limit", altsrc.StringSourcer(meta.Config.Source)),
-				),
-				Value: 99999,
+				Value:   99999,
 			},
 			NewHostFlag("wq", meta.Config.Source),
 			NewOrgFlag("wq", meta.Config.Source),

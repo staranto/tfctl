@@ -9,17 +9,9 @@ import (
 	altsrc "github.com/urfave/cli-altsrc/v3"
 	yaml "github.com/urfave/cli-altsrc/v3/yaml"
 	"github.com/urfave/cli/v3"
-
-	"github.com/staranto/tfctlgo/internal/config"
 )
 
-func init() {
-	cfg, _ = config.Load("")
-}
-
 var (
-	cfg config.Type
-
 	schemaFlag *cli.BoolFlag = &cli.BoolFlag{
 		Name:        "schema",
 		Usage:       "dump the schema",
@@ -51,40 +43,28 @@ func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 			Aliases: []string{"a"},
 			Usage:   "comma-separated list of attributes to include in results",
 		},
-		&cli.BoolWithInverseFlag{
+		&cli.BoolFlag{
 			Name:    "color",
 			Aliases: []string{"c"},
 			Usage:   "enable colored text output",
-			Sources: cli.NewValueSourceChain(
-				yaml.YAML(params[0]+"."+"color", altsrc.StringSourcer(cfg.Source)),
-				yaml.YAML("color", altsrc.StringSourcer(cfg.Source)),
-			),
-			Value: false,
+			Value:   false,
 		},
 		&cli.StringFlag{
 			Name:    "filter",
 			Aliases: []string{"f"},
 			Usage:   "comma-separated list of filters to apply to results",
 		},
-		&cli.BoolWithInverseFlag{
+		&cli.BoolFlag{
 			Name:    "local",
 			Aliases: []string{"l"},
 			Usage:   "show local timestamps",
-			Sources: cli.NewValueSourceChain(
-				yaml.YAML(params[0]+"."+"local", altsrc.StringSourcer(cfg.Source)),
-				yaml.YAML("local", altsrc.StringSourcer(cfg.Source)),
-			),
-			Value: false,
+			Value:   false,
 		},
 		&cli.StringFlag{
 			Name:    "output",
 			Aliases: []string{"o"},
-			Usage:   "output fgoormat",
-			Sources: cli.NewValueSourceChain(
-				yaml.YAML(params[0]+"."+"output", altsrc.StringSourcer(cfg.Source)),
-				yaml.YAML("output", altsrc.StringSourcer(cfg.Source)),
-			),
-			Value: "text",
+			Usage:   "output format",
+			Value:   "text",
 			Validator: func(value string) error {
 				return FlagValidators(value, OutputValidator)
 			},
@@ -93,19 +73,12 @@ func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 			Name:    "sort",
 			Aliases: []string{"s"},
 			Usage:   "comma-separated list of attributes to sort the results by",
-			Sources: cli.NewValueSourceChain(
-				yaml.YAML(params[0]+"."+"sort", altsrc.StringSourcer(cfg.Source)),
-			),
 		},
-		&cli.BoolWithInverseFlag{
+		&cli.BoolFlag{
 			Name:    "titles",
 			Aliases: []string{"t"},
 			Usage:   "show titles with text output",
-			Sources: cli.NewValueSourceChain(
-				yaml.YAML(params[0]+"."+"titles", altsrc.StringSourcer(cfg.Source)),
-				yaml.YAML("titles", altsrc.StringSourcer(cfg.Source)),
-			),
-			Value: false,
+			Value:   false,
 		},
 	}
 

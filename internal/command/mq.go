@@ -103,7 +103,7 @@ func mqCommandBuilder(meta meta.Meta) *cli.Command {
 	return (&QueryCommandBuilder{
 		Name:      "mq",
 		Usage:     "module registry query",
-		UsageText: `tfctl mq [RootDir] [options]`,
+		UsageText: "tfctl mq [RootDir] [options]",
 		Flags: []cli.Flag{
 			NewHostFlag("mq", meta.Config.Source),
 			NewOrgFlag("mq", meta.Config.Source),

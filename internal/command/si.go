@@ -323,7 +323,7 @@ func siCommandBuilder(meta meta.Meta) *cli.Command {
 		Name:      "si",
 		Hidden:    true,
 		Usage:     "state inspector",
-		UsageText: `tfctl si [RootDir] [options]`,
+		UsageText: "tfctl si [RootDir] [options]",
 		Metadata: map[string]any{
 			"meta": meta,
 		},
