@@ -179,7 +179,7 @@ func (cfg *Type) get(kspec string) (any, error) {
 
 	for _, key := range candidateKeys {
 		keys := strings.Split(key, ".")
-		var current interface{} = Config.Data
+		var current interface{} = cfg.Data
 
 		success := true
 		for _, key := range keys {

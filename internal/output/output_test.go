@@ -167,38 +167,38 @@ func TestNewTag(t *testing.T) {
 		name string
 		h    string
 		s    string
-		want Tag
+		want schemaTag
 	}{
 		{
 			name: "simple attr",
 			s:    "attr,name",
-			want: Tag{Kind: "attr", Name: "name"},
+			want: schemaTag{Kind: "attr", Name: "name"},
 		},
 		{
 			name: "with holder",
 			h:    "resource",
 			s:    "attr,name",
-			want: Tag{Kind: "attr", Name: "resource.name"},
+			want: schemaTag{Kind: "attr", Name: "resource.name"},
 		},
 		{
 			name: "with encoding",
 			s:    "attr,name,json",
-			want: Tag{Kind: "attr", Name: "name", Encoding: "json"},
+			want: schemaTag{Kind: "attr", Name: "name", Encoding: "json"},
 		},
 		{
 			name: "invalid kind",
 			s:    "relation,name",
-			want: Tag{},
+			want: schemaTag{},
 		},
 		{
 			name: "empty string",
 			s:    "",
-			want: Tag{},
+			want: schemaTag{},
 		},
 		{
 			name: "only kind",
 			s:    "attr",
-			want: Tag{Kind: "attr"},
+			want: schemaTag{Kind: "attr"},
 		},
 	}
 
@@ -213,24 +213,24 @@ func TestNewTag(t *testing.T) {
 func TestTag_Print(t *testing.T) {
 	tests := []struct {
 		name string
-		tag  Tag
+		tag  schemaTag
 		want string
 	}{
 		{
 			name: "with name",
-			tag:  Tag{Name: "resource.name"},
+			tag:  schemaTag{Name: "resource.name"},
 			want: "resource.name",
 		},
 		{
 			name: "empty tag",
-			tag:  Tag{},
+			tag:  schemaTag{},
 			want: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.tag.Print()
+			got := tt.tag.print()
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -252,13 +252,13 @@ func TestDumpSchemaWalker(t *testing.T) {
 		name     string
 		prefix   string
 		typ      reflect.Type
-		checkLen func([]Tag) bool
+		checkLen func([]schemaTag) bool
 	}{
 		{
 			name:   "simple struct",
 			prefix: "",
 			typ:    reflect.TypeOf(SimpleStruct{}),
-			checkLen: func(tags []Tag) bool {
+			checkLen: func(tags []schemaTag) bool {
 				return len(tags) >= 2
 			},
 		},
@@ -266,7 +266,7 @@ func TestDumpSchemaWalker(t *testing.T) {
 			name:   "nested struct",
 			prefix: "parent",
 			typ:    reflect.TypeOf(NestedStruct{}),
-			checkLen: func(tags []Tag) bool {
+			checkLen: func(tags []schemaTag) bool {
 				return len(tags) >= 1 // At least title
 			},
 		},
@@ -274,7 +274,7 @@ func TestDumpSchemaWalker(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := DumpSchemaWalker(tt.prefix, tt.typ, 0)
+			got := dumpSchemaWalker(tt.prefix, tt.typ, 0)
 			assert.True(t, tt.checkLen(got), "unexpected tag count: %v", len(got))
 		})
 	}
