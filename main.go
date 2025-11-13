@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/apex/log"
+
 	"github.com/staranto/tfctlgo/internal/cacheutil"
 	"github.com/staranto/tfctlgo/internal/command"
 	"github.com/staranto/tfctlgo/internal/config"
@@ -29,7 +30,13 @@ func realMain() int {
 
 	args := os.Args
 
-	// TODO Let urfave do this
+	if len(args) < 2 {
+		fmt.Fprintln(os.Stderr, "No command specified.")
+		args = append(args, "--help")
+	} else {
+		args = mangleArguments(args)
+	}
+
 	// Short-circuit --version/-v.
 	for _, a := range args {
 		if a == "--version" || a == "-v" {
@@ -44,11 +51,32 @@ func realMain() int {
 		fmt.Fprintln(os.Stderr, err)
 	}
 
-	// Mangle the args.
+	app, err := command.InitApp(ctx, args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
 
+	if err := app.Run(ctx, args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+
+	return 0
+}
+
+func mangleArguments(args []string) []string {
 	// We know the first two args are going to be the executable and command.
 	preamble := make([]string, 2)
 	copy(preamble, args[:2])
+
+	// Short-circuit for --help/-h. If help is requested, just keep the preamble
+	// and add --help flag.
+	for _, a := range args {
+		if a == "--help" || a == "-h" {
+			return append(preamble, "--help")
+		}
+	}
 
 	// And the next arg might be a root dir
 	rootDir, _ := os.Getwd()
@@ -84,7 +112,6 @@ func realMain() int {
 	args = workingArgs
 
 	// Now scan through args and if there is not a @set, insert @defaults after
-
 	idx := 2
 	set := "defaults"
 	// See if there is a @set specified. If so, that becomes are insertion point
@@ -106,17 +133,5 @@ func realMain() int {
 	}
 
 	log.Debugf("idx=%d, set=%s, args=%v", idx, set, args)
-
-	app, err := command.InitApp(ctx, args)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 1
-	}
-
-	if err := app.Run(ctx, args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 2
-	}
-
-	return 0
+	return args
 }
