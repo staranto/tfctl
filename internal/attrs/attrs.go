@@ -6,13 +6,13 @@ package attrs
 import (
 	"fmt"
 	"math"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/apex/log"
+	"github.com/dustin/go-humanize"
 )
 
 // Attr represents each of the keys to be included in the output. These are
@@ -43,28 +43,24 @@ func (a *Attr) Transform(value interface{}) interface{} {
 		return value
 	}
 
-	// Convert UTC time to local.
+	// Convert UTC time to local or time ago.
 	if strings.ContainsAny(a.TransformSpec, "tT") {
-
-		// See if there is a timezone in the config or via a TFCTL_ or TF_ env
-		// variable. If there is not, look for a plain TZ env variable.
-		tz := "" // TODO rt.GetRuntimeVar("timezone", true, "").
-		if tz == "" {
-			tz = os.Getenv("TZ")
-		}
+		now := time.Now()
+		tz, _ := now.In(time.Local).Zone()
 
 		// Convert only if a TZ was specified. Otherwise, use the value as is.
 		if tz != "" {
-			loc, err := time.LoadLocation(tz)
-			if err == nil {
+			if loc, err := time.LoadLocation(tz); err == nil {
 				t, err := time.Parse(time.RFC3339, result)
 				if err == nil {
 					local := t.In(loc)
-					result = local.Format("2006-01-02T15:04:05MST")
+					if strings.Contains(a.TransformSpec, "T") {
+						result = humanize.Time(local)
+					} else {
+						result = local.Format("2006-01-02T15:04:05MST")
+					}
 				} else {
 					log.Error("failed to parse time: " + result)
-					a.TransformSpec = strings.ReplaceAll(a.TransformSpec, "t", "")
-					a.TransformSpec = strings.ReplaceAll(a.TransformSpec, "T", "")
 				}
 			}
 		}
