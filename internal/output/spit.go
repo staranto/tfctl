@@ -8,13 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/apex/log"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/lipgloss/v2/table"
 	"github.com/tidwall/gjson"
@@ -184,20 +184,20 @@ func SliceDiceSpit(raw bytes.Buffer,
 		// TODO Figure out how to maintain key order in the JSON document.
 		jsonOutput, err := json.Marshal(filteredDataset)
 		if err != nil {
-			slog.Error("SliceDiceSpit()", "err", err)
+			log.Errorf("SliceDiceSpit json marshal: %v", err)
 		}
 		os.Stdout.Write(jsonOutput)
 	case "yaml":
 		yamlOutput, err := yaml.Marshal(filteredDataset)
 		if err != nil {
-			slog.Error("SliceDiceSpit()", "err", err)
+			log.Errorf("SliceDiceSpit yaml marshal: %v", err)
 		}
 		os.Stdout.Write(yamlOutput)
 	default:
 		// We apply command-specific post-processing.
 		if postProcess != nil {
 			if err := postProcess(filteredDataset); err != nil {
-				slog.Error("PostProcess", "err", err)
+				log.Errorf("PostProcess: %v", err)
 			}
 		}
 
@@ -359,7 +359,7 @@ func flattenState(resources gjson.Result, short bool) bytes.Buffer {
 
 	jsonBytes, err := json.Marshal(flatResources)
 	if err != nil {
-		slog.Error("flattenState()", "err", err)
+		log.Errorf("flattenState marshal: %v", err)
 		return *bytes.NewBuffer([]byte{})
 	}
 

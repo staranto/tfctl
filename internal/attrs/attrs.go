@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/dustin/go-humanize"
 )
 
@@ -58,8 +57,6 @@ func (a *Attr) Transform(value interface{}) interface{} {
 					} else {
 						result = local.Format("2006-01-02T15:04:05MST")
 					}
-				} else {
-					log.Error("failed to parse time: " + result)
 				}
 			}
 		}

@@ -202,7 +202,7 @@ func (be *BackendRemote) Organization() (string, error) {
 
 func (be *BackendRemote) Runs() ([]*tfe.Run, error) {
 	if len(be.RunList) > 0 {
-		log.Errorf("be.RunList: preloaded with %d", len(be.RunList))
+		log.Infof("be.RunList: preloaded with %d", len(be.RunList))
 		return be.RunList, nil
 	}
 
@@ -368,7 +368,7 @@ func (be *BackendRemote) StateVersion(svSpecs ...string) (tfe.StateVersion, erro
 // to apply server-side filters before each API call.
 func (be *BackendRemote) StateVersions(augmenter ...func(context.Context, *cli.Command, *tfe.StateVersionListOptions) error) ([]*tfe.StateVersion, error) {
 	if len(be.StateVersionList) > 0 {
-		log.Errorf("be.StateVersionList: preloaded with %d", len(be.StateVersionList))
+		log.Infof("be.StateVersionList: preloaded with %d", len(be.StateVersionList))
 		return be.StateVersionList, nil
 	}
 
