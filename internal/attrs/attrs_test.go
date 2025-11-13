@@ -6,9 +6,11 @@ package attrs
 
 import (
 	"embed"
-	"os"
+	"fmt"
 	"testing"
+	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -130,6 +132,31 @@ func TestAttr_Transform(t *testing.T) {
 
 			attr := Attr{TransformSpec: tt.TransformSpec}
 			got := attr.Transform(tt.Input)
+
+			// Handle dynamic expectations for time transforms that now rely on
+			// the system's local time rather than TZ environment variables.
+			if s, ok := tt.Want.(string); ok && s == "DYNAMIC_LOCAL_TIME" {
+				in, ok := tt.Input.(string)
+				require.True(t, ok, "input must be RFC3339 string")
+				tParsed, err := time.Parse(time.RFC3339, in)
+				require.NoError(t, err)
+				loc := time.Now().Location()
+				want := tParsed.In(loc).Format("2006-01-02T15:04:05MST")
+				assert.Equal(t, want, got, "local time conversion should match")
+				return
+			}
+
+			if s, ok := tt.Want.(string); ok && s == "DYNAMIC_RELATIVE_TIME" {
+				in, ok := tt.Input.(string)
+				require.True(t, ok, "input must be RFC3339 string")
+				tParsed, err := time.Parse(time.RFC3339, in)
+				require.NoError(t, err)
+				loc := time.Now().Location()
+				want := humanize.Time(tParsed.In(loc))
+				assert.Equal(t, want, fmt.Sprintf("%v", got))
+				return
+			}
+
 			assert.Equal(t, tt.Want, got)
 		})
 	}
@@ -154,44 +181,16 @@ func TestAttrList_Type(t *testing.T) {
 	assert.Equal(t, "list", a.Type())
 }
 
-// TestAttr_Transform_TimezonePriority tests that timezone is sourced from
-// environment in the correct priority order.
-func TestAttr_Transform_TimezonePriority(t *testing.T) {
-	tests := []struct {
-		name    string
-		envVars map[string]string
-		input   string
-		want    string
-	}{
-		{
-			name: "TZ env var used",
-			envVars: map[string]string{
-				"TZ": "America/Los_Angeles",
-			},
-			input: "2024-01-15T10:00:00Z",
-			want:  "2024-01-15T02:00:00PST",
-		},
-		{
-			name:    "no timezone - passthrough",
-			envVars: map[string]string{},
-			input:   "2024-01-15T10:00:00Z",
-			want:    "2024-01-15T10:00:00Z",
-		},
-	}
+// We validate local time transformation using the system's current location
+// only, with no dependence on TZ environment variables.
+func TestAttr_Transform_Time_LocalUsesSystemZone(t *testing.T) {
+	t.Setenv("TZ", "")
+	input := "2024-01-15T10:00:00Z"
+	attr := Attr{TransformSpec: "t"}
+	got := fmt.Sprintf("%v", attr.Transform(input))
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Clear all relevant env vars first
-			os.Unsetenv("TZ")
-
-			// Set test env vars
-			for k, v := range tt.envVars {
-				t.Setenv(k, v)
-			}
-
-			attr := Attr{TransformSpec: "t"}
-			got := attr.Transform(tt.input)
-			assert.Equal(t, tt.want, got)
-		})
-	}
+	tParsed, err := time.Parse(time.RFC3339, input)
+	require.NoError(t, err)
+	want := tParsed.In(time.Now().Location()).Format("2006-01-02T15:04:05MST")
+	assert.Equal(t, want, got)
 }

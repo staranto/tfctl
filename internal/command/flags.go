@@ -66,10 +66,20 @@ func NewGlobalFlags(params ...string) (flags []cli.Flag) {
 			Aliases: []string{"f"},
 			Usage:   "comma-separated list of filters to apply to results",
 		},
+		&cli.BoolWithInverseFlag{
+			Name:    "local",
+			Aliases: []string{"l"},
+			Usage:   "show local timestamps",
+			Sources: cli.NewValueSourceChain(
+				yaml.YAML(params[0]+"."+"local", altsrc.StringSourcer(cfg.Source)),
+				yaml.YAML("local", altsrc.StringSourcer(cfg.Source)),
+			),
+			Value: false,
+		},
 		&cli.StringFlag{
 			Name:    "output",
 			Aliases: []string{"o"},
-			Usage:   "output format",
+			Usage:   "output fgoormat",
 			Sources: cli.NewValueSourceChain(
 				yaml.YAML(params[0]+"."+"output", altsrc.StringSourcer(cfg.Source)),
 				yaml.YAML("output", altsrc.StringSourcer(cfg.Source)),

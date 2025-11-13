@@ -48,7 +48,6 @@ func (a *Attr) Transform(value interface{}) interface{} {
 		now := time.Now()
 		tz, _ := now.In(time.Local).Zone()
 
-		// Convert only if a TZ was specified. Otherwise, use the value as is.
 		if tz != "" {
 			if loc, err := time.LoadLocation(tz); err == nil {
 				t, err := time.Parse(time.RFC3339, result)
