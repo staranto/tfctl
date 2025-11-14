@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/apex/log"
+	"github.com/staranto/tfctlgo/internal/log"
 )
 
 // Entry represents a cached artifact on disk.
@@ -53,13 +53,16 @@ func EnsureBaseDir() (string, bool, error) {
 	if !Enabled() {
 		return "", false, nil
 	}
+
 	base, ok := Dir()
 	if !ok {
 		return "", false, nil
 	}
+
 	if err := os.MkdirAll(base, 0o755); err != nil { //nolint:mnd
 		return base, false, fmt.Errorf("failed to create cache base directory: %w", err)
 	}
+	log.Debugf("created cache dir: path=%s", base)
 	return base, true, nil
 }
 
@@ -121,6 +124,7 @@ func Read(subdirs []string, clearKey string) (*Entry, bool) {
 	}
 	b = bytes.TrimSpace(b)
 	encoded := encodeKey(clearKey)
+	log.Debugf("cache hit: key=%s", clearKey)
 	return &Entry{
 		Key:        clearKey,
 		EncodedKey: encoded,
@@ -147,6 +151,7 @@ func Write(subdirs []string, clearKey string, data []byte) error {
 	if err := os.WriteFile(p, data, os.FileMode(0o600)); err != nil { //nolint:mnd
 		return fmt.Errorf("failed to write to cache: %w", err)
 	}
+	log.Debugf("cache write: key=%s", clearKey)
 	return nil
 }
 

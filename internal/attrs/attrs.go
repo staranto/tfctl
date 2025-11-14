@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+
+	"github.com/staranto/tfctlgo/internal/log"
 )
 
 // Attr represents each of the keys to be included in the output. These are
@@ -37,8 +39,10 @@ func (a *Attr) Transform(value interface{}) interface{} {
 	result, ok := value.(string)
 	if !ok {
 		if mapValue, ok := value.(map[string]interface{}); ok {
+			log.Tracef("map value: value=%v", value)
 			return mapValue
 		}
+		log.Tracef("non-string value: value=%v", value)
 		return value
 	}
 
@@ -46,19 +50,24 @@ func (a *Attr) Transform(value interface{}) interface{} {
 	if strings.ContainsAny(a.TransformSpec, "tT") {
 		now := time.Now()
 		tz, _ := now.In(time.Local).Zone()
-
-		if tz != "" {
-			if loc, err := time.LoadLocation(tz); err == nil {
-				t, err := time.Parse(time.RFC3339, result)
-				if err == nil {
-					local := t.In(loc)
-					if strings.Contains(a.TransformSpec, "T") {
-						result = humanize.Time(local)
-					} else {
-						result = local.Format("2006-01-02T15:04:05MST")
-					}
-				}
-			}
+		if tz == "" {
+			return result
+		}
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			return result
+		}
+		t, err := time.Parse(time.RFC3339, result)
+		if err != nil {
+			return result
+		}
+		local := t.In(loc)
+		if strings.Contains(a.TransformSpec, "T") {
+			result = humanize.Time(local)
+			log.Tracef("time ago: result=%s", result)
+		} else {
+			result = local.Format("2006-01-02T15:04:05MST")
+			log.Tracef("time local: result=%s", result)
 		}
 	}
 
@@ -71,8 +80,10 @@ func (a *Attr) Transform(value interface{}) interface{} {
 
 	if lastL > lastU {
 		result = strings.ToLower(result)
+		log.Tracef("case lower: result=%s", result)
 	} else if lastU > lastL {
 		result = strings.ToUpper(result)
+		log.Tracef("case upper: result=%s", result)
 	}
 
 	// Is it a length-based transformation?
@@ -91,8 +102,10 @@ func (a *Attr) Transform(value interface{}) interface{} {
 					left := result[0:lr]
 					right := result[len(result)-lr:]
 					result = left + ".." + right
+					log.Tracef("length middle: result=%s", result)
 				} else {
 					result = result[:l]
+					log.Tracef("length trunc: result=%s", result)
 				}
 			}
 		}
@@ -107,6 +120,7 @@ type AttrList []Attr
 // Set parses each spec from --attrs and adds it to the AttrList.
 func (a *AttrList) Set(value string) error {
 	if value == "" || value == "*" {
+		log.Debugf("early return: value=%s", value)
 		return nil
 	}
 
@@ -122,6 +136,7 @@ func (a *AttrList) Set(value string) error {
 	// latter two are optional. The output key defaults to the last
 	// section of the JSON key.
 	specs := strings.Split(value, ",")
+	log.Debugf("specs split: specs=%v", specs)
 specloop:
 	for _, spec := range specs {
 
@@ -144,6 +159,7 @@ specloop:
 		if attr.Key == "*" {
 			attr.Include = false
 		}
+		log.Tracef("key parsed: key=%s, include=%v", attr.Key, attr.Include)
 
 		// Fix up the output field. If there is only one field, it is the JSON
 		// extract key and the output key becomes the last segment of the
@@ -158,11 +174,13 @@ specloop:
 				attr.OutputKey = attr.Key
 			}
 		}
+		log.Tracef("output set: outputKey=%s", attr.OutputKey)
 
 		attr.TransformSpec = ""
 		if len(fields) > transformIdx {
 			attr.TransformSpec = strings.TrimSpace(fields[transformIdx])
 		}
+		log.Tracef("transform set: spec=%s", attr.TransformSpec)
 
 		// If the attr already exists in the list (because it is a default for
 		// a command or the user double-entered it), apply the OutputKey, Include
@@ -173,6 +191,7 @@ specloop:
 				(*a)[i].Include = attr.Include
 				(*a)[i].OutputKey = attr.OutputKey
 				(*a)[i].TransformSpec = attr.TransformSpec
+				log.Tracef("existing updated: i=%d", i)
 				continue specloop
 			}
 		}
@@ -185,8 +204,11 @@ specloop:
 		} else if attr.Key != "*" {
 			attr.Key = "attributes." + attr.Key
 		}
+		log.Tracef("key fixed: key=%s", attr.Key)
 
 		*a = append(*a, attr)
+		log.Tracef("attr appended: len=%d", len(*a))
+
 	}
 
 	return nil
@@ -204,9 +226,11 @@ func (a *AttrList) SetGlobalTransformSpec() error {
 			break
 		}
 	}
+	log.Debugf("global spec: spec=%s", spec)
 
 	// Return early if there is no global transform spec.
 	if spec == "" {
+		log.Debugf("no global spec")
 		return nil
 	}
 
@@ -214,18 +238,22 @@ func (a *AttrList) SetGlobalTransformSpec() error {
 	for attr := range *a {
 		(*a)[attr].TransformSpec = spec + "," + (*a)[attr].TransformSpec
 	}
+	log.Debugf("specs prepended")
 
 	return nil
 }
 
-// String returns a string representation of the AttrList. This matches the format
-// of the original --attrs flag.
+// String returns a string representation of the AttrList. This matches the
+// format of the original --attrs flag.
 func (a *AttrList) String() string {
 	result := make([]string, 0, len(*a))
 	for _, attr := range *a {
 		result = append(result, fmt.Sprintf("%s:%s:%s", attr.Key, attr.OutputKey, attr.TransformSpec))
 	}
-	return strings.Join(result, ",")
+
+	resultStr := strings.Join(result, ",")
+	log.Debugf("string built: result=%s", resultStr)
+	return resultStr
 }
 
 // Type returns the flag type for use with the flag.Value interface.

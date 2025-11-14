@@ -9,6 +9,7 @@ import (
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/staranto/tfctlgo/internal/log"
 )
 
 // options holds optional overrides for AWS config loading.
@@ -31,6 +32,7 @@ func LoadAWSConfig(ctx context.Context, opts ...Option) (awsv2.Config, error) {
 	for _, opt := range opts {
 		opt(&o)
 	}
+	log.Debugf("opts applied: profile=%s, region=%s", o.profile, o.region)
 
 	var loadOpts []func(*config.LoadOptions) error
 	if o.profile != "" {
@@ -42,14 +44,23 @@ func LoadAWSConfig(ctx context.Context, opts ...Option) (awsv2.Config, error) {
 	if o.retryer != nil {
 		loadOpts = append(loadOpts, config.WithRetryer(o.retryer))
 	}
+	log.Debugf("loadOpts built: len=%d", len(loadOpts))
 
-	return config.LoadDefaultConfig(ctx, loadOpts...)
+	cfg, err := config.LoadDefaultConfig(ctx, loadOpts...)
+	if err != nil {
+		log.Debugf("config load err: err=%v", err)
+		return awsv2.Config{}, err
+	}
+	log.Debugf("config loaded")
+	return cfg, nil
 }
 
 // NewS3 constructs a v2 S3 client from the provided config. Additional service
 // options can be supplied via optFns.
 func NewS3(cfg awsv2.Config, optFns ...func(*s3v2.Options)) *s3v2.Client {
-	return s3v2.NewFromConfig(cfg, optFns...)
+	client := s3v2.NewFromConfig(cfg, optFns...)
+	log.Debugf("s3 client created")
+	return client
 }
 
 // WithProfile sets the shared config profile. Defaults to AWS_PROFILE/env chain.

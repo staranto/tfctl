@@ -9,12 +9,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/apex/log"
-
 	"github.com/staranto/tfctlgo/internal/cacheutil"
 	"github.com/staranto/tfctlgo/internal/command"
 	"github.com/staranto/tfctlgo/internal/config"
-	mylog "github.com/staranto/tfctlgo/internal/log"
+	"github.com/staranto/tfctlgo/internal/log"
 	"github.com/staranto/tfctlgo/internal/util"
 	"github.com/staranto/tfctlgo/internal/version"
 )
@@ -26,15 +24,18 @@ func main() {
 }
 
 func realMain() int {
-	mylog.InitLogger()
+	log.InitLogger()
 
 	args := os.Args
+	log.Debugf("args captured: args=%v", args)
 
 	if len(args) < 2 {
 		fmt.Fprintln(os.Stderr, "No command specified.")
 		args = append(args, "--help")
+		log.Debugf("help added: args=%v", args)
 	} else {
 		args = mangleArguments(args)
+		log.Debugf("args mangled: args=%v", args)
 	}
 
 	// Short-circuit --version/-v.
@@ -49,16 +50,19 @@ func realMain() int {
 	if _, ok, err := cacheutil.EnsureBaseDir(); err != nil && ok {
 		// Non-fatal: print to stderr and continue.
 		fmt.Fprintln(os.Stderr, err)
+		log.Debugf("cache ensure err: err=%v", err)
 	}
 
 	app, err := command.InitApp(ctx, args)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		log.Debugf("app init err: err=%v", err)
 		return 1
 	}
 
 	if err := app.Run(ctx, args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		log.Debugf("app run err: err=%v", err)
 		return 2
 	}
 
@@ -66,14 +70,17 @@ func realMain() int {
 }
 
 func mangleArguments(args []string) []string {
+	log.Debugf("mangle start: args=%v", args)
 	// We know the first two args are going to be the executable and command.
 	preamble := make([]string, 2)
 	copy(preamble, args[:2])
+	log.Debugf("preamble set: preamble=%v", preamble)
 
 	// Short-circuit for --help/-h. If help is requested, just keep the preamble
 	// and add --help flag.
 	for _, a := range args {
 		if a == "--help" || a == "-h" {
+			log.Debugf("help short: args=%v", append(preamble, "--help"))
 			return append(preamble, "--help")
 		}
 	}
@@ -87,17 +94,18 @@ func mangleArguments(args []string) []string {
 			argStartIdx = 3
 		}
 	}
+	log.Debugf("root dir set: rootDir=%s, argStartIdx=%d", rootDir, argStartIdx)
 
+	// This first scan through args is going to see if we should keep @defaults or
+	// not.  It should only be kept when there is not a explicitly provided @set.
 	defaultSet := "@defaults"
-
-	// Scan through the args. If there is no @set, just use it and ignore this
-	// default.
 	for _, a := range args {
 		if strings.HasPrefix(a, "@") {
 			defaultSet = ""
 			break
 		}
 	}
+	log.Debugf("default set: defaultSet=%s", defaultSet)
 
 	// Now combine them back together.
 	workingArgs := append(preamble, rootDir) //nolint
@@ -108,10 +116,10 @@ func mangleArguments(args []string) []string {
 	if argStartIdx < len(args) {
 		workingArgs = append(workingArgs, args[argStartIdx:]...)
 	}
-
 	args = workingArgs
+	log.Debugf("working args: args=%v", args)
 
-	// Now scan through args and if there is not a @set, insert @defaults after
+	// Look for an explicit @set argument.
 	idx := 2
 	set := "defaults"
 	// See if there is a @set specified. If so, that becomes are insertion point
@@ -124,14 +132,16 @@ func mangleArguments(args []string) []string {
 			break
 		}
 	}
+	log.Debugf("set found: set=%s, idx=%d", set, idx)
 
 	setArgs, _ := config.GetStringSlice(args[1] + "." + set)
+	log.Debugf("set args got: setArgs=%v", setArgs)
 	for _, arg := range setArgs {
 		parts := strings.Fields(arg)
 		args = append(args[:idx], append(parts, args[idx:]...)...)
 		idx += len(parts)
 	}
+	log.Debugf("set expanded: idx=%d, set=%s, args=%v", idx, set, args)
 
-	log.Debugf("idx=%d, set=%s, args=%v", idx, set, args)
 	return args
 }
