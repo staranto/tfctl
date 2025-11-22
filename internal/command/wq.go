@@ -81,6 +81,8 @@ func wqServerSideFilterAugmenter(
 			parts := strings.Split(f.Key, ".")
 			if len(parts) > 1 {
 				switch parts[0] {
+				case "name":
+					opts.Search = f.Value
 				case "project":
 					opts.ProjectID = f.Value
 				case "tag":
