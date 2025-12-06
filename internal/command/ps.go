@@ -54,7 +54,7 @@ func psCommandAction(ctx context.Context, cmd *cli.Command) error {
 
 	// Get the positional argument (the plan input file or default to stdin)
 	var planInput string
-	if len(meta.Args) > 2 {
+	if len(meta.Args) > 2 && meta.Args[2] != "-" {
 		planInput = meta.Args[2]
 	} else {
 		planInput = "-"
@@ -67,6 +67,11 @@ func psCommandAction(ctx context.Context, cmd *cli.Command) error {
 	if planInput == "-" {
 		input = os.Stdin
 	} else {
+		if info, err := os.Stat(planInput); err != nil {
+			return fmt.Errorf("plan file does not exist: %s", planInput)
+		} else if info.IsDir() {
+			return fmt.Errorf("plan input cannot be a directory: %s", planInput)
+		}
 		input, err = os.Open(planInput)
 		if err != nil {
 			return fmt.Errorf("failed to open plan file: %w", err)

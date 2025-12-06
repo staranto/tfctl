@@ -88,7 +88,12 @@ func mangleArguments(args []string) []string {
 	// And the next arg might be a root dir
 	rootDir, _ := os.Getwd()
 	argStartIdx := 2
-	if len(args) > 2 {
+	// Special-case the 'completion' and 'ps' commands which take a plain
+	// positional argument (e.g., 'bash' or 'zsh' for completion, plan file
+	// for ps).
+	isSpecial := args[1] == "ps" || args[1] == "completion"
+
+	if !isSpecial && len(args) > 2 {
 		if _, _, err := util.ParseRootDir(args[2]); err == nil {
 			rootDir = args[2]
 			argStartIdx = 3
@@ -108,7 +113,14 @@ func mangleArguments(args []string) []string {
 	log.Debugf("default set: defaultSet=%s", defaultSet)
 
 	// Now combine them back together.
-	workingArgs := append(preamble, rootDir) //nolint
+	var workingArgs []string
+	if isSpecial {
+		workingArgs = make([]string, 2)
+		copy(workingArgs, preamble)
+	} else {
+		workingArgs = append(preamble, rootDir) //nolint
+	}
+
 	if defaultSet != "" {
 		workingArgs = append(workingArgs, defaultSet)
 	}
