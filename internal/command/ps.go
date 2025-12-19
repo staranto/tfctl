@@ -122,6 +122,13 @@ func parsePlanOutput(input io.Reader) ([]PlanResource, error) {
 		`^\s*#\s+(.+?)\s+(?:will|must)\s+be\s+(.+?)\s*$`,
 	)
 
+	// Regex to match data source reads like:
+	// data.aws_caller_identity.validator: Reading...
+	// module.data.aws_caller_identity.validator: Reading...
+	dataReadLineRegex := regexp.MustCompile(
+		`^\s*(.+?):\s+Reading\.\.\.\s*$`,
+	)
+
 	var resources []PlanResource
 
 	scanner := bufio.NewScanner(input)
@@ -131,19 +138,24 @@ func parsePlanOutput(input io.Reader) ([]PlanResource, error) {
 		// Strip ANSI color codes from the line
 		line = ansiColorRegex.ReplaceAllString(line, "")
 
-		// Check if line starts with # (after stripping whitespace)
-		trimmed := strings.TrimLeft(line, " \t")
-		if !strings.HasPrefix(trimmed, "#") {
-			continue
-		}
-
 		// Try to match the resource action pattern
-		matches := resourceLineRegex.FindStringSubmatch(line)
-		if len(matches) == 3 {
+		if matches := resourceLineRegex.FindStringSubmatch(line); len(matches) == 3 {
 			resources = append(resources, PlanResource{
 				Resource: matches[1],
 				Action:   matches[2],
 			})
+			continue
+		}
+
+		// Try to match data read pattern
+		if matches := dataReadLineRegex.FindStringSubmatch(line); len(matches) == 2 {
+			resource := strings.TrimSpace(matches[1])
+			if strings.HasPrefix(resource, "data.") || strings.Contains(resource, ".data.") {
+				resources = append(resources, PlanResource{
+					Resource: resource,
+					Action:   "read",
+				})
+			}
 		}
 	}
 

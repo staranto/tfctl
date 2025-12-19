@@ -1,48 +1,58 @@
+version: "2"
 run:
-  timeout: 3m
   tests: true
-
 linters:
   enable:
     - copyloopvar
     - dupl
-    - errcheck
-    #- gocognit
     - gocritic
     - gocyclo
-    - godot # doc comment formatting
-    - gofmt
-    - goimports
+    - godot
     - gosec
-    - govet
-    - ineffassign
     - misspell
     - predeclared
     - revive
-    - staticcheck
     - unparam
-    - unused
-
-linters-settings:
-  gocyclo:
-    min-complexity: 15
-  goimports:
-    local-prefixes: github.com/staranto/tfctlgo
-  revive:
-    rules:
-      - name: dot-imports
-      - name: exported
-      - name: var-naming
-      - name: receiver-naming
-
-  godot:
-    scope: all
-    period: false
-
-issues:
-  exclude-files:
-    - ^tools/docgen/.*\.go$
-    - ^internal/command/si\.go$
-    - ^internal.command/si/*
-  exclude-rules:
-    # Reserved for future, currently no path-specific excludes
+  settings:
+    gocyclo:
+      min-complexity: 15
+    godot:
+      scope: all
+      period: false
+    revive:
+      rules:
+        - name: dot-imports
+        - name: exported
+        - name: var-naming
+        - name: receiver-naming
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - ^tools/docgen/.*\.go$
+      - ^internal/command/si\.go$
+      - ^internal.command/si/*
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/staranto/tfctlgo
+  exclusions:
+    generated: lax
+    paths:
+      - ^tools/docgen/.*\.go$
+      - ^internal/command/si\.go$
+      - ^internal.command/si/*
+      - third_party$
+      - builtin$
+      - examples$
