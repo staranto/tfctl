@@ -89,12 +89,28 @@ func Purge(hours int) error {
 		log.Debug("cache cleaning disabled")
 		return nil
 	}
+
 	base, ok := Dir()
 	if !ok {
 		return nil
 	}
+
 	maxAge := time.Duration(hours) * time.Hour
-	if err := filepath.Walk(base, func(path string, info os.FileInfo, _ error) error {
+	if err := filepath.Walk(base, func(path string, info os.FileInfo, walkErr error) error {
+		// Guard against nil info (can occur if the file disappeared). This is an
+		// unlikely edge case and has only happened when multiple Jenkins run were
+		// misconfigured and coincidently colllided on the cache entries.
+		if walkErr != nil {
+			if os.IsNotExist(walkErr) {
+				return nil
+			}
+			return walkErr
+		}
+
+		if info == nil {
+			return nil
+		}
+
 		if !info.IsDir() && time.Since(info.ModTime()) > maxAge {
 			if err := os.Remove(path); err == nil {
 				log.Debugf("removed cache file %s", path)

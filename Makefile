@@ -25,16 +25,11 @@ release:
 		exit 1; \
 	fi
 
-	git push origin --delete "$(VERSION)"
-	git tag --delete "$(VERSION)"
+	git push origin --delete "$(VERSION)" || true
+	git tag --delete "$(VERSION)" || true
 	git tag "$(VERSION)" --message "Release $(VERSION)."
 	git push origin
 	git push origin "$(VERSION)"
 
 test: build
 	go test ./... --count 1 -v
-
-tflint: install
-	for d in rules/*/testdata; do tflint --chdir $$d; done
-
-

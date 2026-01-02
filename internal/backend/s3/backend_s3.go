@@ -37,10 +37,12 @@ type BackendS3 struct {
 	Backend          struct {
 		Type   string `json:"type" validate:"eq=local"`
 		Config struct {
-			Bucket string `json:"bucket"`
-			Key    string `json:"key"`
-			Prefix string `json:"workspace_key_prefix"`
-			Region string `json:"region"`
+			Bucket   string `json:"bucket"`
+			Key      string `json:"key"`
+			Prefix   string `json:"workspace_key_prefix"`
+			Region   string `json:"region"`
+			Encrypt  bool   `json:"encrypt"`
+			KmsKeyId string `json:"kms_key_id"`
 		} `json:"config"`
 		Hash int `json:"hash"`
 	} `json:"backend"`
