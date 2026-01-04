@@ -5,6 +5,7 @@
 [0.00, "o", "\u001b[38;5;220m"]
 [0.00, "o", "# Querying state files with Terraform is slow and has limited capability.\r\n"]
 [0.00, "o", "# It can only show a list of resource ids in the state file.\r\n"]
+
 [0.00, "o", "\u001b[38;5;33m~/iac> \u001b[0m"]
 [3.00, "o", "t"]
 [0.10, "o", "e"]
@@ -225,15 +226,7 @@
 [0.00, "o", "\u001b[0m\r\n"]
 [0.20, "o", "\r\n"]
 [0.00, "o", "[\r\n  {\r\n    \"id\": \"sample-f5d67884-internal\",\r\n    \"mode\": \"managed\",\r\n    \"name\": \"sample-f5d67884-internal\",\r\n    \"resource\": \"aws_cloudwatch_log_group.log[\\\"internal\\\"]\",\r\n    \"type\": \"aws_cloudwatch_log_group\"\r\n  },\r\n  {\r\n    \"id\": \"sample-f5d67884-notfound\",\r\n    \"mode\": \"managed\",\r\n    \"name\": \"sample-f5d67884-notfound\",\r\n    \"resource\": \"aws_cloudwatch_log_group.log[\\\"notfound\\\"]\",\r\n    \"type\": \"aws_cloudwatch_log_group\"\r\n  },\r\n  {\r\n    \"id\": \"internal-500\",\r\n    \"mode\": \"managed\",\r\n    \"name\": \"internal-500\",\r\n    \"resource\": \"aws_cloudwatch_log_metric_filter.log[\\\"internal\\\"]\",\r\n    \"type\": \"aws_cloudwatch_log_metric_filter\"\r\n  },\r\n  {\r\n    \"id\": \"notfound-404\",\r\n    \"mode\": \"managed\",\r\n    \"name\": \"notfound-404\",\r\n    \"resource\": \"aws_cloudwatch_log_metric_filter.log[\\\"notfound\\\"]\",\r\n    \"type\": \"aws_cloudwatch_log_metric_filter\"\r\n  }\r\n]\r\n"]
-[0.00, "o", "\r\n"]
 
-[3.00, "o", "\u001b[38;5;220m"]
-[0.00, "o", "# There's so much more you can do with tfctl beyond these simple state file\r\n"]
-[0.00, "o", "# queries. You can apply transformations to attribute values, compare differences\r\n"]
-[0.00, "o", "# between any two states in the history, query local and remote workspace states and more!!\r\n"]
-[0.00, "o", "# Plus, you can query TFE/HCP resources like organizations, projects, workspaces, run\r\n"]
-[0.00, "o", "# histories, state version histories and the module registries.\r\n"]
-
-[1.00, "o", "\u001b[38;5;220m"]
+[3.00, "o", "\u001b[38;5;220m\r\n"]
 [0.00, "o", "    _      __          _     _ \r\n   | |_   / _|   ___  | |_  | |\r\n   | __| | |_   / __| | __| | |\r\n   | |_  |  _| | (__  | |_  | |\r\n    \\__| |_|    \\___|  \\__| |_|\r\n                               \r\n"]
-[0.00, "o", " https://github.com/staranto/tfctl\r\n\r\n"]
+[0.00, "o", " https://github.com/staranto/tfctlgo\r\n\r\n"]
