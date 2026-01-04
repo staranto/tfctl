@@ -12,8 +12,8 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/backend/remote"
-	"github.com/staranto/tfctlgo/internal/config"
+	"github.com/staranto/tfctl/internal/backend/remote"
+	"github.com/staranto/tfctl/internal/config"
 )
 
 type BackendCloud struct {

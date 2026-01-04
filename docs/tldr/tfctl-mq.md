@@ -1,7 +1,7 @@
 # tfctl-mq
 
 > Query the Module Registry (HCP/TFE) for available modules and metadata.
-> More information: https://github.com/staranto/tfctlgo.
+> More information: https://github.com/staranto/tfctl.
 
 - List registry modules:
 

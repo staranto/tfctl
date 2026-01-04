@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/meta"
+	"github.com/staranto/tfctl/internal/meta"
 )
 
 // svqDefaultAttrs specifies the default attributes displayed for state

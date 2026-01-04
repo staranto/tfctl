@@ -227,7 +227,7 @@ func buildTLDR(cmd, title, short string, exs []example) string {
 	} else {
 		b.WriteString("> tfctl " + cmd + "\n")
 	}
-	b.WriteString("> More information: https://github.com/staranto/tfctlgo.\n\n")
+	b.WriteString("> More information: https://github.com/staranto/tfctl.\n\n")
 
 	if len(exs) == 0 {
 		// Fallback examples

@@ -21,9 +21,9 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	awsx "github.com/staranto/tfctlgo/internal/aws"
-	"github.com/staranto/tfctlgo/internal/differ"
-	"github.com/staranto/tfctlgo/internal/svutil"
+	awsx "github.com/staranto/tfctl/internal/aws"
+	"github.com/staranto/tfctl/internal/differ"
+	"github.com/staranto/tfctl/internal/svutil"
 )
 
 type BackendS3 struct {

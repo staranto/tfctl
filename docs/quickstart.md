@@ -37,17 +37,6 @@ tfctl --help
 tfctl oq --help
 ```
 
-Additionally, `--examples` can be used to see commonly used commands for a query --
-```sh
-tfctl oq --examples
-COMMAND                          DESCRIPTION
-tfctl oq                         All Organizations on the default HCP/TFE server.
-tfctl oq --host tfe.example.com  All Organizations on the tfe.example.com server.
-tfctl oq --attrs email           All Organizations, plus the email of their administrator.
-tfctl oq --filter 'name@prod'    Organizations containing 'prod' in their name.
-
-```
-
 **tfctl** follows a typical CLI command pattern where the query command is specified followed by optional flags and arguments.
 
 ```sh

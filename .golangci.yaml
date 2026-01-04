@@ -46,7 +46,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/staranto/tfctlgo
+        - github.com/staranto/tfctl
   exclusions:
     generated: lax
     paths:

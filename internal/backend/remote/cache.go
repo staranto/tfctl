@@ -6,8 +6,8 @@ package remote
 import (
 	"os"
 
-	"github.com/staranto/tfctlgo/internal/cacheutil"
-	"github.com/staranto/tfctlgo/internal/config"
+	"github.com/staranto/tfctl/internal/cacheutil"
+	"github.com/staranto/tfctl/internal/config"
 )
 
 // CacheEntry is provided by cacheutil.Entry; local alias removed to avoid duplication.

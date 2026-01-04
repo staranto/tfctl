@@ -25,7 +25,7 @@ builds:
       - -trimpath
     ldflags:
       - '-s -w -extldflags "-static"'
-      - '-X "github.com/staranto/tfctlgo/internal/version.Version={{ .Version }}"'
+      - '-X "github.com/staranto/tfctl/internal/version.Version={{ .Version }}"'
 
 archives:
   - id: archive
@@ -67,7 +67,7 @@ brews:
     repository:
       owner: staranto
       name: homebrew-tfctlgo
-    homepage: https://github.com/staranto/tfctlgo
+    homepage: https://github.com/staranto/tfctl
     description: CLI to query Terraform/OpenTofu state across backends
     license: Apache-2.0
     url_template: "https://github.com/staranto/homebrew-tfctlgo/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
@@ -85,7 +85,7 @@ nfpms:
     file_name_template: '{{ .Binary }}_{{ .Version }}_{{- if eq .Arch "amd64" }}amd64{{ else }}{{ .Arch }}{{ end }}{{ .ConventionalExtension }}'
     vendor: Steve Taranto
     maintainer: Steve Taranto staranto@gmail.com
-    homepage: https://github.com/staranto/tfctlgo
+    homepage: https://github.com/staranto/tfctl
     description: CLI to query Terraform/OpenTofu state across backends
     license: Apache-2.0
     bindir: /usr/local/bin

@@ -11,9 +11,9 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/backend/remote"
-	"github.com/staranto/tfctlgo/internal/filters"
-	"github.com/staranto/tfctlgo/internal/meta"
+	"github.com/staranto/tfctl/internal/backend/remote"
+	"github.com/staranto/tfctl/internal/filters"
+	"github.com/staranto/tfctl/internal/meta"
 )
 
 var oqDefaultAttrs = []string{"external-id:id", ".id:name"}

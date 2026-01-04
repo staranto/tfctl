@@ -1,4 +1,4 @@
-module github.com/staranto/tfctlgo
+module github.com/staranto/tfctl
 
 go 1.24.0
 

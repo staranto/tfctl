@@ -1,7 +1,7 @@
 # tfctl-si
 
 > Start an interactive console to explore state data (search resources, run ad-hoc queries, and view results inline).
-> More information: https://github.com/staranto/tfctlgo.
+> More information: https://github.com/staranto/tfctl.
 
 - Start interactive console in CWD:
 

@@ -1,7 +1,7 @@
 # tfctl-wq
 
 > Query Workspaces for an organization or project. Useful for inventorying workspaces and extracting attributes like VCS information and Terraform version.
-> More information: https://github.com/staranto/tfctlgo.
+> More information: https://github.com/staranto/tfctl.
 
 - List workspaces in the current org:
 

@@ -1,20 +1,24 @@
 # tfctl-rq
 
-> Query runs for a workspace.
-> More information: https://github.com/staranto/tfctlgo.
+> Query Runs for a workspace. Useful for examining the execution history and status of Terraform runs.
+> More information: https://github.com/staranto/tfctl.
 
-- List runs for a workspace:
+- List runs for the current workspace:
 
-`tfctl rq --workspace {{workspace_name}}`
+`tfctl rq`
 
-- Limit the number of runs returned:
+- Show common run attributes:
 
-`tfctl rq --workspace {{workspace_name}} --limit {{20}}`
+`tfctl rq --schema`
 
-- Output results as JSON:
+- Show tldr page:
 
-`tfctl rq --workspace {{workspace_name}} --output json`
+`tfctl rq --tldr`
 
-- Use a specific Terraform Enterprise host:
+- Filter runs by status:
 
-`tfctl rq --host {{tfe.example.com}} --org {{organization_name}} --workspace {{workspace_name}}`
+`tfctl rq --filter "status=applied"`
+
+- Limit results and include custom attributes:
+
+`tfctl rq --limit 10 --attrs "created-at,status,message"`
