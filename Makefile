@@ -20,8 +20,8 @@ install: build
 
 release:
 	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=x.y.z"; exit 1; fi
-	@if ! echo "$(VERSION)" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$$'; then \
-		echo "Error: VERSION must be a valid semantic version (e.g. 0.2.0) without leading 'v'. Got: $(VERSION)"; \
+	@if ! echo "$(VERSION)" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$$'; then \
+		echo "Error: VERSION must be a valid semantic version (e.g. v0.2.0) with leading 'v'. Got: $(VERSION)"; \
 		exit 1; \
 	fi
 

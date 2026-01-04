@@ -45,9 +45,9 @@ The native Terraform CLI provides essential IAC tooling for managing the lifecyc
   go install github.com/staranto/tfctl@latest
   ```
 
-- Homebrew (recommended):
+- Homebrew:
 	```bash
-	brew install staranto/tfctl/tfctl
+	brew install staranto/tfctlgo/tfctl
 	```
 - See the full [Installation Guide](docs/installation.md) for other options (tarball, build from source), plus installing man and TLDR pages.
 
