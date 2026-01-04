@@ -1,7 +1,7 @@
 # tfctl-filters
 
 > Filter query results with `--filter` using a compact syntax.
-> More information: https://github.com/staranto/tfctlgo/docs/filters.md.
+> More information: https://github.com/staranto/tfctl/docs/filters.md.
 
 - Contains and negation:
 

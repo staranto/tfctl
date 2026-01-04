@@ -18,9 +18,9 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/config"
-	"github.com/staranto/tfctlgo/internal/differ"
-	"github.com/staranto/tfctlgo/internal/svutil"
+	"github.com/staranto/tfctl/internal/config"
+	"github.com/staranto/tfctl/internal/differ"
+	"github.com/staranto/tfctl/internal/svutil"
 )
 
 type BackendRemote struct {

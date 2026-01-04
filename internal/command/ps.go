@@ -17,10 +17,10 @@ import (
 	"github.com/apex/log"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/attrs"
-	"github.com/staranto/tfctlgo/internal/config"
-	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/staranto/tfctlgo/internal/output"
+	"github.com/staranto/tfctl/internal/attrs"
+	"github.com/staranto/tfctl/internal/config"
+	"github.com/staranto/tfctl/internal/meta"
+	"github.com/staranto/tfctl/internal/output"
 )
 
 // ansiColorRegex matches ANSI escape sequences used for coloring terminal

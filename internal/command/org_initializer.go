@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/backend"
-	"github.com/staranto/tfctlgo/internal/backend/remote"
+	"github.com/staranto/tfctl/internal/backend"
+	"github.com/staranto/tfctl/internal/backend/remote"
 )
 
 // RemoteOrgListFetcher[T, O] is the signature for a function that performs

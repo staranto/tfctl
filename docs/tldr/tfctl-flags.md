@@ -1,7 +1,7 @@
 # tfctl-flags
 
 > Common flags shared across tfctl commands.
-> More information: https://github.com/staranto/tfctlgo/docs/flags.md.
+> More information: https://github.com/staranto/tfctl/docs/flags.md.
 
 - Set output format to JSON:
 

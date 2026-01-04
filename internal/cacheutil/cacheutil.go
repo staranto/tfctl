@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/staranto/tfctlgo/internal/log"
+	"github.com/staranto/tfctl/internal/log"
 )
 
 // Entry represents a cached artifact on disk.

@@ -11,7 +11,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/meta"
+	"github.com/staranto/tfctl/internal/meta"
 )
 
 const bashCompletionScript = `# bash completion for tfctl

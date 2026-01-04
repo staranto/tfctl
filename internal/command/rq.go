@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/meta"
+	"github.com/staranto/tfctl/internal/meta"
 )
 
 // rqDefaultAttrs specifies the default attributes displayed for runs in

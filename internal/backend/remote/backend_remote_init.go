@@ -14,7 +14,7 @@ import (
 	"github.com/apex/log"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/config"
+	"github.com/staranto/tfctl/internal/config"
 )
 
 type BackendRemoteOption = func(ctx context.Context, cmd *cli.Command, be *BackendRemote) error

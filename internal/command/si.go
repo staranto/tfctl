@@ -19,10 +19,10 @@ import (
 	"github.com/apex/log"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/command/si"
-	"github.com/staranto/tfctlgo/internal/config"
-	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/staranto/tfctlgo/internal/state"
+	"github.com/staranto/tfctl/internal/command/si"
+	"github.com/staranto/tfctl/internal/config"
+	"github.com/staranto/tfctl/internal/meta"
+	"github.com/staranto/tfctl/internal/state"
 )
 
 func siCommandAction(ctx context.Context, cmd *cli.Command) error {

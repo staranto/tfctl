@@ -1,41 +1,85 @@
-.TH TFCTL-RQ 1 "2025-09-25" "tfctl" "User Commands"
-.SH NAME
-tfctl-rq \- query runs for a workspace
-.SH SYNOPSIS
-.B tfctl rq
-.RI [ options ]
-.RI [ RootDir ]
-.SH DESCRIPTION
-.B tfctl rq
-lists runs associated with a workspace.
-.SH OPTIONS
-.TP
-.BR \-\-host \fIHOST\fR
-HCP/TFE host.
-.TP
-.BR \-\-org \fIORG\fR
-Organization.
-.TP
-.BR \-w ", " \-\-workspace \fINAME\fR
-Workspace name.
-.TP
-.BR \-l ", " \-\-limit \fIN\fR
-Limit the number of runs returned (default 99999).
-.TP
-See also global options in
-.BR tfctl (1)
-and
-.BR tfctl\-flags (7).
-.SH EXAMPLES
-.nf
-# List runs for a workspace (latest 20)
-tfctl rq --workspace {{workspace_name}} --limit 20
+'\" t
+.nh
+.TH tfctl rq — run query
+Synopsis
 
-# Return as JSON
-tfctl rq --workspace {{workspace_name}} --output json
-.fi
-.SH SEE ALSO
-.BR tfctl (1),
-.BR tfctl\-attrs (7),
-.BR tfctl\-filters (7),
-.BR tfctl\-flags (7)
+.EX
+tfctl rq [RootDir] [options]
+.EE
+
+.PP
+Short description
+
+.PP
+Query Runs for a workspace. Useful for examining the execution history and status of Terraform runs.
+
+.PP
+Flags and related docs
+.IP \(bu 2
+See the common flag reference: Flags
+\[la]../flags.md\[ra]
+.IP \(bu 2
+Attributes: Attributes
+\[la]../attrs.md\[ra]
+.IP \(bu 2
+Filtering: Filters
+\[la]../filters.md\[ra]
+
+.PP
+Flags
+
+.TS
+allbox;
+l l l l l 
+l l l l l .
+\fBFlag\fP	\fBAlias\fP	\fBDescription\fP	\fBDefault\fP	\fBNotes\fP
+\fB--attrs\fR	\fB-a\fR	T{
+Comma-separated list of attributes to include
+T}	\fB\&.id,created-at,status\fR	Global flag
+\fB--color\fR		Enable colored text output	false	Use \fB--no-color\fR to disable
+\fB--filter\fR	\fB-f\fR	T{
+Comma-separated list of filters to apply
+T}	(none)	See Filters
+\[la]../filters.md\[ra]
+\fB--host\fR	\fB-h\fR	Host to use for queries	\fBapp.terraform.io\fR	Command-scoped
+\fB--limit\fR	\fB-l\fR	Limit runs returned	99999	Command-specific
+\fB--org\fR		Organization to query	(none)	Command-scoped
+\fB--output\fR	\fB-o\fR	Output format (\fBtext\fR, \fBjson\fR, \fByaml\fR, \fBraw\fR)	\fBtext\fR	Global flag
+\fB--schema\fR		Dump the schema	false	Command-specific helper
+\fB--sort\fR	\fB-s\fR	Attributes to sort by	(none)	Global flag
+\fB--titles\fR		Show titles with text output	false	Use \fB--no-titles\fR to disable
+\fB--tldr\fR		Show tldr page	false	Command-specific helper
+\fB--workspace\fR	\fB-w\fR	Workspace to use for query	(none)	Command-scoped
+.TE
+
+.PP
+Quick examples
+
+.EX
+# List runs for the current workspace
+tfctl rq
+
+# Show common run attributes
+tfctl rq --schema
+
+# Show tldr page
+tfctl rq --tldr
+
+# Filter runs by status
+tfctl rq --filter "status=applied"
+
+# Limit results and include custom attributes
+tfctl rq --limit 10 --attrs "created-at,status,message"
+.EE
+
+.PP
+Notes
+.IP \(bu 2
+Use \fB--workspace\fR to scope to a specific workspace when required.
+.IP \(bu 2
+Use \fB--org\fR to specify the organization if not using the default.
+.IP \(bu 2
+Use \fB--schema\fR to discover attributes available to \fB--attrs\fR for this command.
+
+.PP
+See also

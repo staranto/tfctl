@@ -1,7 +1,7 @@
 # tfctl-pq
 
 > Query Projects within an organization. Use to enumerate and extract project-level metadata.
-> More information: https://github.com/staranto/tfctlgo.
+> More information: https://github.com/staranto/tfctl.
 
 - List projects in org:
 

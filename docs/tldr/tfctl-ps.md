@@ -1,7 +1,7 @@
 # tfctl-ps
 
 > Parse and summarize Terraform plan output, displaying resource actions in a formatted table. Accepts plan files or reads from stdin. Supports filtering and sorting to narrow down changes.
-> More information: https://github.com/staranto/tfctlgo.
+> More information: https://github.com/staranto/tfctl.
 
 - Example:
 

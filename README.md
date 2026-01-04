@@ -4,15 +4,15 @@
 
 **Supercharge your Terraform workflow with powerful CLI queries**
 
-[![Go Version](https://img.shields.io/github/go-mod/go-version/staranto/tfctlgo)](https://golang.org/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/staranto/tfctlgo)](https://goreportcard.com/report/github.com/staranto/tfctlgo)
-[![Release](https://img.shields.io/github/v/release/staranto/tfctlgo?include_prereleases)](https://github.com/staranto/tfctlgo/releases)
-[![CodeQL](https://github.com/staranto/tfctlgo/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/staranto/tfctlgo/actions/workflows/github-code-scanning/codeql)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/staranto/tfctl)](https://golang.org/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/staranto/tfctl)](https://goreportcard.com/report/github.com/staranto/tfctl)
+[![Release](https://img.shields.io/github/v/release/staranto/tfctl?include_prereleases)](https://github.com/staranto/tfctl/releases)
+[![CodeQL](https://github.com/staranto/tfctl/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/staranto/tfctl/actions/workflows/github-code-scanning/codeql)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 </div>
 
-**tfctl** is a command-line tool for querying Terraform and OpenTofu infrastructure. State querying of multiple backends is a main use-case, but tfctl also lets you query the broader Terraform ecosystem - modules, organizations, and workspaces - to power reporting and automation.
+**tfctl** is a command-line tool for querying Terraform and OpenTofu infrastructure. State querying of multiple backends is a main use-case, but tfctl can also query the broader Terraform ecosystem - modules, organizations, workspaces, etc - to power reporting and automation.
 
 ## Key Features
 
@@ -26,12 +26,9 @@
 
 **Comprehensive** - Query any attribute available through the Terraform APIs.
 
-
-XXX XXX XXX XXX XXX XXX
-
 ## Why tfctl?
 
-The native Terraform CLI provides essential IAC tooling for managing the resources it creates. But it lacks powerful state querying tools and offers no easily accessible way to query other elements of the Terraform ecosystem like workspaces, organizations, or module registries. This is especially problematic for automation use cases, where you need programmatic access to infrastructure metadata, state history, or cross-workspace insights.
+The native Terraform CLI provides essential IAC tooling for managing the lifecycle of resources it creates. But it lacks powerful state querying tools and offers no easily accessible way to query other elements of the Terraform ecosystem like workspaces, organizations, or module registries. This is especially problematic for automation use cases, where you need programmatic access to infrastructure metadata, state history, or cross-workspace insights.
 
 **tfctl fills these gaps** by providing a unified, high-performance CLI for deep querying and analysis of the Terraform ecosystem, enabling better automation, reporting, and operational workflows.
 
@@ -43,16 +40,14 @@ The native Terraform CLI provides essential IAC tooling for managing the resourc
 
 ## Installation
 
+- Go package install
+  ```bash
+  go install github.com/staranto/tfctl@latest
+  ```
+
 - Homebrew (recommended):
 	```bash
-	brew install staranto/tfctlgo/tfctl
-	```
-- Debian/Ubuntu (.deb):
-	- Visit https://github.com/staranto/tfctlgo/releases/latest and download the
-	  .deb matching your architecture (for example, amd64 or arm64).
-	- Then install it:
-	```bash
-	sudo dpkg -i /path/to/download/deb
+	brew install staranto/tfctl/tfctl
 	```
 - See the full [Installation Guide](docs/installation.md) for other options (tarball, build from source), plus installing man and TLDR pages.
 
@@ -106,7 +101,7 @@ tfctl wq --attrs created-at,updated-at --output json
 - Enhanced S3 backend configuration options
 - Advanced reporting and dashboards.
 
-*Want a feature? [Open an issue](https://github.com/staranto/tfctlgo/issues) and help us prioritize!*
+*Want a feature? [Open an issue](https://github.com/staranto/tfctl/issues) and help us prioritize!*
 
 ## Contributing
 
@@ -116,7 +111,7 @@ Contributions are welcome! Whether it's:
 - Documentation improvements
 - Ideas and feedback
 
-**Get started:** Fork the repo, make your changes, and submit a PR. Check out our [issues](https://github.com/staranto/tfctlgo/issues) for good first contributions.
+**Get started:** Fork the repo, make your changes, and submit a PR. Check out our [issues](https://github.com/staranto/tfctl/issues) for good first contributions.
 
 ---
 
@@ -133,11 +128,11 @@ We sign release artifacts with GPG. To verify the integrity and authenticity of 
 **Download and verify**
 ```bash
 # Download the artifact and its signature
-curl -L https://github.com/staranto/tfctlgo/releases/latest/download/tfctl_linux_amd64.tar.gz -o tfctl_linux_amd64.tar.gz
-curl -L https://github.com/staranto/tfctlgo/releases/latest/download/tfctl_linux_amd64.tar.gz.sig -o tfctl_linux_amd64.tar.gz.sig
+curl -L https://github.com/staranto/tfctl/releases/latest/download/tfctl_linux_amd64.tar.gz -o tfctl_linux_amd64.tar.gz
+curl -L https://github.com/staranto/tfctl/releases/latest/download/tfctl_linux_amd64.tar.gz.sig -o tfctl_linux_amd64.tar.gz.sig
 
 # Import the public key (one-time setup)
-curl -L https://raw.githubusercontent.com/staranto/tfctlgo/master/KEYS | gpg --import
+curl -L https://raw.githubusercontent.com/staranto/tfctl/master/KEYS | gpg --import
 
 # Verify the signature
 gpg --verify tfctl_linux_amd64.tar.gz.sig tfctl_linux_amd64.tar.gz

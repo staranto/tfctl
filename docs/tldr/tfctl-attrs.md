@@ -1,7 +1,7 @@
 # tfctl-attrs
 
 > Select and transform fields in output using `--attrs`.
-> More information: https://github.com/staranto/tfctlgo/docs/attrs.md.
+> More information: https://github.com/staranto/tfctl/docs/attrs.md.
 
 - Select specific attributes:
 

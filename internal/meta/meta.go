@@ -6,7 +6,7 @@ package meta
 import (
 	"context"
 
-	"github.com/staranto/tfctlgo/internal/config"
+	"github.com/staranto/tfctl/internal/config"
 )
 
 // RootDirSpec holds the resolved root directory and optional environment

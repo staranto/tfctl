@@ -15,10 +15,10 @@ import (
 	"github.com/hashicorp/jsonapi"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/attrs"
-	"github.com/staranto/tfctlgo/internal/backend/remote"
-	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/staranto/tfctlgo/internal/output"
+	"github.com/staranto/tfctl/internal/attrs"
+	"github.com/staranto/tfctl/internal/backend/remote"
+	"github.com/staranto/tfctl/internal/meta"
+	"github.com/staranto/tfctl/internal/output"
 )
 
 // DefaultListOptions provides the standard pagination starting point for all

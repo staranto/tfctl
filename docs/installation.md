@@ -7,7 +7,7 @@ This guide covers all supported ways to install tfctl and related documentation 
 The simplest way to install on macOS/Linux with Homebrew:
 
 ```bash
-brew install staranto/tfctlgo/tfctl
+brew install staranto/tfctl/tfctl
 ```
 
 Notes:
@@ -19,7 +19,7 @@ Download the .deb from the latest release and install:
 
 ```bash
 # Example for amd64; adjust the filename for your architecture
-curl -LO https://github.com/staranto/tfctlgo/releases/latest/download/tfctl_amd64.deb \
+curl -LO https://github.com/staranto/tfctl/releases/latest/download/tfctl_amd64.deb \
   && sudo dpkg -i tfctl_amd64.deb || sudo apt-get -f install
 ```
 
@@ -33,7 +33,7 @@ Notes:
 Download a tarball for your platform from Releases, extract, and move the binary to your PATH:
 
 ```bash
-curl -L https://github.com/staranto/tfctlgo/releases/latest/download/tfctl_linux_amd64.tar.gz | tar xz
+curl -L https://github.com/staranto/tfctl/releases/latest/download/tfctl_linux_amd64.tar.gz | tar xz
 sudo mv tfctl /usr/local/bin/
 ```
 
@@ -175,7 +175,7 @@ The steps are the same as Linux; adjust any paths for Homebrew conventions. For 
 ## Build from source
 
 ```bash
-git clone https://github.com/staranto/tfctlgo.git
+git clone https://github.com/staranto/tfctl.git
 cd tfctlgo && go build -o tfctl
 ```
 

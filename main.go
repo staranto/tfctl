@@ -9,12 +9,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/staranto/tfctlgo/internal/cacheutil"
-	"github.com/staranto/tfctlgo/internal/command"
-	"github.com/staranto/tfctlgo/internal/config"
-	"github.com/staranto/tfctlgo/internal/log"
-	"github.com/staranto/tfctlgo/internal/util"
-	"github.com/staranto/tfctlgo/internal/version"
+	"github.com/staranto/tfctl/internal/cacheutil"
+	"github.com/staranto/tfctl/internal/command"
+	"github.com/staranto/tfctl/internal/config"
+	"github.com/staranto/tfctl/internal/log"
+	"github.com/staranto/tfctl/internal/util"
+	"github.com/staranto/tfctl/internal/version"
 )
 
 var ctx = context.Background()

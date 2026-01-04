@@ -8,7 +8,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/meta"
+	"github.com/staranto/tfctl/internal/meta"
 )
 
 // QueryCommandBuilder is a helper that constructs a cli.Command for query

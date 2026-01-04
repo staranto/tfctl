@@ -12,9 +12,9 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/config"
-	"github.com/staranto/tfctlgo/internal/meta"
-	"github.com/staranto/tfctlgo/internal/util"
+	"github.com/staranto/tfctl/internal/config"
+	"github.com/staranto/tfctl/internal/meta"
+	"github.com/staranto/tfctl/internal/util"
 )
 
 func InitApp(ctx context.Context, args []string) (*cli.Command, error) {

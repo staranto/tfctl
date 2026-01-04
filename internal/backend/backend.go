@@ -14,11 +14,11 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/backend/cloud"
-	"github.com/staranto/tfctlgo/internal/backend/local"
-	"github.com/staranto/tfctlgo/internal/backend/remote"
-	"github.com/staranto/tfctlgo/internal/backend/s3"
-	"github.com/staranto/tfctlgo/internal/meta"
+	"github.com/staranto/tfctl/internal/backend/cloud"
+	"github.com/staranto/tfctl/internal/backend/local"
+	"github.com/staranto/tfctl/internal/backend/remote"
+	"github.com/staranto/tfctl/internal/backend/s3"
+	"github.com/staranto/tfctl/internal/meta"
 )
 
 // Type holds common backend resolution context and flags.

@@ -14,7 +14,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/attrs"
+	"github.com/staranto/tfctl/internal/attrs"
 )
 
 func TestSortDataset(t *testing.T) {

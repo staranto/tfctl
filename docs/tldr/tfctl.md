@@ -1,7 +1,7 @@
 # tfctl
 
 > Command-line tool for querying Terraform and OpenTofu infrastructure across multiple backend types.
-> More information: https://github.com/staranto/tfctlgo.
+> More information: https://github.com/staranto/tfctl.
 
 > Related pages: [tfctl-attrs](./tfctl-attrs.md), [tfctl-filters](./tfctl-filters.md), [tfctl-flags](./tfctl-flags.md), [tfctl-mq](./tfctl-mq.md), [tfctl-oq](./tfctl-oq.md), [tfctl-pq](./tfctl-pq.md), [tfctl-rq](./tfctl-rq.md), [tfctl-sq](./tfctl-sq.md), [tfctl-svq](./tfctl-svq.md), [tfctl-wq](./tfctl-wq.md)
 

@@ -17,8 +17,8 @@ import (
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/urfave/cli/v3"
 
-	"github.com/staranto/tfctlgo/internal/differ"
-	"github.com/staranto/tfctlgo/internal/svutil"
+	"github.com/staranto/tfctl/internal/differ"
+	"github.com/staranto/tfctl/internal/svutil"
 )
 
 // BackendLocal is a struct that represents a local backend configuration.

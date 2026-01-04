@@ -21,9 +21,9 @@ import (
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v2"
 
-	"github.com/staranto/tfctlgo/internal/attrs"
-	"github.com/staranto/tfctlgo/internal/config"
-	"github.com/staranto/tfctlgo/internal/filters"
+	"github.com/staranto/tfctl/internal/attrs"
+	"github.com/staranto/tfctl/internal/config"
+	"github.com/staranto/tfctl/internal/filters"
 )
 
 // InterfaceToString converts supported primitive or composite values to a

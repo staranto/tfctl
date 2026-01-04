@@ -1,7 +1,7 @@
 # tfctl-oq
 
 > Query Organizations from your configured Terraform/HCP/TFE host.
-> More information: https://github.com/staranto/tfctlgo.
+> More information: https://github.com/staranto/tfctl.
 
 - List organizations:
 
