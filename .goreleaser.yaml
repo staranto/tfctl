@@ -52,7 +52,7 @@ changelog:
 release:
   github:
     owner: staranto
-    name: tfctlgo
+    name: tfctl
   footer: >-
 
     Copyright (c) 2026 Steve Taranto staranto@gmail.com.

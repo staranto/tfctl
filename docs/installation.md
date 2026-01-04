@@ -176,7 +176,7 @@ The steps are the same as Linux; adjust any paths for Homebrew conventions. For 
 
 ```bash
 git clone https://github.com/staranto/tfctl.git
-cd tfctlgo && go build -o tfctl
+cd tfctl && go build -o tfctl
 ```
 
 ## Build with GoReleaser

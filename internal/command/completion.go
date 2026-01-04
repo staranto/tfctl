@@ -224,7 +224,7 @@ _tfctl() {
 if ! typeset -f compdef >/dev/null 2>&1; then
   autoload -Uz compinit && compinit -i
 fi
-compdef _tfctl tfctl tfctlgo
+compdef _tfctl tfctl tfctl
 `
 
 func completionCommandAction(ctx context.Context, cmd *cli.Command) error {
